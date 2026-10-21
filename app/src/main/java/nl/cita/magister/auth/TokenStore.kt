@@ -2,12 +2,10 @@ package nl.cita.magister.auth
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import nl.cita.magister.auth.StoredSession as Session
 
 class TokenStore(context: Context) {
-    private val prefs: SharedPreferences = createSecurePrefs(context)
+    private val prefs: SharedPreferences = SecurePrefs.open(context, PREFS_NAME)
 
     @Synchronized
     fun read(): Session? {
@@ -54,24 +52,6 @@ class TokenStore(context: Context) {
     @Synchronized
     fun clear() {
         prefs.edit().clear().apply()
-    }
-
-    private fun createSecurePrefs(context: Context): SharedPreferences {
-        return try {
-            val masterKey = MasterKey.Builder(context)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-            EncryptedSharedPreferences.create(
-                context,
-                PREFS_NAME,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-            )
-        } catch (error: Exception) {
-            // Emulator/CI zonder lockscreen: val terug op gewone prefs i.p.v. crashen.
-            context.getSharedPreferences("${PREFS_NAME}_fallback", Context.MODE_PRIVATE)
-        }
     }
 
     private companion object {

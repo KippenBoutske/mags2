@@ -12,8 +12,8 @@ android {
         applicationId = "nl.cita.magister"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.1.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
@@ -34,8 +34,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     buildFeatures {
@@ -47,12 +47,15 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
 }
 
 kotlin {
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         optIn.add("androidx.compose.material3.ExperimentalMaterial3Api")
         optIn.add("androidx.compose.material3.ExperimentalMaterial3ExpressiveApi")
     }
@@ -69,7 +72,6 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.browser)
     implementation(libs.androidx.security.crypto)
-    implementation(libs.androidx.datastore)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.kotlinx.serialization.json)

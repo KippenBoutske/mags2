@@ -33,5 +33,13 @@
                     android:scheme="m6loapp" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".crash.CrashActivity"
+            android:exported="false"
+            android:process=":crash"
+            android:excludeFromRecents="true"
+            android:taskAffinity="nl.cita.magister.crash"
+            android:theme="@style/Theme.Cita.Crash" />
     </application>
 </manifest>

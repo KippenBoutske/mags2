@@ -11,6 +11,7 @@ import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import nl.cita.magister.api.MagisterEndpoints
+import nl.cita.magister.crash.CrashGuard
 import nl.cita.magister.ui.CitaRoot
 import nl.cita.magister.ui.CitaViewModel
 import nl.cita.magister.ui.theme.CitaTheme
@@ -20,24 +21,30 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        handleAuthIntent(intent)
-        lifecycleScope.launch {
-            viewModel.shareJson.collect { json ->
-                val clipboard = getSystemService(ClipboardManager::class.java)
-                clipboard.setPrimaryClip(ClipData.newPlainText("cita-cijfers.json", json))
-                val share = Intent(Intent.ACTION_SEND).apply {
-                    type = "application/json"
-                    putExtra(Intent.EXTRA_TEXT, json)
-                    putExtra(Intent.EXTRA_SUBJECT, "Cita cijfers")
+        try {
+            runCatching { enableEdgeToEdge() }
+            handleAuthIntent(intent)
+            lifecycleScope.launch {
+                viewModel.shareJson.collect { json ->
+                    val clipboard = getSystemService(ClipboardManager::class.java)
+                    clipboard.setPrimaryClip(ClipData.newPlainText("cita-cijfers.json", json))
+                    val share = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/json"
+                        putExtra(Intent.EXTRA_TEXT, json)
+                        putExtra(Intent.EXTRA_SUBJECT, "Cita cijfers")
+                    }
+                    startActivity(Intent.createChooser(share, "Cijfers delen als JSON"))
                 }
-                startActivity(Intent.createChooser(share, "Cijfers delen als JSON"))
             }
-        }
-        setContent {
-            CitaTheme {
-                CitaRoot(viewModel)
+            val safeMode = CrashGuard.isSafeMode(this)
+            setContent {
+                CitaTheme(safeMode = safeMode) {
+                    CitaRoot(viewModel)
+                }
             }
+        } catch (error: Throwable) {
+            CrashGuard.show(this, error)
+            finish()
         }
     }
 

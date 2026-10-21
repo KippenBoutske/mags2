@@ -1,22 +1,28 @@
 package nl.cita.magister.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Grade
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShortNavigationBar
 import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nl.cita.magister.ui.grades.GradesScreen
 import nl.cita.magister.ui.homework.HomeworkScreen
@@ -33,6 +40,7 @@ import nl.cita.magister.ui.login.LoginWebView
 import nl.cita.magister.ui.messages.MessagesScreen
 import nl.cita.magister.ui.schedule.ScheduleScreen
 import nl.cita.magister.ui.settings.SettingsScreen
+import nl.cita.magister.ui.theme.LocalSafeMode
 
 private enum class Tab { Cijfers, Rooster, Huiswerk, Berichten, Meer }
 
@@ -50,7 +58,10 @@ fun CitaRoot(viewModel: CitaViewModel) {
 
     if (booting) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            LoadingIndicator()
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                CircularProgressIndicator()
+                Text("Cita starten…", modifier = Modifier.padding(top = 12.dp))
+            }
         }
         return
     }
@@ -104,37 +115,38 @@ private fun SignedInShell(viewModel: CitaViewModel, snackbarHost: SnackbarHostSt
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHost) },
         bottomBar = {
-            ShortNavigationBar {
-                ShortNavigationBarItem(
-                    selected = tab == Tab.Cijfers,
-                    onClick = { tab = Tab.Cijfers },
-                    icon = { Icon(Icons.Outlined.Grade, contentDescription = null) },
-                    label = { Text("Cijfers") },
-                )
-                ShortNavigationBarItem(
-                    selected = tab == Tab.Rooster,
-                    onClick = { tab = Tab.Rooster },
-                    icon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = null) },
-                    label = { Text("Rooster") },
-                )
-                ShortNavigationBarItem(
-                    selected = tab == Tab.Huiswerk,
-                    onClick = { tab = Tab.Huiswerk },
-                    icon = { Icon(Icons.Outlined.Checklist, contentDescription = null) },
-                    label = { Text("Huiswerk") },
-                )
-                ShortNavigationBarItem(
-                    selected = tab == Tab.Berichten,
-                    onClick = { tab = Tab.Berichten },
-                    icon = { Icon(Icons.Outlined.Mail, contentDescription = null) },
-                    label = { Text("Berichten") },
-                )
-                ShortNavigationBarItem(
-                    selected = tab == Tab.Meer,
-                    onClick = { tab = Tab.Meer },
-                    icon = { Icon(Icons.Outlined.MoreHoriz, contentDescription = null) },
-                    label = { Text("Meer") },
-                )
+            val items = listOf(
+                Tab.Cijfers to Icons.Outlined.Grade,
+                Tab.Rooster to Icons.Outlined.CalendarMonth,
+                Tab.Huiswerk to Icons.Outlined.Checklist,
+                Tab.Berichten to Icons.Outlined.Mail,
+                Tab.Meer to Icons.Outlined.MoreHoriz,
+            )
+            if (LocalSafeMode.current) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                ) {
+                    items.forEach { (item, icon) ->
+                        TextButton(onClick = { tab = item }) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(icon, contentDescription = item.name)
+                                Text(item.name)
+                            }
+                        }
+                    }
+                }
+            } else {
+                ShortNavigationBar {
+                    items.forEach { (item, icon) ->
+                        ShortNavigationBarItem(
+                            selected = tab == item,
+                            onClick = { tab = item },
+                            icon = { Icon(icon, contentDescription = null) },
+                            label = { Text(item.name) },
+                        )
+                    }
+                }
             }
         },
     ) { padding ->

@@ -1,62 +1,62 @@
 package nl.cita.magister.data.prefs
 
 import android.content.Context
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import nl.cita.magister.api.Tenant
 
-private val Context.dataStore by preferencesDataStore("cita_user")
+/**
+ * Gewone SharedPreferences — geen DataStore-native (`libdatastore_shared_counter.so`)
+ * op het startpad. Alleen niet-geheime voorkeuren (tenant, demo, webhook-URL).
+ */
+class UserPrefs(context: Context) {
+    private val prefs = context.applicationContext
+        .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-class UserPrefs(private val context: Context) {
-    val tenantHost: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_TENANT] ?: Tenant.CITADEL_HOST
-    }
+    private val _tenantHost = MutableStateFlow(prefs.getString(KEY_TENANT, null) ?: Tenant.CITADEL_HOST)
+    val tenantHost: Flow<String> = _tenantHost.asStateFlow()
 
-    val demoMode: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[KEY_DEMO] ?: false
-    }
+    private val _demoMode = MutableStateFlow(prefs.getBoolean(KEY_DEMO, false))
+    val demoMode: Flow<Boolean> = _demoMode.asStateFlow()
 
-    val schoolName: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_SCHOOL] ?: Tenant.CITADEL_DISPLAY
-    }
+    private val _schoolName = MutableStateFlow(prefs.getString(KEY_SCHOOL, null) ?: Tenant.CITADEL_DISPLAY)
+    val schoolName: Flow<String> = _schoolName.asStateFlow()
 
-    val webhookUrl: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_WEBHOOK_URL].orEmpty()
-    }
+    private val _webhookUrl = MutableStateFlow(prefs.getString(KEY_WEBHOOK_URL, null).orEmpty())
+    val webhookUrl: Flow<String> = _webhookUrl.asStateFlow()
 
-    suspend fun tenantHostNow(): String = tenantHost.first()
-    suspend fun isDemo(): Boolean = demoMode.first()
-    suspend fun schoolNameNow(): String = schoolName.first()
-    suspend fun webhookUrlNow(): String = webhookUrl.first()
+    suspend fun tenantHostNow(): String = _tenantHost.value
+    suspend fun isDemo(): Boolean = _demoMode.value
+    suspend fun schoolNameNow(): String = _schoolName.value
+    suspend fun webhookUrlNow(): String = _webhookUrl.value
 
     suspend fun setTenant(host: String, schoolName: String) {
-        context.dataStore.edit { prefs ->
-            prefs[KEY_TENANT] = Tenant.normalize(host)
-            prefs[KEY_SCHOOL] = schoolName
-        }
+        val normalized = Tenant.normalize(host)
+        prefs.edit()
+            .putString(KEY_TENANT, normalized)
+            .putString(KEY_SCHOOL, schoolName)
+            .apply()
+        _tenantHost.value = normalized
+        _schoolName.value = schoolName
     }
 
     suspend fun setDemo(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[KEY_DEMO] = enabled
-        }
+        prefs.edit().putBoolean(KEY_DEMO, enabled).apply()
+        _demoMode.value = enabled
     }
 
     suspend fun setWebhookUrl(url: String) {
-        context.dataStore.edit { prefs ->
-            prefs[KEY_WEBHOOK_URL] = url.trim()
-        }
+        val trimmed = url.trim()
+        prefs.edit().putString(KEY_WEBHOOK_URL, trimmed).apply()
+        _webhookUrl.value = trimmed
     }
 
     private companion object {
-        val KEY_TENANT = stringPreferencesKey("tenant_host")
-        val KEY_SCHOOL = stringPreferencesKey("school_name")
-        val KEY_DEMO = booleanPreferencesKey("demo_mode")
-        val KEY_WEBHOOK_URL = stringPreferencesKey("plan_goon_webhook_url")
+        const val PREFS_NAME = "cita_user"
+        const val KEY_TENANT = "tenant_host"
+        const val KEY_SCHOOL = "school_name"
+        const val KEY_DEMO = "demo_mode"
+        const val KEY_WEBHOOK_URL = "plan_goon_webhook_url"
     }
 }

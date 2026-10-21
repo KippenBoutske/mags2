@@ -4,5 +4,13 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowBackground">#FFF4F1EA</item>
+    </style>
+
+    <style name="Theme.Cita.Crash" parent="android:Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">#FF101828</item>
+        <item name="android:statusBarColor">#FF101828</item>
+        <item name="android:navigationBarColor">#FF101828</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>
