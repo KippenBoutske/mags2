@@ -1,0 +1,15 @@
+HSPLandroidx/activity/ComponentActivity;
+HSPLandroidx/activity/compose/ComponentActivityKt;
+HSPLandroidx/compose/ui/platform/ComposeView;
+HSPLandroidx/compose/material3/MaterialExpressiveThemeKt;
+HSPLandroidx/compose/material3/MotionScheme;
+HSPLandroidx/compose/animation/SharedTransitionKt;
+HSPLandroidx/compose/animation/AnimatedContentKt;
+HSPLnl/cita/magister/MainActivity;
+HSPLnl/cita/magister/ui/CitaRootKt;
+HSPLnl/cita/magister/ui/nav/PhotosDockKt;
+HSPLnl/cita/magister/ui/nav/MagsTopBarKt;
+HSPLnl/cita/magister/ui/today/TodayScreenKt;
+HSPLnl/cita/magister/ui/grades/GradesScreenKt;
+HSPLnl/cita/magister/ui/schedule/ScheduleScreenKt;
+HSPLnl/cita/magister/ui/homework/HomeworkScreenKt;

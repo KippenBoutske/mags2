@@ -9,13 +9,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.IosShare
 import androidx.compose.material.icons.outlined.Send
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
@@ -44,6 +44,9 @@ import nl.cita.magister.model.GradeColumnType
 import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.SubjectAverage
 import nl.cita.magister.ui.formatGrade
+import nl.cita.magister.ui.motion.PressScaleCard
+import nl.cita.magister.ui.motion.magsFloatSpring
+import nl.cita.magister.ui.motion.staggerEnter
 import nl.cita.magister.ui.theme.CitaAction
 import nl.cita.magister.ui.theme.CitaActionRow
 
@@ -77,7 +80,7 @@ fun GradesScreen(
             start = 16.dp,
             end = 16.dp,
             top = contentPadding.calculateTopPadding() + 8.dp,
-            bottom = contentPadding.calculateBottomPadding() + 96.dp,
+            bottom = contentPadding.calculateBottomPadding() + 8.dp,
         ),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -129,11 +132,12 @@ fun GradesScreen(
                 Text("Nog geen cijfers in de cache. Trek naar beneden om te vernieuwen.")
             }
         }
-        items(visible, key = { it.subjectId }) { subject ->
+        itemsIndexed(visible, key = { _, it -> it.subjectId }) { index, subject ->
             SubjectCard(
                 subject = subject,
                 grades = grades.filter { it.subjectId == subject.subjectId && it.columnType == GradeColumnType.Grade },
                 onCalculate = { calculatorFor = subject },
+                modifier = Modifier.staggerEnter(index).animateItem(),
             )
         }
     }
@@ -152,15 +156,25 @@ private fun SubjectCard(
     subject: SubjectAverage,
     grades: List<Grade>,
     onCalculate: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val avg = subject.average
+    val animated by animateFloatAsState(
+        targetValue = (avg ?: 0.0).toFloat(),
+        animationSpec = magsFloatSpring(stiffness = 220f),
+        label = "grade",
+    )
     val color = when {
         avg == null -> MaterialTheme.colorScheme.surfaceContainerHigh
         avg < 5.5 -> MaterialTheme.colorScheme.errorContainer
         avg < 6.0 -> MaterialTheme.colorScheme.tertiaryContainer
         else -> MaterialTheme.colorScheme.secondaryContainer
     }
-    Card(colors = CardDefaults.cardColors(containerColor = color)) {
+    PressScaleCard(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = color),
+        onClick = onCalculate,
+    ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -170,7 +184,10 @@ private fun SubjectCard(
                         style = MaterialTheme.typography.labelMedium,
                     )
                 }
-                Text(formatGrade(avg), style = MaterialTheme.typography.displaySmall)
+                Text(
+                    if (avg == null) "–" else formatGrade(animated.toDouble()),
+                    style = MaterialTheme.typography.displaySmall,
+                )
             }
             if (avg != null) {
                 LinearProgressIndicator(

@@ -1,44 +1,78 @@
 package nl.cita.magister.ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.Checklist
-import androidx.compose.material.icons.outlined.Grade
-import androidx.compose.material.icons.outlined.Mail
-import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ShortNavigationBar
-import androidx.compose.material3.ShortNavigationBarItem
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.CancellationException
+import nl.cita.magister.api.School
+import nl.cita.magister.model.ApiFailure
+import nl.cita.magister.model.Appointment
+import nl.cita.magister.model.Grade
+import nl.cita.magister.model.HomeworkItem
+import nl.cita.magister.model.MessageDetail
+import nl.cita.magister.model.MessagePreview
+import nl.cita.magister.model.StudentProfile
+import nl.cita.magister.model.SubjectAverage
 import nl.cita.magister.ui.grades.GradesScreen
 import nl.cita.magister.ui.homework.HomeworkScreen
 import nl.cita.magister.ui.login.BootSplash
 import nl.cita.magister.ui.login.LoginScreen
 import nl.cita.magister.ui.login.LoginWebView
 import nl.cita.magister.ui.messages.MessagesScreen
+import nl.cita.magister.ui.motion.magsSpring
+import nl.cita.magister.ui.nav.MagsChrome
+import nl.cita.magister.ui.nav.MagsPage
+import nl.cita.magister.ui.nav.MagsTopBar
+import nl.cita.magister.ui.nav.PhotosDock
 import nl.cita.magister.ui.schedule.ScheduleScreen
+import nl.cita.magister.ui.search.SearchHit
+import nl.cita.magister.ui.search.SearchSheet
 import nl.cita.magister.ui.settings.SettingsScreen
 import nl.cita.magister.ui.theme.LocalSafeMode
-
-private enum class Tab { Cijfers, Rooster, Huiswerk, Berichten, Meer }
+import nl.cita.magister.ui.today.TodayScreen
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -48,7 +82,7 @@ fun CitaRoot(viewModel: CitaViewModel) {
     val webViewUrl by viewModel.webViewUrl.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
 
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    LaunchedEffect(Unit) {
         viewModel.snackbar.collect { snackbarHost.showSnackbar(it) }
     }
 
@@ -89,13 +123,6 @@ fun CitaRoot(viewModel: CitaViewModel) {
         return
     }
 
-    SignedInShell(viewModel, snackbarHost)
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun SignedInShell(viewModel: CitaViewModel, snackbarHost: SnackbarHostState) {
-    var tab by remember { mutableStateOf(Tab.Cijfers) }
     val profile by viewModel.profile.collectAsStateWithLifecycle()
     val grades by viewModel.grades.collectAsStateWithLifecycle()
     val averages by viewModel.averages.collectAsStateWithLifecycle()
@@ -113,78 +140,301 @@ private fun SignedInShell(viewModel: CitaViewModel, snackbarHost: SnackbarHostSt
     val searching by viewModel.schoolSearching.collectAsStateWithLifecycle()
     val error by viewModel.lastError.collectAsStateWithLifecycle()
 
+    MagsSignedInScaffold(
+        profile = profile,
+        grades = grades,
+        averages = averages,
+        appointments = appointments,
+        homework = homework,
+        messages = messages,
+        detail = detail,
+        refreshing = refreshing,
+        exporting = exporting,
+        tenantHost = tenant,
+        schoolName = school,
+        webhookUrl = webhook,
+        hasWebhookKey = viewModel.hasWebhookKey,
+        demoMode = demo,
+        schools = hits,
+        searching = searching,
+        lastError = error,
+        snackbarHost = snackbarHost,
+        onRefresh = viewModel::refresh,
+        onExport = viewModel::exportToPlanGoon,
+        onShareJson = viewModel::shareExportJson,
+        onToggleHomework = viewModel::toggleHomework,
+        onOpenMessage = viewModel::openMessage,
+        onCloseMessage = viewModel::closeMessage,
+        onQuery = viewModel::searchSchools,
+        onSwitchSchool = viewModel::switchSchool,
+        onSaveWebhook = viewModel::saveWebhook,
+        onLogout = viewModel::logout,
+    )
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
+@Composable
+fun MagsSignedInScaffold(
+    profile: StudentProfile?,
+    grades: List<Grade>,
+    averages: List<SubjectAverage>,
+    appointments: List<Appointment>,
+    homework: List<HomeworkItem>,
+    messages: List<MessagePreview>,
+    detail: MessageDetail?,
+    refreshing: Boolean,
+    exporting: Boolean,
+    tenantHost: String,
+    schoolName: String,
+    webhookUrl: String,
+    hasWebhookKey: Boolean,
+    demoMode: Boolean,
+    schools: List<School>,
+    searching: Boolean,
+    lastError: ApiFailure?,
+    snackbarHost: SnackbarHostState,
+    onRefresh: () -> Unit,
+    onExport: () -> Unit,
+    onShareJson: () -> Unit,
+    onToggleHomework: (HomeworkItem, Boolean) -> Unit,
+    onOpenMessage: (Int) -> Unit,
+    onCloseMessage: () -> Unit,
+    onQuery: (String) -> Unit,
+    onSwitchSchool: (host: String, name: String, tenantId: String?) -> Unit,
+    onSaveWebhook: (url: String, key: String) -> Unit,
+    onLogout: () -> Unit,
+    initialPage: MagsPage = MagsPage.Vandaag,
+) {
+    var page by remember { mutableStateOf(initialPage) }
+    var lastDock by remember { mutableStateOf(MagsPage.Vandaag) }
+    var searchOpen by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var expansion by remember { mutableFloatStateOf(1f) }
+    var backProgress by remember { mutableFloatStateOf(0f) }
+    val safe = LocalSafeMode.current
+    val density = LocalDensity.current
+
+    val scroll = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                val delta = available.y
+                if (delta == 0f) return Offset.Zero
+                expansion = (expansion + delta / 180f).coerceIn(0f, 1f)
+                return Offset.Zero
+            }
+        }
+    }
+
+    val visualExpansion by animateFloatAsState(
+        targetValue = expansion,
+        animationSpec = magsSpring(),
+        label = "dock-expand",
+    )
+
+    val canPopOverlay = page == MagsPage.Berichten || page == MagsPage.Meer || searchOpen || detail != null
+    val dismissOverlay = {
+        when {
+            detail != null -> onCloseMessage()
+            searchOpen -> {
+                searchOpen = false
+                searchQuery = ""
+            }
+            else -> page = lastDock
+        }
+    }
+
+    if (safe) {
+        BackHandler(canPopOverlay) { dismissOverlay() }
+    } else {
+        PredictiveBackHandler(enabled = canPopOverlay) { progress ->
+            try {
+                progress.collect { event -> backProgress = event.progress }
+                dismissOverlay()
+            } catch (_: CancellationException) {
+                // gebaar geannuleerd
+            } finally {
+                backProgress = 0f
+            }
+        }
+    }
+
+    val topInset = WindowInsets.statusBars.getTop(density)
+    val bottomInset = WindowInsets.navigationBars.getBottom(density)
+    val contentPadding = PaddingValues(
+        top = with(density) { topInset.toDp() } + MagsChrome.TopBarHeight,
+        bottom = with(density) { bottomInset.toDp() } + MagsChrome.DockClearance,
+    )
+
+    val ptr = rememberPullToRefreshState()
+    val overlayScale = 1f - backProgress * 0.06f
+    val overlayAlpha = 1f - backProgress * 0.25f
+
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHost) },
-        bottomBar = {
-            val items = listOf(
-                Tab.Cijfers to Icons.Outlined.Grade,
-                Tab.Rooster to Icons.Outlined.CalendarMonth,
-                Tab.Huiswerk to Icons.Outlined.Checklist,
-                Tab.Berichten to Icons.Outlined.Mail,
-                Tab.Meer to Icons.Outlined.MoreHoriz,
-            )
-            if (LocalSafeMode.current) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                ) {
-                    items.forEach { (item, icon) ->
-                        TextButton(onClick = { tab = item }) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(icon, contentDescription = item.name)
-                                Text(item.name)
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = {
+            SnackbarHost(snackbarHost) { data ->
+                Snackbar(modifier = Modifier.padding(bottom = MagsChrome.DockClearance), snackbarData = data)
+            }
+        },
+    ) { _ ->
+        Box(
+            Modifier
+                .fillMaxSize()
+                .nestedScroll(scroll),
+        ) {
+            PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = onRefresh,
+                state = ptr,
+                modifier = Modifier.fillMaxSize(),
+                indicator = {
+                    if (safe) {
+                        PullToRefreshDefaults.Indicator(
+                            modifier = Modifier.align(Alignment.TopCenter),
+                            isRefreshing = refreshing,
+                            state = ptr,
+                        )
+                    } else {
+                        PullToRefreshDefaults.LoadingIndicator(
+                            modifier = Modifier.align(Alignment.TopCenter),
+                            isRefreshing = refreshing,
+                            state = ptr,
+                        )
+                    }
+                },
+            ) {
+                SharedTransitionLayout {
+                    AnimatedContent(
+                        targetState = page,
+                        transitionSpec = {
+                            val forward = targetState.ordinal >= initialState.ordinal
+                            val slide = if (forward) 28 else -28
+                            (
+                                fadeIn(magsSpring()) +
+                                    slideInHorizontally { slide } +
+                                    scaleIn(initialScale = 0.97f, animationSpec = magsSpring())
+                                ) togetherWith (
+                                fadeOut() + slideOutHorizontally { -slide / 2 }
+                                )
+                        },
+                        label = "page",
+                    ) { dest ->
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    scaleX = overlayScale
+                                    scaleY = overlayScale
+                                    alpha = overlayAlpha
+                                },
+                        ) {
+                            when (dest) {
+                                MagsPage.Vandaag -> TodayScreen(
+                                    profile = profile,
+                                    appointments = appointments,
+                                    homework = homework,
+                                    averages = averages,
+                                    messages = messages,
+                                    contentPadding = contentPadding,
+                                    onOpenPage = { next ->
+                                        if (next.isDockTab) lastDock = next
+                                        page = next
+                                        expansion = 1f
+                                    },
+                                )
+                                MagsPage.Rooster -> ScheduleScreen(appointments, contentPadding)
+                                MagsPage.Cijfers -> GradesScreen(
+                                    profile = profile,
+                                    averages = averages,
+                                    grades = grades,
+                                    refreshing = refreshing,
+                                    exporting = exporting,
+                                    contentPadding = contentPadding,
+                                    onExport = onExport,
+                                    onShareJson = onShareJson,
+                                )
+                                MagsPage.Huiswerk -> HomeworkScreen(homework, contentPadding, onToggleHomework)
+                                MagsPage.Berichten -> MessagesScreen(
+                                    messages,
+                                    detail,
+                                    contentPadding,
+                                    onOpenMessage,
+                                    onCloseMessage,
+                                )
+                                MagsPage.Meer -> SettingsScreen(
+                                    profile = profile,
+                                    tenantHost = tenantHost,
+                                    schoolName = schoolName,
+                                    webhookUrl = webhookUrl,
+                                    hasWebhookKey = hasWebhookKey,
+                                    demoMode = demoMode,
+                                    schools = schools,
+                                    searching = searching,
+                                    lastError = lastError,
+                                    contentPadding = contentPadding,
+                                    onQuery = onQuery,
+                                    onSwitchSchool = onSwitchSchool,
+                                    onSaveWebhook = onSaveWebhook,
+                                    onExport = onExport,
+                                    onShareJson = onShareJson,
+                                    onLogout = onLogout,
+                                )
                             }
                         }
                     }
                 }
-            } else {
-                ShortNavigationBar {
-                    items.forEach { (item, icon) ->
-                        ShortNavigationBarItem(
-                            selected = tab == item,
-                            onClick = { tab = item },
-                            icon = { Icon(icon, contentDescription = null) },
-                            label = { Text(item.name) },
-                        )
-                    }
-                }
             }
-        },
-    ) { padding ->
-        PullToRefreshBox(isRefreshing = refreshing, onRefresh = viewModel::refresh) {
-            when (tab) {
-                Tab.Cijfers -> GradesScreen(
-                    profile = profile,
-                    averages = averages,
-                    grades = grades,
-                    refreshing = refreshing,
-                    exporting = exporting,
-                    contentPadding = padding,
-                    onExport = viewModel::exportToPlanGoon,
-                    onShareJson = viewModel::shareExportJson,
-                )
-                Tab.Rooster -> ScheduleScreen(appointments, padding)
-                Tab.Huiswerk -> HomeworkScreen(homework, padding, viewModel::toggleHomework)
-                Tab.Berichten -> MessagesScreen(messages, detail, padding, viewModel::openMessage, viewModel::closeMessage)
-                Tab.Meer -> SettingsScreen(
-                    profile = profile,
-                    tenantHost = tenant,
-                    schoolName = school,
-                    webhookUrl = webhook,
-                    hasWebhookKey = viewModel.hasWebhookKey,
-                    demoMode = demo,
-                    schools = hits,
-                    searching = searching,
-                    lastError = error,
-                    contentPadding = padding,
-                    onQuery = viewModel::searchSchools,
-                    onSwitchSchool = viewModel::switchSchool,
-                    onSaveWebhook = viewModel::saveWebhook,
-                    onExport = viewModel::exportToPlanGoon,
-                    onShareJson = viewModel::shareExportJson,
-                    onLogout = viewModel::logout,
-                )
-            }
+
+            MagsTopBar(
+                profile = profile,
+                unreadMessages = messages.count { !it.isRead },
+                onMessages = { page = MagsPage.Berichten },
+                onMore = { page = MagsPage.Meer },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding(),
+            )
+
+            PhotosDock(
+                selected = page.takeIf { it.isDockTab },
+                expansion = visualExpansion,
+                onSelect = { next ->
+                    lastDock = next
+                    page = next
+                    expansion = 1f
+                },
+                onSearch = { searchOpen = true },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 12.dp)
+                    .graphicsLayer {
+                        translationY = (1f - visualExpansion) * 22f
+                    },
+            )
         }
+    }
+
+    if (searchOpen) {
+        SearchSheet(
+            query = searchQuery,
+            onQuery = { searchQuery = it },
+            grades = grades,
+            appointments = appointments,
+            homework = homework,
+            messages = messages,
+            onDismiss = {
+                searchOpen = false
+                searchQuery = ""
+            },
+            onOpen = { hit: SearchHit ->
+                searchOpen = false
+                searchQuery = ""
+                if (hit.page.isDockTab) lastDock = hit.page
+                page = hit.page
+                hit.messageId?.let(onOpenMessage)
+                expansion = 1f
+            },
+        )
     }
 }

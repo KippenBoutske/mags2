@@ -61,7 +61,7 @@ fun SettingsScreen(
                 start = 16.dp,
                 end = 16.dp,
                 top = contentPadding.calculateTopPadding() + 8.dp,
-                bottom = contentPadding.calculateBottomPadding() + 24.dp,
+                bottom = contentPadding.calculateBottomPadding() + 8.dp,
             ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -120,8 +120,8 @@ fun SettingsScreen(
                 }
                 CitaActionRow(
                     actions = listOf(
-                        CitaAction("Exporteren", onExport),
-                        CitaAction("Deel JSON", onShareJson),
+                        CitaAction("Exporteren", onClick = onExport),
+                        CitaAction("Deel JSON", onClick = onShareJson),
                     ),
                     modifier = Modifier.fillMaxWidth(),
                 )

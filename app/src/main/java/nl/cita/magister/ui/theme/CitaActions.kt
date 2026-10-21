@@ -2,41 +2,47 @@ package nl.cita.magister.ui.theme
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.ButtonGroup
-import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-data class CitaAction(val label: String, val onClick: () -> Unit)
+data class CitaAction(val label: String, val selected: Boolean = false, val onClick: () -> Unit)
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+/**
+ * Filter/actie-rij die nooit [androidx.compose.material3.ButtonGroup] gebruikt.
+ *
+ * ButtonGroup (material3 1.5 beta) crasht in measure wanneer hij `fillMaxWidth`
+ * in een LazyColumn-item krijgt: min-breedtes van de items + overflow-knop
+ * overschrijden de beschikbare breedte, waarna
+ * `maxWidth must be >= than minWidth` volgt (Pixel 10 / 0.1.5).
+ */
 @Composable
 fun CitaActionRow(
     actions: List<CitaAction>,
     modifier: Modifier = Modifier,
 ) {
-    if (LocalSafeMode.current) {
+    if (actions.isEmpty()) return
+    BoxWithConstraints(modifier.fillMaxWidth()) {
         Row(
-            modifier = modifier.horizontalScroll(rememberScrollState()),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             actions.forEach { action ->
-                TextButton(onClick = action.onClick) { Text(action.label) }
-            }
-        }
-    } else {
-        ButtonGroup(
-            overflowIndicator = { ButtonGroupDefaults.OverflowIndicator(it) },
-            modifier = modifier,
-        ) {
-            actions.forEach { action ->
-                clickableItem(onClick = action.onClick, label = action.label)
+                FilterChip(
+                    selected = action.selected,
+                    onClick = action.onClick,
+                    modifier = Modifier.widthIn(min = 48.dp),
+                    label = { Text(action.label, maxLines = 1) },
+                )
             }
         }
     }

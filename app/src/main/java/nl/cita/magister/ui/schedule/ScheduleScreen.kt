@@ -8,8 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,6 +23,8 @@ import nl.cita.magister.model.Appointment
 import nl.cita.magister.ui.formatDay
 import nl.cita.magister.ui.formatTime
 import nl.cita.magister.ui.localDateOf
+import nl.cita.magister.ui.motion.PressScaleCard
+import nl.cita.magister.ui.motion.staggerEnter
 import nl.cita.magister.ui.theme.CitaAction
 import nl.cita.magister.ui.theme.CitaActionRow
 import java.time.LocalDate
@@ -47,7 +48,7 @@ fun ScheduleScreen(
             start = 16.dp,
             end = 16.dp,
             top = contentPadding.calculateTopPadding() + 8.dp,
-            bottom = contentPadding.calculateBottomPadding() + 24.dp,
+            bottom = contentPadding.calculateBottomPadding() + 8.dp,
         ),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -69,12 +70,18 @@ fun ScheduleScreen(
         if (ofDay.isEmpty()) {
             item { Text("Geen lessen op deze dag.") }
         }
-        items(ofDay, key = { it.id }) { item ->
+        itemsIndexed(ofDay, key = { _, it -> it.id }) { index, item ->
             val colors = when {
                 item.isCancelled -> CardDefaults.cardColors(MaterialTheme.colorScheme.errorContainer)
                 else -> CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)
             }
-            Card(colors = colors, modifier = Modifier.fillMaxWidth()) {
+            PressScaleCard(
+                colors = colors,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .staggerEnter(index)
+                    .animateItem(),
+            ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(

@@ -2,9 +2,11 @@
 <resources>
     <string name="app_name">Mags</string>
     <string name="app_tagline">Magister, maar sneller.</string>
+    <string name="tab_vandaag">Vandaag</string>
     <string name="tab_cijfers">Cijfers</string>
     <string name="tab_rooster">Rooster</string>
     <string name="tab_huiswerk">Huiswerk</string>
     <string name="tab_berichten">Berichten</string>
     <string name="tab_meer">Meer</string>
+    <string name="action_search">Zoeken</string>
 </resources>

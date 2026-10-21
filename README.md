@@ -11,6 +11,7 @@ Mags is **geen** product van Iddink/Magister. Werkt met elke Magister-school. Al
 - **Cijfers exporteren** naar Plan Goon of als JSON
 - Live schoolzoeken via Magister tenant-search
 - Offline cache, pull-to-refresh, Material 3 Expressive
+- Photos-stijl zwevende navbar: pill met Vandaag / Rooster / Cijfers / Huiswerk, ronde zoekknop, avatar voor Berichten en Meer
 - Crash-scherm met kopieerbare stacktrace
 - Nederlandse UI
 
@@ -24,7 +25,7 @@ cat mags-debug.apk.part-aa mags-debug.apk.part-ab > mags-debug.apk
 sha256sum -c mags-debug.apk.sha256
 ```
 
-3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.5** (`targetSdk` 37).
+3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.6** (`targetSdk` 37).
 4. Bij een crash: scherm **Mags is gestopt** → *Kopieer stacktrace*.
 
 Zelf bouwen:
@@ -43,7 +44,7 @@ Vereist JDK 17+, Android SDK platform 37.
 3. **In de app** (menu ⋯) is de WebView-fallback. **Voorbeeld** laadt testdata.
 4. Magister stuurt je terug naar `m6loapp://oauth2redirect/`. Tokens gaan versleuteld in Android Keystore. Geen wachtwoord wordt opgeslagen.
 
-School wisselen kan onder **Meer**. Dat logt je uit.
+School wisselen kan onder **Meer** (avatar rechtsboven). Dat logt je uit.
 
 Als de officiële Magister-app ook geïnstalleerd is, kan Android vragen welke app de `m6loapp://`-link opent. Kies Mags.
 

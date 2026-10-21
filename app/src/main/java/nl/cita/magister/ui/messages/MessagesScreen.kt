@@ -1,6 +1,5 @@
 package nl.cita.magister.ui.messages
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,10 +7,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -24,6 +22,8 @@ import nl.cita.magister.model.MessageDetail
 import nl.cita.magister.model.MessagePreview
 import nl.cita.magister.parse.stripHtml
 import nl.cita.magister.ui.formatWhen
+import nl.cita.magister.ui.motion.PressScaleCard
+import nl.cita.magister.ui.motion.staggerEnter
 
 @Composable
 fun MessagesScreen(
@@ -39,7 +39,7 @@ fun MessagesScreen(
             start = 16.dp,
             end = 16.dp,
             top = contentPadding.calculateTopPadding() + 8.dp,
-            bottom = contentPadding.calculateBottomPadding() + 24.dp,
+            bottom = contentPadding.calculateBottomPadding() + 8.dp,
         ),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -50,17 +50,19 @@ fun MessagesScreen(
         if (messages.isEmpty()) {
             item { Text("Geen berichten in de cache.") }
         }
-        items(messages, key = { it.id }) { message ->
+        itemsIndexed(messages, key = { _, it -> it.id }) { index, message ->
             val colors = if (message.isRead) {
                 CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow)
             } else {
                 CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer)
             }
-            Card(
+            PressScaleCard(
                 colors = colors,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onOpen(message.id) },
+                    .staggerEnter(index)
+                    .animateItem(),
+                onClick = { onOpen(message.id) },
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(if (message.isRead) message.sender else "●  ${message.sender}", style = MaterialTheme.typography.labelLarge)
