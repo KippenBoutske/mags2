@@ -1,5 +1,6 @@
 package nl.cita.magister.parse
 
+import nl.cita.magister.api.MagisterEndpoints
 import nl.cita.magister.api.Tenant
 import nl.cita.magister.auth.AuthRequestFactory
 import nl.cita.magister.auth.Pkce
@@ -75,11 +76,16 @@ class MagisterParsersTest {
     }
 
     @Test
-    fun authUrlContainsStudentScopes() {
+    fun authUrlContainsOfficialM6loappScopes() {
         val request = AuthRequestFactory.create("citadel.magister.net", Pkce.generate(), state = "s", nonce = "n")
-        assertTrue(request.authorizeUrl.contains("opp.read"))
-        assertTrue(request.authorizeUrl.contains("calendar.user"))
-        assertTrue(request.authorizeUrl.contains("grades.read"))
+        assertEquals(
+            "openid profile offline_access magister.mobile magister.ecs",
+            MagisterEndpoints.SCOPE,
+        )
+        assertTrue(request.authorizeUrl.contains("magister.mobile"))
+        assertTrue(request.authorizeUrl.contains("magister.ecs"))
+        assertTrue(request.authorizeUrl.contains("offline_access"))
+        assertFalse(request.authorizeUrl.contains("opp.read"))
     }
 
     @Test

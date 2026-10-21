@@ -20,11 +20,12 @@ object MagisterEndpoints {
     const val CLIENT_ID = "M6LOAPP"
     const val REDIRECT_URI = "m6loapp://oauth2redirect/"
     /**
-     * Officiële M6LOAPP-achtige scopes. Alleen `openid profile email offline_access`
-     * gaf na login 403 OnvoldoendePrivileges op /api/account.
+     * Exacte M6LOAPP-scope uit werkende clients (niet raden).
+     * `opp.read` / `grades.read` / `email` gaf 0.1.4 `invalid_scope`.
+     * Bron: https://github.com/DiscipulusApp/Discipulus/blob/9e15bafcce451167a3d0eb4b5a49a044b64949bd/lib/api/authentication.dart
+     * Zelfde string: Friday magister-core, WalburgApp-V2.
      */
-    const val SCOPE =
-        "openid profile email offline_access opp.read opp.manage attendance.overview calendar.user grades.read"
+    const val SCOPE = "openid profile offline_access magister.mobile magister.ecs"
     const val RESPONSE_TYPE = "id_token code"
     const val CODE_CHALLENGE_METHOD = "S256"
 

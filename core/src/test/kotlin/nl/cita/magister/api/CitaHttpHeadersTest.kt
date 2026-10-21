@@ -28,7 +28,7 @@ class CitaHttpHeadersTest {
 
     @Test
     fun userAgentIsTheAsciiStringOkHttpMustAccept() {
-        assertEquals("Mags/0.1.4 (Android; unofficial Magister client)", CitaHttp.USER_AGENT)
+        assertEquals("Mags/0.1.5 (Android; unofficial Magister client)", CitaHttp.USER_AGENT)
         assertFalse(CitaHttp.USER_AGENT.contains("ë"))
         assertFalse(CitaHttp.USER_AGENT.contains("officiële"))
     }
@@ -73,8 +73,14 @@ class CitaHttpHeadersTest {
         assertTrue(request.authorizeUrl.startsWith(MagisterEndpoints.AUTHORIZE))
         assertTrue(request.authorizeUrl.contains("acr_values=tenant%3Acitadel.magister.net"))
         assertTrue(request.authorizeUrl.contains("redirect_uri=m6loapp%3A%2F%2Foauth2redirect%2F"))
-        assertTrue(request.authorizeUrl.contains("opp.read"))
-        assertTrue(request.authorizeUrl.contains("grades.read"))
+        assertTrue(request.authorizeUrl.contains("magister.mobile"))
+        assertTrue(request.authorizeUrl.contains("magister.ecs"))
+        assertTrue(request.authorizeUrl.contains("offline_access"))
+        assertFalse(request.authorizeUrl.contains("opp.read"))
+        assertEquals(
+            "openid profile offline_access magister.mobile magister.ecs",
+            MagisterEndpoints.SCOPE,
+        )
         AuthRequestFactory.tokenForm("code-value", request.codeVerifier).forEach { (k, v) ->
             assertTrue("$k=$v", CitaHttp.isAscii(k) && CitaHttp.isAscii(v))
         }

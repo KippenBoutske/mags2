@@ -170,8 +170,8 @@ class MagisterRepository(
         val root = MagisterEndpoints.tenantRoot(host)
         val accountJson = firstSuccessful(
             listOf(
-                MagisterEndpoints.account(root),
                 MagisterEndpoints.accountNoCache(root),
+                MagisterEndpoints.account(root),
             ),
             warnings,
         )

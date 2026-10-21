@@ -24,7 +24,7 @@ cat mags-debug.apk.part-aa mags-debug.apk.part-ab > mags-debug.apk
 sha256sum -c mags-debug.apk.sha256
 ```
 
-3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.4** (`targetSdk` 37).
+3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.5** (`targetSdk` 37).
 4. Bij een crash: scherm **Mags is gestopt** → *Kopieer stacktrace*.
 
 Zelf bouwen:
@@ -50,7 +50,7 @@ Als de officiële Magister-app ook geïnstalleerd is, kan Android vragen welke a
 OAuth (zelfde stroom als bekende open-source clients):
 
 - Client `M6LOAPP`, PKCE S256, `acr_values=tenant:<host>`
-- Scopes: `openid profile email offline_access opp.read opp.manage attendance.overview calendar.user grades.read`
+- Scopes: `openid profile offline_access magister.mobile magister.ecs` (exacte M6LOAPP-string uit Discipulus / Friday / WalburgApp-V2)
 
 ## Cijfers exporteren (Plan Goon)
 
