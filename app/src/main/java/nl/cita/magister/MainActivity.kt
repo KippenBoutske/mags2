@@ -27,11 +27,11 @@ class MainActivity : ComponentActivity() {
             lifecycleScope.launch {
                 viewModel.shareJson.collect { json ->
                     val clipboard = getSystemService(ClipboardManager::class.java)
-                    clipboard.setPrimaryClip(ClipData.newPlainText("cita-cijfers.json", json))
+                    clipboard.setPrimaryClip(ClipData.newPlainText("mags-cijfers.json", json))
                     val share = Intent(Intent.ACTION_SEND).apply {
                         type = "application/json"
                         putExtra(Intent.EXTRA_TEXT, json)
-                        putExtra(Intent.EXTRA_SUBJECT, "Cita cijfers")
+                        putExtra(Intent.EXTRA_SUBJECT, "Mags cijfers")
                     }
                     startActivity(Intent.createChooser(share, "Cijfers delen als JSON"))
                 }

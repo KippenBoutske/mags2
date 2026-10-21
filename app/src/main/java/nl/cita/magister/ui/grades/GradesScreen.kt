@@ -87,7 +87,7 @@ fun GradesScreen(
                 style = MaterialTheme.typography.headlineMedium,
             )
             Text(
-                "Gemiddeldes per vak, gewogen op weging. Tik op een vak voor de calculator.",
+                "Tik een vak voor de calculator.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

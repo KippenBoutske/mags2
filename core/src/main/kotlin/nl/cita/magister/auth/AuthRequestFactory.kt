@@ -20,8 +20,14 @@ object AuthRequestFactory {
         pkce: PkcePair = Pkce.generate(),
         state: String = UUID.randomUUID().toString(),
         nonce: String = UUID.randomUUID().toString(),
+        tenantId: String? = null,
     ): AuthRequest {
         val host = Tenant.normalize(tenantHost)
+        val acr = when {
+            host.isNotBlank() -> "tenant:$host"
+            !tenantId.isNullOrBlank() -> "tenant:$tenantId"
+            else -> null
+        }
         val params = linkedMapOf(
             "client_id" to MagisterEndpoints.CLIENT_ID,
             "redirect_uri" to MagisterEndpoints.REDIRECT_URI,
@@ -32,8 +38,8 @@ object AuthRequestFactory {
             "code_challenge" to pkce.challenge,
             "code_challenge_method" to MagisterEndpoints.CODE_CHALLENGE_METHOD,
             "prompt" to "select_account",
-            "acr_values" to "tenant:$host",
         )
+        if (acr != null) params["acr_values"] = acr
         val query = params.entries.joinToString("&") { (k, v) ->
             "${enc(k)}=${enc(v)}"
         }

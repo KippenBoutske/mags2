@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -13,11 +15,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import nl.cita.magister.CitaApp
-import nl.cita.magister.api.Tenant
+import nl.cita.magister.api.School
 import nl.cita.magister.auth.AuthRequest
 import nl.cita.magister.auth.AuthRequestFactory
+import nl.cita.magister.data.api.MagisterApiException
 import nl.cita.magister.data.repo.MagisterRepository
 import nl.cita.magister.di.AppContainer
+import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.MessageDetail
 
@@ -33,8 +37,9 @@ class CitaViewModel(
     val appointments = repo.observeAppointments().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val homework = repo.observeHomework().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val messages = repo.observeMessages().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-    val tenantHost = container.prefs.tenantHost.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Tenant.CITADEL_HOST)
-    val schoolName = container.prefs.schoolName.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Tenant.CITADEL_DISPLAY)
+    val tenantHost = container.prefs.tenantHost.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+    val schoolName = container.prefs.schoolName.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+    val tenantId = container.prefs.tenantId.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     val webhookUrl = container.prefs.webhookUrl.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     val demoMode = container.prefs.demoMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
@@ -56,6 +61,15 @@ class CitaViewModel(
     private val _messageDetail = MutableStateFlow<MessageDetail?>(null)
     val messageDetail = _messageDetail.asStateFlow()
 
+    private val _schoolHits = MutableStateFlow<List<School>>(emptyList())
+    val schoolHits = _schoolHits.asStateFlow()
+
+    private val _schoolSearching = MutableStateFlow(false)
+    val schoolSearching = _schoolSearching.asStateFlow()
+
+    private val _lastError = MutableStateFlow<ApiFailure?>(null)
+    val lastError = _lastError.asStateFlow()
+
     private val _snackbar = MutableSharedFlow<String>(extraBufferCapacity = 4)
     val snackbar = _snackbar.asSharedFlow()
 
@@ -64,26 +78,56 @@ class CitaViewModel(
 
     val hasWebhookKey: Boolean get() = repo.webhookConfigured()
 
+    private var searchJob: Job? = null
+
     init {
         viewModelScope.launch {
             val demo = repo.isDemo()
             _signedIn.value = repo.isLoggedIn() || demo
             if (_signedIn.value && profile.value == null) {
                 runCatching { repo.refreshAll() }
+                    .onSuccess { reportWarnings(it.warnings) }
+                    .onFailure { rememberFailure(it) }
             }
             _booting.value = false
         }
     }
 
-    fun setSchool(host: String, name: String) {
-        viewModelScope.launch { container.prefs.setTenant(host, name) }
+    fun searchSchools(query: String) {
+        searchJob?.cancel()
+        val q = query.trim()
+        if (q.length < 2) {
+            _schoolHits.value = emptyList()
+            _schoolSearching.value = false
+            return
+        }
+        searchJob = viewModelScope.launch {
+            delay(280)
+            _schoolSearching.value = true
+            _schoolHits.value = runCatching { repo.searchSchools(q) }.getOrDefault(emptyList())
+            _schoolSearching.value = false
+        }
+    }
+
+    fun setSchool(host: String, name: String, tenantId: String? = null) {
+        viewModelScope.launch { container.prefs.setTenant(host, name, tenantId) }
+    }
+
+    fun switchSchool(host: String, name: String, tenantId: String? = null) {
+        viewModelScope.launch {
+            repo.logout()
+            container.prefs.setTenant(host, name, tenantId)
+            _signedIn.value = false
+            _lastError.value = null
+            _snackbar.emit("Log opnieuw in bij $name.")
+        }
     }
 
     fun startLogin(): AuthRequest {
         val host = tenantHost.value
-        val request = AuthRequestFactory.create(host)
-        container.pendingAuth.save(request.codeVerifier, request.state, host)
-        return request
+        val auth = AuthRequestFactory.create(host, tenantId = tenantId.value.ifBlank { null })
+        container.pendingAuth.save(auth.codeVerifier, auth.state, host.ifBlank { auth.tenantHost })
+        return auth
     }
 
     fun openWebViewLogin() {
@@ -99,25 +143,36 @@ class CitaViewModel(
         viewModelScope.launch {
             val error = AuthRequestFactory.extractError(url)
             if (error != null) {
-                _snackbar.emit("Inloggen geannuleerd: $error")
+                _lastError.value = ApiFailure("oauth", 0, error)
+                _snackbar.emit("Inloggen geannuleerd.")
                 return@launch
             }
             val code = AuthRequestFactory.extractCode(url)
             val pending = container.pendingAuth.read()
             if (code == null || pending == null) {
-                _snackbar.emit("Geen autorisatiecode ontvangen.")
+                _lastError.value = ApiFailure("oauth", 0, "Geen autorisatiecode ontvangen.")
+                _snackbar.emit("Inloggen mislukt.")
                 return@launch
             }
             val (verifier, _, tenant) = pending
             _refreshing.value = true
             runCatching { repo.completeLogin(code, verifier, tenant) }
-                .onSuccess {
+                .onSuccess { result ->
                     container.pendingAuth.clear()
                     _webViewUrl.value = null
                     _signedIn.value = true
-                    _snackbar.emit("Ingelogd als ${it.firstName}.")
+                    val name = result.profile?.firstName
+                    if (name != null) {
+                        _snackbar.emit("Ingelogd als $name.")
+                    } else {
+                        _snackbar.emit("Ingelogd.")
+                    }
+                    reportWarnings(result.warnings)
                 }
-                .onFailure { _snackbar.emit("Inloggen mislukt: ${it.message}") }
+                .onFailure { error ->
+                    rememberFailure(error)
+                    _snackbar.emit(friendlyOf(error))
+                }
             _refreshing.value = false
         }
     }
@@ -126,7 +181,8 @@ class CitaViewModel(
         viewModelScope.launch {
             repo.enterDemo()
             _signedIn.value = true
-            _snackbar.emit("Voorbeelddata van 5 VWO Citadel College.")
+            _lastError.value = null
+            _snackbar.emit("Voorbeelddata geladen.")
         }
     }
 
@@ -134,7 +190,11 @@ class CitaViewModel(
         viewModelScope.launch {
             _refreshing.value = true
             runCatching { repo.refreshAll() }
-                .onFailure { _snackbar.emit("Vernieuwen mislukt: ${it.message}") }
+                .onSuccess { reportWarnings(it.warnings) }
+                .onFailure { error ->
+                    rememberFailure(error)
+                    _snackbar.emit(friendlyOf(error))
+                }
             _refreshing.value = false
         }
     }
@@ -143,7 +203,8 @@ class CitaViewModel(
         viewModelScope.launch {
             repo.logout()
             _signedIn.value = false
-            _snackbar.emit("Uitgelogd. Tokens gewist.")
+            _lastError.value = null
+            _snackbar.emit("Uitgelogd.")
         }
     }
 
@@ -158,7 +219,10 @@ class CitaViewModel(
                     _messageDetail.value = it
                     runCatching { repo.markMessageRead(id) }
                 }
-                .onFailure { _snackbar.emit("Bericht laden mislukt: ${it.message}") }
+                .onFailure { error ->
+                    rememberFailure(error)
+                    _snackbar.emit(friendlyOf(error))
+                }
         }
     }
 
@@ -169,7 +233,7 @@ class CitaViewModel(
     fun saveWebhook(url: String, key: String) {
         viewModelScope.launch {
             repo.saveWebhook(url, key.ifBlank { null })
-            _snackbar.emit("Plan Goon-webhook opgeslagen.")
+            _snackbar.emit("Webhook opgeslagen.")
         }
     }
 
@@ -177,8 +241,11 @@ class CitaViewModel(
         viewModelScope.launch {
             _exporting.value = true
             repo.exportToPlanGoon()
-                .onSuccess { _snackbar.emit("Cijfers verstuurd naar Plan Goon.") }
-                .onFailure { _snackbar.emit("Export mislukt: ${it.message}") }
+                .onSuccess { _snackbar.emit("Cijfers verstuurd.") }
+                .onFailure { error ->
+                    rememberFailure(error)
+                    _snackbar.emit(friendlyOf(error))
+                }
             _exporting.value = false
         }
     }
@@ -188,11 +255,34 @@ class CitaViewModel(
             runCatching { repo.exportJson(pretty = true) }
                 .onSuccess {
                     _shareJson.emit(it)
-                    _snackbar.emit("JSON gekopieerd naar het klembord.")
+                    _snackbar.emit("JSON gekopieerd.")
                 }
-                .onFailure { _snackbar.emit("JSON maken mislukt: ${it.message}") }
+                .onFailure { error ->
+                    rememberFailure(error)
+                    _snackbar.emit(friendlyOf(error))
+                }
         }
     }
+
+    private fun reportWarnings(warnings: List<ApiFailure>) {
+        val first = warnings.firstOrNull() ?: run {
+            _lastError.value = null
+            return
+        }
+        _lastError.value = first
+        viewModelScope.launch { _snackbar.emit("${first.friendly()} ${first.summary()}") }
+    }
+
+    private fun rememberFailure(error: Throwable) {
+        _lastError.value = if (error is MagisterApiException) {
+            ApiFailure(error.path, error.code, error.body)
+        } else {
+            ApiFailure("mags", 0, error.message ?: error.toString())
+        }
+    }
+
+    private fun friendlyOf(error: Throwable): String =
+        if (error is MagisterApiException) error.friendly() else "Dat ging niet."
 
     companion object {
         fun factory(app: Application): ViewModelProvider.Factory =

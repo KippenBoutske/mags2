@@ -71,6 +71,15 @@ class MagisterParsersTest {
         assertEquals(Tenant.CITADEL_HOST, Tenant.normalize("citadelcollege.magister.net"))
         assertEquals(Tenant.CITADEL_HOST, Tenant.normalize("https://Citadel.Magister.Net/"))
         assertEquals("andereschool.magister.net", Tenant.normalize("andereschool"))
+        assertEquals("", Tenant.normalize(" "))
+    }
+
+    @Test
+    fun authUrlContainsStudentScopes() {
+        val request = AuthRequestFactory.create("citadel.magister.net", Pkce.generate(), state = "s", nonce = "n")
+        assertTrue(request.authorizeUrl.contains("opp.read"))
+        assertTrue(request.authorizeUrl.contains("calendar.user"))
+        assertTrue(request.authorizeUrl.contains("grades.read"))
     }
 
     @Test

@@ -19,7 +19,7 @@ class SecretStore(context: Context) {
     }
 
     private companion object {
-        const val PREFS_NAME = "cita_secrets"
+        const val PREFS_NAME = "mags_secrets"
         const val KEY_WEBHOOK = "plan_goon_bearer"
     }
 }

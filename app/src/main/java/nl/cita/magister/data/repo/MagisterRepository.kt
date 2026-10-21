@@ -4,11 +4,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
+import nl.cita.magister.api.KnownSchools
 import nl.cita.magister.api.MagisterEndpoints
+import nl.cita.magister.api.School
 import nl.cita.magister.api.Tenant
+import nl.cita.magister.auth.IdTokenClaims
 import nl.cita.magister.auth.SecretStore
 import nl.cita.magister.auth.StoredSession
 import nl.cita.magister.auth.TokenStore
+import nl.cita.magister.data.api.MagisterApiException
 import nl.cita.magister.data.api.MagisterHttpClient
 import nl.cita.magister.data.api.PlanGoonClient
 import nl.cita.magister.data.db.CacheBlob
@@ -21,11 +25,13 @@ import nl.cita.magister.dto.SendMessageRequest
 import nl.cita.magister.dto.ReceiverDto
 import nl.cita.magister.fixtures.MockFixtures
 import nl.cita.magister.grades.GradeCalculator
+import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.Appointment
 import nl.cita.magister.model.Grade
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.MessageDetail
 import nl.cita.magister.model.MessagePreview
+import nl.cita.magister.model.SessionHydration
 import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.SubjectAverage
 import nl.cita.magister.parse.MagisterJson
@@ -77,9 +83,13 @@ class MagisterRepository(
         blob?.json?.let { MagisterJson.instance.decodeFromString(ListSerializerMessage, it) } ?: emptyList()
     }
 
-    suspend fun completeLogin(code: String, verifier: String, tenantHost: String): StudentProfile {
+    suspend fun completeLogin(code: String, verifier: String, tenantHost: String): SessionHydration {
         val tokens = http.exchangeCode(code, verifier)
-        val host = Tenant.normalize(tenantHost)
+        val fromToken = tokens.idToken?.let { IdTokenClaims.tenantHost(it) }.orEmpty()
+        val host = listOf(fromToken, Tenant.normalize(tenantHost))
+            .firstOrNull { it.isNotBlank() }
+            .orEmpty()
+        val school = prefs.schoolNameNow().ifBlank { schoolNameFor(host) }
         tokenStore.write(
             StoredSession(
                 accessToken = tokens.accessToken,
@@ -89,12 +99,44 @@ class MagisterRepository(
                 tenantHost = host,
                 personId = null,
                 enrollmentId = null,
-                displayName = null,
+                displayName = tokens.idToken?.let { IdTokenClaims.givenName(it) },
             ),
         )
         prefs.setDemo(false)
-        prefs.setTenant(host, schoolNameFor(host))
+        if (host.isNotBlank()) {
+            prefs.setTenant(host, school, prefs.tenantIdNow().ifBlank { null })
+        }
         return refreshAll()
+    }
+
+    suspend fun searchSchools(query: String): List<School> {
+        val q = query.trim()
+        if (q.length < 2) return emptyList()
+        val remote = runCatching { http.searchTenants(q) }.getOrDefault(emptyList())
+        val resolved = remote.map { hit ->
+            val host = resolveHost(hit.displayName, q)
+            School(
+                name = hit.displayName,
+                host = host.orEmpty(),
+                tenantId = hit.id,
+            )
+        }
+        val local = KnownSchools.search(q)
+        return (resolved + local)
+            .distinctBy { it.tenantId ?: it.host.ifBlank { it.name.lowercase() } }
+            .take(8)
+    }
+
+    private suspend fun resolveHost(displayName: String, query: String): String? {
+        if (Tenant.looksLikeHost(query)) return Tenant.normalize(query)
+        val guessed = Tenant.slugCandidates(displayName) + Tenant.slugCandidates(query)
+        for (slug in guessed.distinct()) {
+            val host = "$slug.magister.net"
+            if (http.tenantAlive(host)) return host
+        }
+        return KnownSchools.suggestions.firstOrNull {
+            it.name.equals(displayName, ignoreCase = true)
+        }?.host
     }
 
     suspend fun enterDemo() {
@@ -113,45 +155,119 @@ class MagisterRepository(
         cache.clear()
     }
 
-    suspend fun refreshAll(): StudentProfile {
+    suspend fun refreshAll(): SessionHydration {
         if (prefs.isDemo() || tokenStore.read() == null) {
             enterDemo()
-            return MockFixtures.profile()
+            return SessionHydration(MockFixtures.profile())
         }
         val session = tokenStore.read()!!
-        val root = MagisterEndpoints.tenantRoot(session.tenantHost)
-        val accountJson = http.get(MagisterEndpoints.account(root))
-        val enrollmentsJson = runCatching {
-            val personGuess = MagisterParsers.parseAccount(accountJson).person?.resolvedId
-                ?: error("geen persoon")
-            http.get(MagisterEndpoints.enrollments(root, personGuess))
-        }.getOrElse {
-            val personGuess = MagisterParsers.parseAccount(accountJson).person?.resolvedId
-                ?: throw it
-            http.get(MagisterEndpoints.enrollmentsFallback(root, personGuess))
+        val warnings = mutableListOf<ApiFailure>()
+        val host = session.tenantHost.ifBlank { prefs.tenantHostNow() }
+        if (host.isBlank()) {
+            warnings += ApiFailure("/api/account", 0, "Geen school-host na login.")
+            return SessionHydration(profileFromToken(session), warnings)
         }
-        val enrollment = MagisterParsers.currentEnrollment(
-            MagisterParsers.parseEnrollments(enrollmentsJson),
-            LocalDate.now().toString(),
-        )
-        val profile = MagisterParsers.parseProfile(
-            json = accountJson,
-            tenantHost = session.tenantHost,
-            schoolName = prefs.schoolNameNow(),
-            enrollment = enrollment,
-        )
-        tokenStore.write(
-            session.copy(
-                personId = profile.personId,
-                enrollmentId = profile.enrollmentId,
-                displayName = listOf(profile.firstName, profile.lastName).filter { it.isNotBlank() }.joinToString(" "),
+        val root = MagisterEndpoints.tenantRoot(host)
+        val accountJson = firstSuccessful(
+            listOf(
+                MagisterEndpoints.account(root),
+                MagisterEndpoints.accountNoCache(root),
             ),
+            warnings,
         )
-        writeCache(KEY_PROFILE, MagisterJson.instance.encodeToString(profile))
-        refreshGrades(profile)
-        refreshAgenda(profile)
-        refreshMessages(profile)
-        return profile
+        val userinfoJson = if (accountJson == null) {
+            firstSuccessful(listOf(MagisterEndpoints.USERINFO), warnings)
+        } else {
+            null
+        }
+        if (accountJson == null && userinfoJson == null) {
+            return SessionHydration(profileFromToken(session), warnings)
+        }
+        val personId = accountJson?.let { MagisterParsers.parseAccount(it).person?.resolvedId }
+        val enrollmentsJson = if (personId != null) {
+            firstSuccessful(
+                listOf(
+                    MagisterEndpoints.enrollments(root, personId),
+                    MagisterEndpoints.enrollmentsFallback(root, personId),
+                ),
+                warnings,
+            )
+        } else {
+            null
+        }
+        val enrollment = enrollmentsJson?.let {
+            MagisterParsers.currentEnrollment(
+                MagisterParsers.parseEnrollments(it),
+                LocalDate.now().toString(),
+            )
+        }
+        val profile = when {
+            accountJson != null -> MagisterParsers.parseProfile(
+                json = accountJson,
+                tenantHost = host,
+                schoolName = prefs.schoolNameNow().ifBlank { schoolNameFor(host) },
+                enrollment = enrollment,
+            )
+            else -> profileFromToken(session, host)
+        }
+        if (profile != null) {
+            tokenStore.write(
+                session.copy(
+                    tenantHost = host,
+                    personId = profile.personId.takeIf { it > 0 },
+                    enrollmentId = profile.enrollmentId,
+                    displayName = listOf(profile.firstName, profile.lastName)
+                        .filter { it.isNotBlank() }
+                        .joinToString(" "),
+                ),
+            )
+            writeCache(KEY_PROFILE, MagisterJson.instance.encodeToString(profile))
+            if (profile.personId > 0) {
+                runCatching { refreshGrades(profile) }.onFailure { warnings += failureOf(it, "/cijfers") }
+                runCatching { refreshAgenda(profile) }.onFailure { warnings += failureOf(it, "/afspraken") }
+                runCatching { refreshMessages(profile) }.onFailure { warnings += failureOf(it, "/berichten") }
+            }
+        }
+        return SessionHydration(profile, warnings)
+    }
+
+    private suspend fun firstSuccessful(urls: List<String>, warnings: MutableList<ApiFailure>): String? {
+        var last: ApiFailure? = null
+        for (url in urls) {
+            try {
+                return http.get(url)
+            } catch (error: Throwable) {
+                last = failureOf(error, url)
+            }
+        }
+        last?.let { warnings += it }
+        return null
+    }
+
+    private fun failureOf(error: Throwable, fallbackUrl: String): ApiFailure =
+        if (error is MagisterApiException) {
+            ApiFailure(error.path, error.code, error.body)
+        } else {
+            ApiFailure(
+                MagisterApiException.shortPath(fallbackUrl),
+                0,
+                error.message ?: error.toString(),
+            )
+        }
+
+    private suspend fun profileFromToken(session: StoredSession, host: String = session.tenantHost): StudentProfile? {
+        val token = session.idToken ?: return null
+        val first = IdTokenClaims.givenName(token) ?: return null
+        return StudentProfile(
+            personId = session.personId ?: 0,
+            firstName = first,
+            lastName = IdTokenClaims.familyName(token).orEmpty(),
+            className = null,
+            study = null,
+            enrollmentId = session.enrollmentId,
+            schoolName = prefs.schoolNameNow().ifBlank { schoolNameFor(host) },
+            tenantHost = host,
+        )
     }
 
     suspend fun refreshGrades(profile: StudentProfile? = null) {

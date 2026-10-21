@@ -14,6 +14,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Cita"
+rootProject.name = "Mags"
 include(":core")
 include(":app")

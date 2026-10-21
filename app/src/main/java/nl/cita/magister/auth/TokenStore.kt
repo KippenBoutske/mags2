@@ -10,7 +10,7 @@ class TokenStore(context: Context) {
     @Synchronized
     fun read(): Session? {
         val access = prefs.getString(KEY_ACCESS, null) ?: return null
-        val tenant = prefs.getString(KEY_TENANT, null) ?: return null
+        val tenant = prefs.getString(KEY_TENANT, null).orEmpty()
         return Session(
             accessToken = access,
             refreshToken = prefs.getString(KEY_REFRESH, null),
@@ -55,7 +55,7 @@ class TokenStore(context: Context) {
     }
 
     private companion object {
-        const val PREFS_NAME = "cita_tokens"
+        const val PREFS_NAME = "mags_tokens"
         const val KEY_ACCESS = "access"
         const val KEY_REFRESH = "refresh"
         const val KEY_ID = "id"
@@ -68,7 +68,7 @@ class TokenStore(context: Context) {
 }
 
 class PendingAuthStore(context: Context) {
-    private val prefs = context.getSharedPreferences("cita_pending_auth", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences("mags_pending_auth", Context.MODE_PRIVATE)
 
     fun save(verifier: String, state: String, tenantHost: String) {
         prefs.edit()
@@ -81,7 +81,7 @@ class PendingAuthStore(context: Context) {
     fun read(): Triple<String, String, String>? {
         val verifier = prefs.getString("verifier", null) ?: return null
         val state = prefs.getString("state", null) ?: return null
-        val tenant = prefs.getString("tenant", null) ?: return null
+        val tenant = prefs.getString("tenant", "").orEmpty()
         return Triple(verifier, state, tenant)
     }
 

@@ -35,7 +35,7 @@ class CrashActivity : Activity() {
 
         root.addView(
             TextView(this).apply {
-                text = "Cita is gestopt"
+                text = "Mags is gestopt"
                 setTextColor(0xFFF4C36A.toInt())
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
                 typeface = Typeface.DEFAULT_BOLD
@@ -79,7 +79,7 @@ class CrashActivity : Activity() {
                 text = "Kopieer stacktrace"
                 setOnClickListener {
                     val clipboard = getSystemService(ClipboardManager::class.java)
-                    clipboard.setPrimaryClip(ClipData.newPlainText("cita-crash", trace))
+                    clipboard.setPrimaryClip(ClipData.newPlainText("mags-crash", trace))
                     Toast.makeText(this@CrashActivity, "Stacktrace gekopieerd", Toast.LENGTH_SHORT).show()
                 }
             },

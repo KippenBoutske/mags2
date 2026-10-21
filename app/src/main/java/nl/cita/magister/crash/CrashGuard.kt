@@ -19,13 +19,13 @@ import kotlin.system.exitProcess
  * separate process) instead of a silent system close.
  */
 object CrashGuard {
-    const val EXTRA_TRACE = "nl.cita.magister.crash.TRACE"
+    const val EXTRA_TRACE = "app.mags.crash.TRACE"
     const val TRACE_FILE = "last_crash.txt"
 
-    private const val PREFS = "cita_crash_guard"
+    private const val PREFS = "mags_crash_guard"
     private const val KEY_HANDLING = "handling_at"
     private const val KEY_SAFE = "safe_mode"
-    private const val TAG = "CitaCrash"
+    private const val TAG = "MagsCrash"
 
     @Volatile
     private var installed = false
@@ -99,7 +99,7 @@ object CrashGuard {
     fun format(error: Throwable): String {
         val stack = StringWriter().also { error.printStackTrace(PrintWriter(it)) }.toString()
         return buildString {
-            appendLine("Cita ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+            appendLine("Mags ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
             appendLine("applicationId=${BuildConfig.APPLICATION_ID}")
             appendLine("SDK ${Build.VERSION.SDK_INT} ${Build.VERSION.RELEASE}")
             appendLine("${Build.MANUFACTURER} ${Build.MODEL} (${Build.DEVICE})")

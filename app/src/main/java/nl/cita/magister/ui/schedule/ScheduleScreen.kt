@@ -53,7 +53,6 @@ fun ScheduleScreen(
     ) {
         item {
             Text("Rooster", style = MaterialTheme.typography.headlineMedium)
-            Text("Afspraken van Magister, inclusief uitval.", style = MaterialTheme.typography.bodyMedium)
         }
         if (days.isNotEmpty()) {
             item {

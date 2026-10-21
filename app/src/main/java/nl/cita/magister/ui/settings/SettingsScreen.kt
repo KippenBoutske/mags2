@@ -23,7 +23,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import nl.cita.magister.api.School
+import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.StudentProfile
+import nl.cita.magister.ui.login.ErrorDetails
+import nl.cita.magister.ui.school.SchoolPicker
 import nl.cita.magister.ui.theme.CitaAction
 import nl.cita.magister.ui.theme.CitaActionRow
 
@@ -35,7 +39,12 @@ fun SettingsScreen(
     webhookUrl: String,
     hasWebhookKey: Boolean,
     demoMode: Boolean,
+    schools: List<School>,
+    searching: Boolean,
+    lastError: ApiFailure?,
     contentPadding: PaddingValues,
+    onQuery: (String) -> Unit,
+    onSwitchSchool: (host: String, name: String, tenantId: String?) -> Unit,
     onSaveWebhook: (url: String, key: String) -> Unit,
     onExport: () -> Unit,
     onShareJson: () -> Unit,
@@ -59,42 +68,60 @@ fun SettingsScreen(
         Text("Meer", style = MaterialTheme.typography.headlineMedium)
         Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(profile?.let { "${it.firstName} ${it.lastName}" } ?: "Niet ingelogd", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    profile?.let { "${it.firstName} ${it.lastName}" } ?: "Niet ingelogd",
+                    style = MaterialTheme.typography.titleLarge,
+                )
                 Text(listOfNotNull(profile?.className, profile?.study, schoolName).joinToString(" · "))
-                Text(tenantHost, style = MaterialTheme.typography.labelMedium)
-                if (demoMode) Text("Voorbeeldmodus — geen live Magister-data.")
+                if (tenantHost.isNotBlank()) {
+                    Text(tenantHost, style = MaterialTheme.typography.labelMedium)
+                }
+                if (demoMode) Text("Voorbeeld — geen live data.")
             }
         }
         Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Andere school", style = MaterialTheme.typography.titleMedium)
+                SchoolPicker(
+                    selectedName = schoolName,
+                    selectedHost = tenantHost,
+                    hits = schools,
+                    searching = searching,
+                    onQuery = onQuery,
+                    onPick = onSwitchSchool,
+                )
+            }
+        }
+        lastError?.let { ErrorDetails(it) }
+        Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Plan Goon", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Stuur je cijfers naar je planningsassistent via een Grok Bot-routine-webhook. " +
-                        "De bearer-key wordt versleuteld opgeslagen en nooit gelogd.",
+                    "Stuur cijfers naar je planningsassistent.",
                     style = MaterialTheme.typography.bodySmall,
                 )
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
-                    label = { Text("Webhook-URL (HTTPS)") },
+                    label = { Text("Webhook-URL") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = key,
                     onValueChange = { key = it },
-                    label = { Text(if (hasWebhookKey) "Nieuwe bearer-key (leeg = behouden)" else "Bearer-key") },
+                    label = { Text(if (hasWebhookKey) "Nieuwe key (leeg = behouden)" else "Bearer-key") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                 )
                 Button(onClick = { onSaveWebhook(url, key) }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Webhook opslaan")
+                    Text("Opslaan")
                 }
                 CitaActionRow(
                     actions = listOf(
-                        CitaAction("Cijfers exporteren", onExport),
-                        CitaAction("Kopieer / deel JSON", onShareJson),
+                        CitaAction("Exporteren", onExport),
+                        CitaAction("Deel JSON", onShareJson),
                     ),
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -104,8 +131,7 @@ fun SettingsScreen(
             Text("Uitloggen")
         }
         Text(
-            "Cita is geen officiële Magister-app. Alleen jouw eigen leerlingdata. " +
-                "OAuth via M6LOAPP / m6loapp://oauth2redirect/ zoals bekende open-source clients.",
+            "Mags is geen officiële Magister-app. Alleen jouw eigen data.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

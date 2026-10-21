@@ -19,7 +19,12 @@ object MagisterEndpoints {
     /** Officieel-app client-id; Magister accepteert geen eigen public clients. */
     const val CLIENT_ID = "M6LOAPP"
     const val REDIRECT_URI = "m6loapp://oauth2redirect/"
-    const val SCOPE = "openid profile email offline_access"
+    /**
+     * Officiële M6LOAPP-achtige scopes. Alleen `openid profile email offline_access`
+     * gaf na login 403 OnvoldoendePrivileges op /api/account.
+     */
+    const val SCOPE =
+        "openid profile email offline_access opp.read opp.manage attendance.overview calendar.user grades.read"
     const val RESPONSE_TYPE = "id_token code"
     const val CODE_CHALLENGE_METHOD = "S256"
 
@@ -29,7 +34,16 @@ object MagisterEndpoints {
     fun wellKnownHostMeta(): String =
         "https://magister.net/.well-known/host-meta.json?rel=magister-api"
 
+    fun tenantSearch(query: String): String {
+        val key = java.net.URLEncoder.encode(query, Charsets.UTF_8).replace("+", "%20")
+        return "$ACCOUNTS_HOST/challenges/tenant/search?key=$key"
+    }
+
+    fun version(host: String) = "${tenantRoot(host)}/api/versie"
+
     fun account(root: String) = "$root/api/account"
+
+    fun accountNoCache(root: String) = "$root/api/account?noCache=0"
 
     fun profile(root: String, personId: Int) = "$root/api/personen/$personId/profiel"
 

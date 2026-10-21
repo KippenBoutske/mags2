@@ -16,7 +16,7 @@ import nl.cita.magister.parse.MagisterJson
 import nl.cita.magister.parse.MagisterParsers
 
 /**
- * Duidelijk gemarkeerde voorbeeldata voor 5 VWO Citadel College.
+ * Duidelijk gemarkeerde voorbeelddata (5 VWO).
  * Gebruikt wanneer er geen live-login is, en als testdata voor parsers.
  */
 object MockFixtures {

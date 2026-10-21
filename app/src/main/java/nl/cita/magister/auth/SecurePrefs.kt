@@ -22,9 +22,9 @@ import javax.crypto.spec.GCMParameterSpec
  * key + prefs wissen, opnieuw, anders gewone SharedPreferences.
  */
 object SecurePrefs {
-    private const val TAG = "CitaSecurePrefs"
+    private const val TAG = "MagsSecurePrefs"
     private const val KEYSTORE = "AndroidKeyStore"
-    private const val ALIAS = "cita_prefs_aes"
+    private const val ALIAS = "mags_prefs_aes"
     private val lock = Any()
 
     fun open(context: Context, name: String): SharedPreferences = synchronized(lock) {

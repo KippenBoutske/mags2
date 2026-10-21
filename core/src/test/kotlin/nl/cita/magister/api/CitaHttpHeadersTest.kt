@@ -21,11 +21,14 @@ class CitaHttpHeadersTest {
             assertTrue("non-ASCII header name: $name", CitaHttp.isAscii(name))
             assertTrue("non-ASCII $name: $value", CitaHttp.isAscii(value))
         }
+        assertTrue(CitaHttp.isAscii(MagisterEndpoints.SCOPE))
+        assertTrue(CitaHttp.isAscii(MagisterEndpoints.CLIENT_ID))
+        assertTrue(CitaHttp.isAscii(MagisterEndpoints.REDIRECT_URI))
     }
 
     @Test
     fun userAgentIsTheAsciiStringOkHttpMustAccept() {
-        assertEquals("Cita/0.1.3 (Android; unofficial Magister client)", CitaHttp.USER_AGENT)
+        assertEquals("Mags/0.1.4 (Android; unofficial Magister client)", CitaHttp.USER_AGENT)
         assertFalse(CitaHttp.USER_AGENT.contains("ë"))
         assertFalse(CitaHttp.USER_AGENT.contains("officiële"))
     }
@@ -70,6 +73,8 @@ class CitaHttpHeadersTest {
         assertTrue(request.authorizeUrl.startsWith(MagisterEndpoints.AUTHORIZE))
         assertTrue(request.authorizeUrl.contains("acr_values=tenant%3Acitadel.magister.net"))
         assertTrue(request.authorizeUrl.contains("redirect_uri=m6loapp%3A%2F%2Foauth2redirect%2F"))
+        assertTrue(request.authorizeUrl.contains("opp.read"))
+        assertTrue(request.authorizeUrl.contains("grades.read"))
         AuthRequestFactory.tokenForm("code-value", request.codeVerifier).forEach { (k, v) ->
             assertTrue("$k=$v", CitaHttp.isAscii(k) && CitaHttp.isAscii(v))
         }

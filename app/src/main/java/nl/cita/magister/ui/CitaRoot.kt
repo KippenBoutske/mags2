@@ -1,19 +1,15 @@
 package nl.cita.magister.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Grade
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.MoreHoriz
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -31,10 +27,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nl.cita.magister.ui.grades.GradesScreen
 import nl.cita.magister.ui.homework.HomeworkScreen
+import nl.cita.magister.ui.login.BootSplash
 import nl.cita.magister.ui.login.LoginScreen
 import nl.cita.magister.ui.login.LoginWebView
 import nl.cita.magister.ui.messages.MessagesScreen
@@ -57,12 +53,7 @@ fun CitaRoot(viewModel: CitaViewModel) {
     }
 
     if (booting) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                CircularProgressIndicator()
-                Text("Cita starten…", modifier = Modifier.padding(top = 12.dp))
-            }
-        }
+        BootSplash()
         return
     }
 
@@ -78,15 +69,22 @@ fun CitaRoot(viewModel: CitaViewModel) {
     if (!signedIn) {
         val school by viewModel.schoolName.collectAsStateWithLifecycle()
         val tenant by viewModel.tenantHost.collectAsStateWithLifecycle()
+        val hits by viewModel.schoolHits.collectAsStateWithLifecycle()
+        val searching by viewModel.schoolSearching.collectAsStateWithLifecycle()
+        val error by viewModel.lastError.collectAsStateWithLifecycle()
         Scaffold(snackbarHost = { SnackbarHost(snackbarHost) }) {
-                LoginScreen(
-                    schoolName = school,
-                    tenantHost = tenant,
-                    onSchoolChange = viewModel::setSchool,
-                    onStartLogin = { viewModel.startLogin().authorizeUrl },
-                    onWebViewLogin = viewModel::openWebViewLogin,
-                    onDemo = viewModel::enterDemo,
-                )
+            LoginScreen(
+                schoolName = school,
+                tenantHost = tenant,
+                schools = hits,
+                searching = searching,
+                lastError = error,
+                onQuery = viewModel::searchSchools,
+                onSchoolChange = viewModel::setSchool,
+                onStartLogin = { viewModel.startLogin().authorizeUrl },
+                onWebViewLogin = viewModel::openWebViewLogin,
+                onDemo = viewModel::enterDemo,
+            )
         }
         return
     }
@@ -111,6 +109,9 @@ private fun SignedInShell(viewModel: CitaViewModel, snackbarHost: SnackbarHostSt
     val school by viewModel.schoolName.collectAsStateWithLifecycle()
     val webhook by viewModel.webhookUrl.collectAsStateWithLifecycle()
     val demo by viewModel.demoMode.collectAsStateWithLifecycle()
+    val hits by viewModel.schoolHits.collectAsStateWithLifecycle()
+    val searching by viewModel.schoolSearching.collectAsStateWithLifecycle()
+    val error by viewModel.lastError.collectAsStateWithLifecycle()
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHost) },
@@ -172,7 +173,12 @@ private fun SignedInShell(viewModel: CitaViewModel, snackbarHost: SnackbarHostSt
                     webhookUrl = webhook,
                     hasWebhookKey = viewModel.hasWebhookKey,
                     demoMode = demo,
+                    schools = hits,
+                    searching = searching,
+                    lastError = error,
                     contentPadding = padding,
+                    onQuery = viewModel::searchSchools,
+                    onSwitchSchool = viewModel::switchSchool,
                     onSaveWebhook = viewModel::saveWebhook,
                     onExport = viewModel::exportToPlanGoon,
                     onShareJson = viewModel::shareExportJson,

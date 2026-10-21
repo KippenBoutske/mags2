@@ -1,13 +1,14 @@
 package nl.cita.magister.api
 
 /**
- * Alle HTTP-headerwaarden die Cita zelf zet. OkHttp weigert non-ASCII (0x80+)
+ * Alle HTTP-headerwaarden die Mags zelf zet. OkHttp weigert non-ASCII (0x80+)
  * in headers — een ë in de User-Agent liet inloggen meteen falen.
  */
 object CitaHttp {
-    const val USER_AGENT = "Cita/0.1.3 (Android; unofficial Magister client)"
+    const val USER_AGENT = "Mags/0.1.4 (Android; unofficial Magister client)"
     const val ACCEPT_JSON = "application/json"
     const val CONTENT_TYPE_JSON = "application/json"
+    const val API_CLIENT_ID = "M6LOAPP"
 
     /**
      * Elke statische headerwaarde die de app meestuurt (Magister + Plan Goon).
@@ -17,12 +18,14 @@ object CitaHttp {
         USER_AGENT,
         ACCEPT_JSON,
         CONTENT_TYPE_JSON,
+        API_CLIENT_ID,
     )
 
     val staticHeaders: List<Pair<String, String>> = listOf(
         "User-Agent" to USER_AGENT,
         "Accept" to ACCEPT_JSON,
         "Content-Type" to CONTENT_TYPE_JSON,
+        "X-API-Client-ID" to API_CLIENT_ID,
     )
 
     fun bearer(token: String): String = "Bearer ${requireAscii("Authorization", token)}"

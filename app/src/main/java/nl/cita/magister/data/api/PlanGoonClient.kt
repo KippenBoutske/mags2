@@ -38,7 +38,7 @@ class PlanGoonClient {
                     if (code == 200) {
                         code
                     } else {
-                        throw MagisterApiException(code, "Plan Goon gaf HTTP $code")
+                        throw MagisterApiException(code, url, "Plan Goon gaf HTTP $code")
                     }
                 }
             }

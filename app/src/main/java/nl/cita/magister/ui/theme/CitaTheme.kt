@@ -21,13 +21,13 @@ import androidx.compose.ui.unit.dp
 
 val LocalSafeMode = staticCompositionLocalOf { false }
 
-private val CitadelNavy = Color(0xFF1B2A4A)
-private val CitadelGold = Color(0xFFF4C36A)
-private val CitadelInk = Color(0xFF101828)
+private val MagsNavy = Color(0xFF1B2A4A)
+private val MagsGold = Color(0xFFF4C36A)
+private val MagsInk = Color(0xFF101828)
 
 private val DarkScheme = darkColorScheme(
-    primary = CitadelGold,
-    onPrimary = CitadelInk,
+    primary = MagsGold,
+    onPrimary = MagsInk,
     secondary = Color(0xFF9BB4E0),
     tertiary = Color(0xFFFFB4A2),
     background = Color(0xFF0E1626),
@@ -37,46 +37,43 @@ private val DarkScheme = darkColorScheme(
 )
 
 private val LightFallback = lightColorScheme(
-    primary = CitadelNavy,
+    primary = MagsNavy,
     onPrimary = Color.White,
-    secondary = CitadelGold,
-    onSecondary = CitadelInk,
+    secondary = MagsGold,
+    onSecondary = MagsInk,
     background = Color(0xFFF4F1EA),
     surface = Color.White,
-    onBackground = CitadelInk,
-    onSurface = CitadelInk,
+    onBackground = MagsInk,
+    onSurface = MagsInk,
+)
+
+private val ExpressiveShapes = Shapes(
+    extraSmall = RoundedCornerShape(10.dp),
+    small = RoundedCornerShape(14.dp),
+    medium = RoundedCornerShape(20.dp),
+    large = RoundedCornerShape(28.dp),
+    extraLarge = RoundedCornerShape(36.dp),
+    largeIncreased = RoundedCornerShape(36.dp),
 )
 
 @Composable
 fun CitaTheme(safeMode: Boolean = false, content: @Composable () -> Unit) {
     val dark = isSystemInDarkTheme()
     val context = LocalContext.current
-    // Pixel 10 / Android 16+ (API 36+): skip Expressive beta (graphics-path + new motion)
-    // until we have a device log. Crash-safe-mode does the same.
-    val stableUi = safeMode || Build.VERSION.SDK_INT >= 36
     val scheme = when {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && dark -> dynamicDarkColorScheme(context)
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !stableUi -> dynamicLightColorScheme(context)
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !dark -> dynamicLightColorScheme(context)
         dark -> DarkScheme
-        stableUi -> LightFallback
         else -> runCatching { expressiveLightColorScheme() }.getOrDefault(LightFallback)
     }
-    CompositionLocalProvider(LocalSafeMode provides stableUi) {
-        if (stableUi) {
+    CompositionLocalProvider(LocalSafeMode provides safeMode) {
+        if (safeMode) {
             MaterialTheme(colorScheme = scheme, content = content)
         } else {
-            val shapes = Shapes(
-                extraSmall = RoundedCornerShape(10.dp),
-                small = RoundedCornerShape(14.dp),
-                medium = RoundedCornerShape(20.dp),
-                large = RoundedCornerShape(28.dp),
-                extraLarge = RoundedCornerShape(36.dp),
-                largeIncreased = RoundedCornerShape(36.dp),
-            )
             MaterialExpressiveTheme(
                 colorScheme = scheme,
                 motionScheme = MotionScheme.expressive(),
-                shapes = shapes,
+                shapes = ExpressiveShapes,
                 content = content,
             )
         }
