@@ -2,6 +2,7 @@ package nl.cita.magister.data.api
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import nl.cita.magister.api.CitaHttp
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -26,9 +27,10 @@ class PlanGoonClient {
                 require(url.startsWith("https://")) { "Webhook moet HTTPS zijn." }
                 val request = Request.Builder()
                     .url(url)
-                    .header("Authorization", "Bearer $bearerKey")
-                    .header("Content-Type", "application/json")
-                    .header("Accept", "application/json")
+                    .header("Authorization", CitaHttp.bearer(bearerKey))
+                    .header("Content-Type", CitaHttp.CONTENT_TYPE_JSON)
+                    .header("Accept", CitaHttp.ACCEPT_JSON)
+                    .header("User-Agent", CitaHttp.USER_AGENT)
                     .post(jsonBody.toRequestBody(jsonMedia))
                     .build()
                 client.newCall(request).execute().use { response ->

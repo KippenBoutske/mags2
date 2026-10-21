@@ -56,8 +56,10 @@ class MainActivity : ComponentActivity() {
 
     private fun handleAuthIntent(intent: Intent?) {
         val uri = intent?.data ?: return
-        if (uri.toString().startsWith(MagisterEndpoints.REDIRECT_URI.trimEnd('/'))) {
-            viewModel.handleRedirect(uri.toString())
+        val raw = uri.toString()
+        if (raw.startsWith(MagisterEndpoints.REDIRECT_URI.trimEnd('/'))) {
+            // Custom Tabs kunnen code in query of fragment zetten; beide doorgeven.
+            viewModel.handleRedirect(raw)
         }
     }
 }

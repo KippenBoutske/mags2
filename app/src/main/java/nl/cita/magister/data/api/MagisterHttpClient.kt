@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import nl.cita.magister.api.CitaHttp
 import nl.cita.magister.api.MagisterEndpoints
 import nl.cita.magister.auth.AuthRequestFactory
 import nl.cita.magister.auth.TokenResponse
@@ -35,10 +36,12 @@ class MagisterHttpClient(
             val original = chain.request()
             val session = tokenStore.read()
             val builder = original.newBuilder()
-                .header("Accept", "application/json")
-                .header("User-Agent", USER_AGENT)
-            if (session != null && original.header("Authorization") == null) {
-                builder.header("Authorization", "Bearer ${session.accessToken}")
+                .header("Accept", CitaHttp.ACCEPT_JSON)
+                .header("User-Agent", CitaHttp.USER_AGENT)
+            val isTokenCall = original.url.host == "accounts.magister.net" &&
+                original.url.encodedPath.contains("token")
+            if (session != null && original.header("Authorization") == null && !isTokenCall) {
+                builder.header("Authorization", CitaHttp.bearer(session.accessToken))
             }
             chain.proceed(builder.build())
         }
@@ -92,8 +95,8 @@ class MagisterHttpClient(
             val request = Request.Builder()
                 .url(url)
                 .post(body)
-                .header("Accept", "application/json")
-                .header("User-Agent", USER_AGENT)
+                .header("Accept", CitaHttp.ACCEPT_JSON)
+                .header("User-Agent", CitaHttp.USER_AGENT)
                 .build()
             client.newCall(request).execute().use { response ->
                 val text = response.body?.string().orEmpty()
@@ -127,9 +130,6 @@ class MagisterHttpClient(
         }
     }
 
-    companion object {
-        const val USER_AGENT = "Cita/0.1 (Android; onofficiële Magister-client)"
-    }
 }
 
 class MagisterApiException(val code: Int, override val message: String) : Exception("HTTP $code: $message")

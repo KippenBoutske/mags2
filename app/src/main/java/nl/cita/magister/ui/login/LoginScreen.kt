@@ -1,5 +1,6 @@
 package nl.cita.magister.ui.login
 
+import android.content.ActivityNotFoundException
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.Arrangement
@@ -89,7 +90,11 @@ fun LoginScreen(
                 Button(
                     onClick = {
                         val url = onStartLogin()
-                        CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(url))
+                        try {
+                            CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(url))
+                        } catch (_: ActivityNotFoundException) {
+                            onWebViewLogin()
+                        }
                     },
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text("Inloggen") }

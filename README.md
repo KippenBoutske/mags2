@@ -30,7 +30,7 @@ De app start met Citadel College / `citadel.magister.net`. Onder inloggen kun je
 
 1. Zet *Onbekende bronnen* / *Installeren uit deze bron* aan.
 2. Installeer `artifacts/cita-debug.apk` (of `app/build/outputs/apk/debug/app-debug.apk` na een lokale build).
-3. ApplicationId van de debug-build: `nl.cita.magister.debug`. Versie **0.1.2** (`targetSdk` 37, Pixel 10 / Android 17).
+3. ApplicationId van de debug-build: `nl.cita.magister.debug`. Versie **0.1.3** (`targetSdk` 37, Pixel 10 / Android 17).
 4. Als de app crasht: je krijgt een scherm **Cita is gestopt** met de stacktrace. Tik *Kopieer stacktrace*.
 
 Zelf bouwen:
