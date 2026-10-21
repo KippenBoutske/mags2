@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Cita</string>
+    <string name="app_tagline">Magister, maar sneller.</string>
+    <string name="tab_cijfers">Cijfers</string>
+    <string name="tab_rooster">Rooster</string>
+    <string name="tab_huiswerk">Huiswerk</string>
+    <string name="tab_berichten">Berichten</string>
+    <string name="tab_meer">Meer</string>
+</resources>

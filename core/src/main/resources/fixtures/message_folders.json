@@ -1,0 +1,10 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "naam": "Postvak IN",
+      "ongelezen": 2,
+      "links": { "berichten": { "href": "api/berichten/mappen/1/berichten" } }
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "items": [
+    {
+      "id": 9001,
+      "onderwerp": "Deadline profielwerkstuk",
+      "afzender": { "id": 71, "naam": "Meers, M. (mentor)" },
+      "verzondenOp": "2026-10-20T14:12:00.0000000Z",
+      "isGelezen": false,
+      "heeftBijlagen": true,
+      "inhoud": "<p>Beste 5 VWO-A,</p><p>Lever je PWS-plan uiterlijk <strong>vrijdag 31 oktober</strong> in via Magister. Gebruik het sjabloon in de bijlage.</p>",
+      "links": { "self": { "href": "api/berichten/berichten/9001" } }
+    },
+    {
+      "id": 9002,
+      "onderwerp": "Roosterwijziging donderdag",
+      "afzender": { "id": 1, "naam": "Administratie Citadel College" },
+      "verzondenOp": "2026-10-20T08:03:00.0000000Z",
+      "isGelezen": true,
+      "heeftBijlagen": false,
+      "inhoud": "<p>Het 6e uur LO vervalt donderdag wegens een toernooi in de sporthal.</p>",
+      "links": { "self": { "href": "api/berichten/berichten/9002" } }
+    },
+    {
+      "id": 9003,
+      "onderwerp": "Binas meenemen",
+      "afzender": { "id": 51, "naam": "van Doren, S." },
+      "verzondenOp": "2026-10-19T16:40:00.0000000Z",
+      "isGelezen": false,
+      "heeftBijlagen": false,
+      "inhoud": "<p>Neem woensdag je Binas en grafische rekenmachine mee naar het proefwerk zuren en basen.</p>",
+      "links": { "self": { "href": "api/berichten/berichten/9003" } }
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "Items": [
+    {
+      "CijferId": 101,
+      "CijferStr": "7,2",
+      "IsVoldoende": true,
+      "IngevoerdDoor": "Dhr. Bakker",
+      "DatumIngevoerd": "2025-09-12T10:00:00.0000000Z",
+      "TeltMee": true,
+      "Docent": "BAK",
+      "Vak": { "Id": 1, "Afkorting": "ne", "Omschrijving": "Nederlands" },
+      "CijferKolom": { "Id": 11, "KolomNaam": "SW1", "KolomKop": "SW1", "KolomOmschrijving": "Schrijfvaardigheid", "KolomSoort": 1, "IsPTAKolom": true, "Weegfactor": 2.0 },
+      "CijferPeriode": { "Id": 1, "Naam": "P1" }
+    },
+    {
+      "CijferId": 102,
+      "CijferStr": "6,8",
+      "IsVoldoende": true,
+      "DatumIngevoerd": "2025-10-03T10:00:00.0000000Z",
+      "TeltMee": true,
+      "Docent": "BAK",
+      "Vak": { "Id": 1, "Afkorting": "ne", "Omschrijving": "Nederlands" },
+      "CijferKolom": { "Id": 12, "KolomNaam": "LT1", "KolomKop": "LT1", "KolomOmschrijving": "Literatuur", "KolomSoort": 1, "IsPTAKolom": true, "Weegfactor": 1.0 },
+      "CijferPeriode": { "Id": 1, "Naam": "P1" }
+    },
+    {
+      "CijferId": 103,
+      "CijferStr": "7,1",
+      "IsVoldoende": true,
+      "TeltMee": false,
+      "Vak": { "Id": 1, "Afkorting": "ne", "Omschrijving": "Nederlands" },
+      "CijferKolom": { "Id": 19, "KolomNaam": "gem", "KolomKop": "GEM", "KolomOmschrijving": "Voortschrijdend gemiddelde", "KolomSoort": 2, "IsPTAKolom": false }
+    },
+    {
+      "CijferId": 201,
+      "CijferStr": "8,1",
+      "IsVoldoende": true,
+      "DatumIngevoerd": "2025-09-20T10:00:00.0000000Z",
+      "TeltMee": true,
+      "Docent": "VLI",
+      "Vak": { "Id": 2, "Afkorting": "en", "Omschrijving": "Engels" },
+      "CijferKolom": { "Id": 21, "KolomNaam": "KW1", "KolomKop": "KW1", "KolomOmschrijving": "Kijk- en luistertoets", "KolomSoort": 1, "IsPTAKolom": true, "Weegfactor": 1.0 },
+      "CijferPeriode": { "Id": 1, "Naam": "P1" }
+    },
+    {
+      "CijferId": 202,
+      "CijferStr": "7,6",
+      "IsVoldoende": true,
+      "DatumIngevoerd": "2025-10-08T10:00:00.0000000Z",
+      "TeltMee": true,
+      "Docent": "VLI",
+      "Vak": { "Id": 2, "Afkorting": "en", "Omschrijving": "Engels" },
+      "CijferKolom": { "Id": 22, "KolomNaam": "WR1", "KolomKop": "WR1", "KolomOmschrijving": "Writing", "KolomSoort": 1, "IsPTAKolom": true, "Weegfactor": 2.0 },
+      "CijferPeriode": { "Id": 1, "Naam": "P1" }
+    },
+    {
+      "CijferId": 301,
+      "CijferStr": "6,4",
+      "IsVoldoende": true,
+      "DatumIngevoerd": "2025-09-18T10:00:00.0000000Z",
+      "TeltMee": true,
+      "Docent": "JNS",
+      "Vak": { "Id": 3, "Afkorting": "wi", "Omschrijving": "Wiskunde B" },
+      "CijferKolom": { "Id": 31, "KolomNaam": "PW1", "KolomKop": "PW1", "KolomOmschrijving": "Differentiaalrekening", "KolomSoort": 1, "IsPTAKolom": true, "Weegfactor": 3.0 },
+      "CijferPeriode": { "Id": 1, "Naam": "P1" }
+    },
+    {
+      "CijferId": 302,
+      "CijferStr": "5,3",
+      "IsVoldoende": false,
+      "DatumIngevoerd": "2025-10-10T10:00:00.0000000Z",
+      "TeltMee": true,
+      "Docent": "JNS",
+      "Vak": { "Id": 3, "Afkorting": "wi", "Omschrijving": "Wiskunde B" },
+      "CijferKolom": { "Id": 32, "KolomNaam": "PW2", "KolomKop": "PW2", "KolomOmschrijving": "Goniometrie", "KolomSoort": 1, "IsPTAKolom": true, "Weegfactor": 3.0 },
+      "CijferPeriode": { "Id": 1, "Naam": "P1" }
+    },
+    {
+      "CijferId": 401,
+      "CijferStr": "7,8",
+      "IsVoldoende": true,
+      "DatumIngevoerd": "2025-09-25T10:00:00.0000000Z",
+      "TeltMee": true,
+      "Docent": "HMK",
+      "Vak": { "Id": 4, "Afkorting": "na", "Omschrijving": "Natuurkunde" },
+      "CijferKolom": { "Id": 41, "KolomNaam": "PW1", "KolomKop": "PW1", "KolomOmschrijving": "Mechanica", "KolomSoort": 1, "IsPTAKolom": true, "Weegfactor": 2.0 }
+    },
+    {
+      "CijferId": 501,
+      "CijferStr": "6,9",
+      "IsVoldoende": true,
+      "DatumIngevoerd": "2025-09-28T10:00:00.0000000Z",
+      "TeltMee": true,
+      "Docent": "VDR",
+      "Vak": { "Id": 5, "Afkorting": "sk", "Omschrijving": "Scheikunde" },
+      "CijferKolom": { "Id": 51, "KolomNaam": "PW1", "KolomKop": "PW1", "KolomOmschrijving": "Zuren en basen", "KolomSoort": 1, "IsPTAKolom": true, "Weegfactor": 2.0 }
+    },
+    {
+      "CijferId": 601,
+      "CijferStr": "8,4",
+      "IsVoldoende": true,
+      "DatumIngevoerd": "2025-10-02T10:00:00.0000000Z",
+      "TeltMee": true,
+      "Docent": "LNG",
+      "Vak": { "Id": 6, "Afkorting": "bi", "Omschrijving": "Biologie" },
+      "CijferKolom": { "Id": 61, "KolomNaam": "PW1", "KolomKop": "PW1", "KolomOmschrijving": "DNA en eiwitsynthese", "KolomSoort": 1, "IsPTAKolom": true, "Weegfactor": 2.0 }
+    },
+    {
+      "CijferId": 701,
+      "CijferStr": "7,0",
+      "IsVoldoende": true,
+      "DatumIngevoerd": "2025-09-30T10:00:00.0000000Z",
+      "TeltMee": true,
+      "Docent": "MRS",
+      "Vak": { "Id": 7, "Afkorting": "gs", "Omschrijving": "Geschiedenis" },
+      "CijferKolom": { "Id": 71, "KolomNaam": "PO1", "KolomKop": "PO1", "KolomOmschrijving": "Koude Oorlog", "KolomSoort": 1, "IsPTAKolom": true, "Weegfactor": 1.0 }
+    }
+  ]
+}

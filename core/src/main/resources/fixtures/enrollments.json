@@ -1,0 +1,11 @@
+{
+  "items": [
+    {
+      "id": 2025001,
+      "start": "2025-08-18T00:00:00.0000000Z",
+      "einde": "2026-07-17T00:00:00.0000000Z",
+      "groep": { "id": 55, "omschrijving": "5VWO-A", "code": "5VWO-A" },
+      "studie": { "id": 8, "omschrijving": "VWO", "code": "VWO" }
+    }
+  ]
+}
