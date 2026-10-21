@@ -11,11 +11,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ButtonGroup
-import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -85,24 +86,23 @@ fun LoginScreen(
                         "Microsoft/Entra-SSO van school werkt het best in een Custom Tab.",
                     style = MaterialTheme.typography.bodySmall,
                 )
-                ButtonGroup(
-                    overflowIndicator = { ButtonGroupDefaults.OverflowIndicator(it) },
+                Button(
+                    onClick = {
+                        val url = onStartLogin()
+                        CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(url))
+                    },
                     modifier = Modifier.fillMaxWidth(),
-                ) {
-                    clickableItem(
-                        onClick = {
-                            val url = onStartLogin()
-                            CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(url))
-                        },
-                        label = "Inloggen",
-                    )
-                    clickableItem(onClick = onWebViewLogin, label = "In de app")
-                    clickableItem(onClick = onDemo, label = "Voorbeeld")
+                ) { Text("Inloggen") }
+                FilledTonalButton(onClick = onWebViewLogin, modifier = Modifier.fillMaxWidth()) {
+                    Text("In de app")
+                }
+                OutlinedButton(onClick = onDemo, modifier = Modifier.fillMaxWidth()) {
+                    Text("Voorbeeld")
                 }
             }
         }
         Text(
-            "We slaan geen wachtwoord op. Tokens gaan naar EncryptedSharedPreferences. " +
+            "We slaan geen wachtwoord op. Tokens staan versleuteld in Android Keystore. " +
                 "Alleen jouw eigen Magister-data wordt opgevraagd.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

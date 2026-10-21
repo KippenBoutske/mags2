@@ -15,15 +15,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.IosShare
 import androidx.compose.material.icons.outlined.Send
-import androidx.compose.material3.ButtonGroup
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -46,6 +44,8 @@ import nl.cita.magister.model.GradeColumnType
 import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.SubjectAverage
 import nl.cita.magister.ui.formatGrade
+import nl.cita.magister.ui.theme.CitaAction
+import nl.cita.magister.ui.theme.CitaActionRow
 
 private enum class GradeFilter { All, Weak, Pta }
 
@@ -93,14 +93,14 @@ fun GradesScreen(
             )
         }
         item {
-            ButtonGroup(
-                overflowIndicator = { ButtonGroupDefaults.OverflowIndicator(it) },
+            CitaActionRow(
+                actions = listOf(
+                    CitaAction("Alle vakken") { filter = GradeFilter.All },
+                    CitaAction("Aandacht") { filter = GradeFilter.Weak },
+                    CitaAction("PTA") { filter = GradeFilter.Pta },
+                ),
                 modifier = Modifier.fillMaxWidth(),
-            ) {
-                clickableItem(onClick = { filter = GradeFilter.All }, label = "Alle vakken")
-                clickableItem(onClick = { filter = GradeFilter.Weak }, label = "Aandacht")
-                clickableItem(onClick = { filter = GradeFilter.Pta }, label = "PTA")
-            }
+            )
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -173,7 +173,7 @@ private fun SubjectCard(
                 Text(formatGrade(avg), style = MaterialTheme.typography.displaySmall)
             }
             if (avg != null) {
-                LinearWavyProgressIndicator(
+                LinearProgressIndicator(
                     progress = { (avg / 10f).toFloat().coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxWidth(),
                 )

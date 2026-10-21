@@ -51,15 +51,18 @@ private val LightFallback = lightColorScheme(
 fun CitaTheme(safeMode: Boolean = false, content: @Composable () -> Unit) {
     val dark = isSystemInDarkTheme()
     val context = LocalContext.current
+    // Pixel 10 / Android 16+ (API 36+): skip Expressive beta (graphics-path + new motion)
+    // until we have a device log. Crash-safe-mode does the same.
+    val stableUi = safeMode || Build.VERSION.SDK_INT >= 36
     val scheme = when {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && dark -> dynamicDarkColorScheme(context)
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !safeMode -> dynamicLightColorScheme(context)
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !stableUi -> dynamicLightColorScheme(context)
         dark -> DarkScheme
-        safeMode -> LightFallback
+        stableUi -> LightFallback
         else -> runCatching { expressiveLightColorScheme() }.getOrDefault(LightFallback)
     }
-    CompositionLocalProvider(LocalSafeMode provides safeMode) {
-        if (safeMode) {
+    CompositionLocalProvider(LocalSafeMode provides stableUi) {
+        if (stableUi) {
             MaterialTheme(colorScheme = scheme, content = content)
         } else {
             val shapes = Shapes(

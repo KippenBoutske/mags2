@@ -11,9 +11,9 @@ android {
     defaultConfig {
         applicationId = "nl.cita.magister"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 2
-        versionName = "0.1.1"
+        targetSdk = 37
+        versionCode = 3
+        versionName = "0.1.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
@@ -48,7 +48,8 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
         jniLibs {
-            useLegacyPackaging = true
+            // Uncompressed + 16 KB zip-align: Pixel 10 / Android 17 mmapt .so uit de APK.
+            useLegacyPackaging = false
         }
     }
 }
@@ -71,7 +72,6 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.browser)
-    implementation(libs.androidx.security.crypto)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.kotlinx.serialization.json)

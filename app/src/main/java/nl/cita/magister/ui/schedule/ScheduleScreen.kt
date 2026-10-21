@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.ButtonGroup
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +24,8 @@ import nl.cita.magister.model.Appointment
 import nl.cita.magister.ui.formatDay
 import nl.cita.magister.ui.formatTime
 import nl.cita.magister.ui.localDateOf
+import nl.cita.magister.ui.theme.CitaAction
+import nl.cita.magister.ui.theme.CitaActionRow
 import java.time.LocalDate
 
 @Composable
@@ -57,18 +57,14 @@ fun ScheduleScreen(
         }
         if (days.isNotEmpty()) {
             item {
-                ButtonGroup(
-                    overflowIndicator = { ButtonGroupDefaults.OverflowIndicator(it) },
+                CitaActionRow(
+                    actions = days.take(7).map { day ->
+                        val label = day.dayOfWeek.name.take(2).lowercase().replaceFirstChar { it.titlecase() } +
+                            " ${day.dayOfMonth}"
+                        CitaAction(label) { selected = day }
+                    },
                     modifier = Modifier.fillMaxWidth(),
-                ) {
-                    days.take(7).forEach { day ->
-                        clickableItem(
-                            onClick = { selected = day },
-                            label = day.dayOfWeek.name.take(2).lowercase().replaceFirstChar { it.titlecase() } +
-                                " ${day.dayOfMonth}",
-                        )
-                    }
-                }
+                )
             }
         }
         if (ofDay.isEmpty()) {

@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonGroup
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.model.StudentProfile
+import nl.cita.magister.ui.theme.CitaAction
+import nl.cita.magister.ui.theme.CitaActionRow
 
 @Composable
 fun SettingsScreen(
@@ -91,13 +91,13 @@ fun SettingsScreen(
                 Button(onClick = { onSaveWebhook(url, key) }, modifier = Modifier.fillMaxWidth()) {
                     Text("Webhook opslaan")
                 }
-                ButtonGroup(
-                    overflowIndicator = { ButtonGroupDefaults.OverflowIndicator(it) },
+                CitaActionRow(
+                    actions = listOf(
+                        CitaAction("Cijfers exporteren", onExport),
+                        CitaAction("Kopieer / deel JSON", onShareJson),
+                    ),
                     modifier = Modifier.fillMaxWidth(),
-                ) {
-                    clickableItem(onClick = onExport, label = "Cijfers exporteren")
-                    clickableItem(onClick = onShareJson, label = "Kopieer / deel JSON")
-                }
+                )
             }
         }
         OutlinedButton(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {

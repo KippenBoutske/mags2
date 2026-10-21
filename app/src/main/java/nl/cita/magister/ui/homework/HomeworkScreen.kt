@@ -3,6 +3,7 @@ package nl.cita.magister.ui.homework
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,6 +36,7 @@ import androidx.compose.ui.zIndex
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.InfoType
 import nl.cita.magister.ui.formatWhen
+import nl.cita.magister.ui.theme.LocalSafeMode
 
 private enum class HwFilter { Open, Done, All }
 
@@ -97,32 +99,46 @@ fun HomeworkScreen(
                 }
             }
         }
-        HorizontalFloatingToolbar(
-            expanded = true,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = contentPadding.calculateBottomPadding() + 12.dp)
-                .offset(y = -FloatingToolbarDefaults.ScreenOffset)
-                .zIndex(1f),
-            leadingContent = {
-                IconButton(onClick = { filter = HwFilter.Open }) {
-                    Icon(Icons.Outlined.RadioButtonUnchecked, contentDescription = "Open")
-                }
-            },
-            trailingContent = {
-                IconButton(onClick = { filter = HwFilter.Done }) {
-                    Icon(Icons.Outlined.CheckCircle, contentDescription = "Klaar")
-                }
-            },
-        ) {
-            TextButton(onClick = { filter = HwFilter.All }) { Text("Alles") }
-            Text(
-                when (filter) {
-                    HwFilter.Open -> "Open"
-                    HwFilter.Done -> "Klaar"
-                    HwFilter.All -> "Alles"
+        if (LocalSafeMode.current) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = contentPadding.calculateBottomPadding() + 12.dp)
+                    .zIndex(1f),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                TextButton(onClick = { filter = HwFilter.Open }) { Text("Open") }
+                TextButton(onClick = { filter = HwFilter.All }) { Text("Alles") }
+                TextButton(onClick = { filter = HwFilter.Done }) { Text("Klaar") }
+            }
+        } else {
+            HorizontalFloatingToolbar(
+                expanded = true,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = contentPadding.calculateBottomPadding() + 12.dp)
+                    .offset(y = -FloatingToolbarDefaults.ScreenOffset)
+                    .zIndex(1f),
+                leadingContent = {
+                    IconButton(onClick = { filter = HwFilter.Open }) {
+                        Icon(Icons.Outlined.RadioButtonUnchecked, contentDescription = "Open")
+                    }
                 },
-            )
+                trailingContent = {
+                    IconButton(onClick = { filter = HwFilter.Done }) {
+                        Icon(Icons.Outlined.CheckCircle, contentDescription = "Klaar")
+                    }
+                },
+            ) {
+                TextButton(onClick = { filter = HwFilter.All }) { Text("Alles") }
+                Text(
+                    when (filter) {
+                        HwFilter.Open -> "Open"
+                        HwFilter.Done -> "Klaar"
+                        HwFilter.All -> "Alles"
+                    },
+                )
+            }
         }
     }
 }

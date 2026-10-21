@@ -30,7 +30,7 @@ De app start met Citadel College / `citadel.magister.net`. Onder inloggen kun je
 
 1. Zet *Onbekende bronnen* / *Installeren uit deze bron* aan.
 2. Installeer `artifacts/cita-debug.apk` (of `app/build/outputs/apk/debug/app-debug.apk` na een lokale build).
-3. ApplicationId van de debug-build: `nl.cita.magister.debug`. Versie **0.1.1**.
+3. ApplicationId van de debug-build: `nl.cita.magister.debug`. Versie **0.1.2** (`targetSdk` 37, Pixel 10 / Android 17).
 4. Als de app crasht: je krijgt een scherm **Cita is gestopt** met de stacktrace. Tik *Kopieer stacktrace*.
 
 Zelf bouwen:
@@ -40,7 +40,7 @@ export ANDROID_HOME=/pad/naar/android-sdk
 ./gradlew :core:test :app:assembleDebug
 ```
 
-Vereist JDK 17+, Android SDK platform 36 en build-tools 35.
+Vereist JDK 17+, Android SDK platform 37.
 
 ## Inloggen
 
@@ -59,7 +59,7 @@ Stappen:
 2. **Inloggen** opent een Custom Tab (beste voor Microsoft/Entra-SSO).
 3. **In de app** gebruikt een WebView als fallback.
 4. Magister stuurt je terug naar `m6loapp://…`. Cita wisselt de code om voor tokens.
-5. Tokens staan in **EncryptedSharedPreferences** (MasterKey). Bij een Keystore-fout wist Cita de kapotte prefs en probeert opnieuw; anders een onversleutelde fallback. Geen wachtwoord wordt opgeslagen.
+5. Tokens staan AES-GCM-versleuteld via **Android Keystore** (geen deprecated EncryptedSharedPreferences/MasterKey/Tink). Bij een Keystore-fout wist Cita de kapotte prefs en probeert opnieuw; anders een onversleutelde fallback. Geen wachtwoord wordt opgeslagen.
 6. **Voorbeeld** laadt duidelijk gemarkeerde 5 VWO-fixtures (geen netwerk, geen credentials).
 
 Als de officiële Magister-app ook geïnstalleerd is, kan Android vragen welke app de `m6loapp://`-link opent. Kies Cita.
@@ -131,7 +131,7 @@ REST-paden (onofficieel, kunnen wijzigen) staan alleen in `MagisterEndpoints.kt`
 - Tenant `citadel.magister.net` leeft; `citadelcollege.magister.net` niet
 - JSON-parsers, gewogen gemiddelde, calculator en export-payload tegen fixtures (unit tests)
 - Debug-APK-build in deze omgeving (als `assembleDebug` slaagt)
-- Startpad: crash-guard, MasterKey-herstel, geen DataStore-native bij boot, geen Expressive `LoadingIndicator` op het eerste frame
+- Startpad: crash-guard, Android Keystore-AES (geen Tink), 16 KB native packaging, geen Expressive-beta op API 36+ (Pixel 10 / Android 17)
 
 **Ongetest tegen de live Magister-API** (geen leerling-credentials in deze omgeving)
 
