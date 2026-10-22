@@ -1,17 +1,13 @@
 package nl.cita.magister.ui.nav
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -22,6 +18,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -109,7 +106,7 @@ fun PhotosDock(
             onSelect = onSelect,
         )
         SearchFab(
-            size = MagsChrome.PillHeight,
+            size = MagsChrome.FabSize,
             container = pillColor,
             content = onPill,
             onClick = onSearch,
@@ -238,32 +235,29 @@ private fun DockPill(
                                 .testTag("dock-indicator"),
                         )
                     }
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    Column(
+                        modifier = Modifier
+                            .widthIn(min = 52.dp, max = 64.dp)
+                            .padding(horizontal = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(1.dp),
                     ) {
                         Icon(
                             tab.icon,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
-                            tint = if (isSelected) onIndicator else onPill.copy(alpha = 0.88f),
+                            tint = if (isSelected) onIndicator else onPill,
                         )
-                        AnimatedVisibility(
-                            visible = isSelected,
-                            enter = fadeIn() + expandHorizontally(expandFrom = Alignment.Start),
-                            exit = fadeOut() + shrinkHorizontally(shrinkTowards = Alignment.Start),
-                        ) {
-                            Text(
-                                tab.label,
-                                color = onIndicator,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Clip,
-                                softWrap = false,
-                            )
-                        }
+                        Text(
+                            tab.label,
+                            color = if (isSelected) onIndicator else onPill,
+                            fontSize = 9.sp,
+                            lineHeight = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Clip,
+                            softWrap = false,
+                        )
                     }
                 }
             }

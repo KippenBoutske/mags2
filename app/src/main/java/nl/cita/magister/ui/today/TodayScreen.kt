@@ -34,6 +34,7 @@ import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.MessagePreview
 import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.SubjectAverage
+import nl.cita.magister.subject.displaySubject
 import nl.cita.magister.ui.components.CircleCheck
 import nl.cita.magister.ui.components.CookieFlower
 import nl.cita.magister.ui.components.PageTitle
@@ -42,10 +43,12 @@ import nl.cita.magister.ui.components.TodaySkeleton
 import nl.cita.magister.ui.grades.LatestGradesStrip
 import nl.cita.magister.ui.localDateOf
 import nl.cita.magister.ui.motion.PressScaleCard
+import nl.cita.magister.ui.nextLessonHint
 import nl.cita.magister.ui.AppClock
 import nl.cita.magister.ui.nav.MagsChrome
 import nl.cita.magister.ui.nav.MagsPage
 import nl.cita.magister.ui.parseInstant
+import nl.cita.magister.ui.upcomingTaskHint
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -91,7 +94,7 @@ fun TodayScreen(
             start = MagsChrome.PageGutter,
             end = MagsChrome.PageGutter,
             top = contentPadding.calculateTopPadding() + 4.dp,
-            bottom = contentPadding.calculateBottomPadding() + 20.dp,
+            bottom = contentPadding.calculateBottomPadding() + MagsChrome.ListBottomGap,
         ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -136,12 +139,21 @@ fun TodayScreen(
                         )
                         if (hero == null) {
                             Text(
-                                if (ofDay.isEmpty()) "Geen les." else "Klaar.",
+                                if (ofDay.isEmpty()) "Vrij." else "Klaar.",
                                 style = MaterialTheme.typography.headlineSmall,
                             )
+                            if (ofDay.isEmpty()) {
+                                nextLessonHint(appointments, today, now)?.let { line ->
+                                    Text(
+                                        line,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
                         } else {
                             Text(
-                                hero.title,
+                                hero.displaySubject(),
                                 style = MaterialTheme.typography.headlineSmall,
                                 maxLines = 2,
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
@@ -213,7 +225,15 @@ fun TodayScreen(
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (openHw.isEmpty()) {
-                        Text("Niets open.")
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("Alles af", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                upcomingTaskHint(homework, today, testsOnly = true)
+                                    ?: "Geen open taken.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     } else {
                         openHw.take(3).forEach { hw ->
                             HomeworkRow(
@@ -267,7 +287,7 @@ private fun HomeworkRow(
         CircleCheck(checked = item.isDone, onCheckedChange = onToggle)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                item.subject,
+                item.displaySubject(),
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 2,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,

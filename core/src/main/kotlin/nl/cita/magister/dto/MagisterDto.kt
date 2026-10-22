@@ -55,10 +55,15 @@ data class EnrollmentDto(
 data class NamedDto(
     @SerialName("id") val id: Int? = null,
     @SerialName("omschrijving") val description: String? = null,
+    @SerialName("Omschrijving") val descriptionAlt: String? = null,
     @SerialName("code") val code: String? = null,
+    @SerialName("Code") val codeAlt: String? = null,
     @SerialName("Naam") val name: String? = null,
     @SerialName("naam") val nameAlt: String? = null,
-)
+) {
+    val resolvedName: String? get() = description ?: descriptionAlt ?: name ?: nameAlt
+    val resolvedCode: String? get() = code ?: codeAlt
+}
 
 @Serializable
 data class GradeDto(

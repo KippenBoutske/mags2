@@ -133,10 +133,10 @@ class ConceptScreenshotTest {
     private fun outDirs(): List<File> = listOf(
         File("app/build/outputs/self-test/screenshots"),
         File("build/outputs/self-test/screenshots"),
-        File("artifacts/screens-0.1.18"),
-        File("/workspace/artifacts/screens-0.1.18"),
-        File("/cursor/stores/self/artifacts/screens-0.1.18"),
-        File("/opt/cursor/artifacts/0.1.18"),
+        File("artifacts/screens-0.1.19"),
+        File("/workspace/artifacts/screens-0.1.19"),
+        File("/cursor/stores/self/artifacts/screens-0.1.19"),
+        File("/opt/cursor/artifacts/0.1.19"),
     )
 
     @Composable

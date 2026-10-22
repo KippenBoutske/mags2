@@ -4,6 +4,7 @@ import android.content.Context
 import kotlinx.serialization.Serializable
 import nl.cita.magister.model.Appointment
 import nl.cita.magister.parse.MagisterJson
+import nl.cita.magister.subject.displaySubject
 
 @Serializable
 data class NextLessonSnapshot(
@@ -23,7 +24,7 @@ object NextLessonStore {
             return
         }
         val snap = NextLessonSnapshot(
-            title = lesson.title,
+            title = lesson.displaySubject(),
             startIso = lesson.startIso,
             room = lesson.classroom ?: lesson.location,
         )

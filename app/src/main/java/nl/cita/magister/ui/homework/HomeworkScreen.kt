@@ -46,21 +46,29 @@ import kotlinx.coroutines.launch
 import nl.cita.magister.haptics.HapticEvent
 import nl.cita.magister.haptics.LocalMagsHaptics
 import nl.cita.magister.model.ApiFailure
+import nl.cita.magister.model.Appointment
+import nl.cita.magister.model.Grade
 import nl.cita.magister.model.HomeworkItem
+import nl.cita.magister.subject.displaySubject
 import nl.cita.magister.ui.AppClock
 import nl.cita.magister.ui.components.CircleCheck
+import nl.cita.magister.ui.components.EmptyState
 import nl.cita.magister.ui.components.ListSkeleton
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatWhen
+import nl.cita.magister.ui.latestGradeHint
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.staggerEnter
 import nl.cita.magister.ui.nav.MagsChrome
+import nl.cita.magister.ui.nav.MagsPage
+import nl.cita.magister.ui.nextLessonHint
 import nl.cita.magister.ui.theme.CitaAction
 import nl.cita.magister.ui.theme.CitaActionRow
 import nl.cita.magister.ui.theme.ToetsAmber
 import nl.cita.magister.ui.theme.ToetsOnAmber
 import nl.cita.magister.ui.today.homeworkBody
+import nl.cita.magister.ui.upcomingTaskHint
 import java.time.LocalDate
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -73,6 +81,9 @@ fun HomeworkScreen(
     loading: Boolean = false,
     clockDate: LocalDate = LocalDate.now(AppClock.zone),
     snackbarHost: SnackbarHostState? = null,
+    appointments: List<Appointment> = emptyList(),
+    latestGrade: Grade? = null,
+    onOpenPage: (MagsPage) -> Unit = {},
 ) {
     var filter by remember { mutableStateOf(HwFilter.Open) }
     var overdueOpen by remember { mutableStateOf(false) }
@@ -104,7 +115,7 @@ fun HomeworkScreen(
             start = MagsChrome.PageGutter,
             end = MagsChrome.PageGutter,
             top = contentPadding.calculateTopPadding() + 8.dp,
-            bottom = contentPadding.calculateBottomPadding() + 8.dp,
+            bottom = contentPadding.calculateBottomPadding() + MagsChrome.ListBottomGap,
         ),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -127,7 +138,19 @@ fun HomeworkScreen(
         }
         if (buckets.isEmpty() && !loading) {
             item {
-                Text(if (agendaError != null) "Geen huiswerk." else "Niets open.")
+                val tests = upcomingTaskHint(items, clockDate, testsOnly = true)
+                val nextLesson = nextLessonHint(appointments, clockDate)
+                val lastGrade = latestGradeHint(latestGrade)
+                EmptyState(
+                    title = if (filter == HwFilter.Done) "Niets afgevinkt" else "Alles af",
+                    body = if (agendaError != null) "Geen huiswerk uit Magister." else "Niets open.",
+                    hint = listOfNotNull(tests, nextLesson, lastGrade).joinToString("\n").ifBlank { null },
+                    actions = listOf(
+                        CitaAction("Rooster morgen") { onOpenPage(MagsPage.Rooster) },
+                        CitaAction("Cijfers") { onOpenPage(MagsPage.Cijfers) },
+                        CitaAction("Studiewijzer") { onOpenPage(MagsPage.Meer) },
+                    ),
+                )
             }
         }
         buckets.forEach { bucket ->
@@ -174,6 +197,36 @@ fun HomeworkScreen(
                         )
                     }
                 }
+            }
+        }
+        if (buckets.isNotEmpty() && openCount <= 2 && filter == HwFilter.Open) {
+            item {
+                val extra = listOfNotNull(
+                    upcomingTaskHint(items, clockDate, testsOnly = true),
+                    nextLessonHint(appointments, clockDate),
+                    latestGradeHint(latestGrade),
+                )
+                if (extra.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Straks", style = MaterialTheme.typography.titleMedium)
+                        extra.forEach { line ->
+                            Text(
+                                line,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+            item {
+                CitaActionRow(
+                    actions = listOf(
+                        CitaAction("Rooster morgen") { onOpenPage(MagsPage.Rooster) },
+                        CitaAction("Cijfers") { onOpenPage(MagsPage.Cijfers) },
+                        CitaAction("Studiewijzer") { onOpenPage(MagsPage.Meer) },
+                    ),
+                )
             }
         }
     }
@@ -279,7 +332,7 @@ private fun HomeworkCard(
                     CircleCheck(checked = item.isDone, onCheckedChange = { onToggle(item, it) })
                     Column(Modifier.weight(1f).padding(start = 8.dp)) {
                         Text(
-                            item.subject,
+                            item.displaySubject(),
                             style = MaterialTheme.typography.titleMedium,
                             textDecoration = if (item.isDone) TextDecoration.LineThrough else null,
                             color = if (item.isDone) MaterialTheme.colorScheme.onSurfaceVariant

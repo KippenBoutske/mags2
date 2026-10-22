@@ -46,7 +46,7 @@ fun MessagesScreen(
             start = MagsChrome.PageGutter,
             end = MagsChrome.PageGutter,
             top = contentPadding.calculateTopPadding() + 4.dp,
-            bottom = contentPadding.calculateBottomPadding() + 8.dp,
+            bottom = contentPadding.calculateBottomPadding() + MagsChrome.ListBottomGap,
         ),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {

@@ -16,6 +16,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.union
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.IosShare
 import androidx.compose.material3.Icon
@@ -349,7 +351,9 @@ fun MagsSignedInScaffold(
     }
 
     val topInset = WindowInsets.statusBars.getTop(density)
-    val bottomInset = WindowInsets.navigationBars.getBottom(density)
+    val bottomInset = WindowInsets.navigationBars
+        .union(WindowInsets.displayCutout)
+        .getBottom(density)
     val contentPadding = PaddingValues(
         top = with(density) { topInset.toDp() } + 8.dp,
         bottom = with(density) { bottomInset.toDp() } + MagsChrome.DockClearance,
@@ -464,6 +468,11 @@ fun MagsSignedInScaffold(
                                     clockTime = clockTime,
                                     sharedTransitionScope = shared,
                                     animatedVisibilityScope = vis,
+                                    onOpenPage = { next ->
+                                        if (next.isDockTab) lastDock = next
+                                        page = next
+                                        expansion = 1f
+                                    },
                                 )
                                 MagsPage.Cijfers -> GradesScreen(
                                     profile = profile,
@@ -485,6 +494,13 @@ fun MagsSignedInScaffold(
                                     loading = refreshing,
                                     clockDate = clockDate,
                                     snackbarHost = snackbarHost,
+                                    appointments = appointments,
+                                    latestGrade = latestGrades.firstOrNull(),
+                                    onOpenPage = { next ->
+                                        if (next.isDockTab) lastDock = next
+                                        page = next
+                                        expansion = 1f
+                                    },
                                 )
                                 MagsPage.Berichten -> MessagesScreen(
                                     messages,
@@ -591,7 +607,7 @@ fun MagsSignedInScaffold(
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(bottom = 12.dp)
+                    .padding(bottom = 16.dp)
                     .zIndex(2f)
                     .graphicsLayer {
                         translationY = (1f - visualExpansion) * 18f

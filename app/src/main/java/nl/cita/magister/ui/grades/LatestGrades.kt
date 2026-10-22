@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,16 +19,15 @@ import nl.cita.magister.grades.GradeCalculator
 import nl.cita.magister.haptics.hapticForGrade
 import nl.cita.magister.haptics.hapticOnDown
 import nl.cita.magister.model.Grade
+import nl.cita.magister.subject.displaySubject
 import nl.cita.magister.ui.formatDayShort
 import nl.cita.magister.ui.formatGrade
 import nl.cita.magister.ui.localDateOf
-import nl.cita.magister.ui.motion.PressScaleCard
 
 internal fun latestGradeCaption(grade: Grade): String =
     listOfNotNull(
         grade.columnHeading?.takeIf { it.isNotBlank() } ?: grade.columnDescription?.takeIf { it.isNotBlank() },
         GradeCalculator.formatWeight(grade.weight),
-        localDateOf(grade.enteredAt)?.let { formatDayShort(it) },
     ).joinToString(" · ")
 
 @Composable
@@ -46,45 +45,57 @@ fun LatestGradesStrip(
         )
         return
     }
-    PressScaleCard(
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .testTag("laatste-cijfers"),
-        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
+        verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            grades.forEach { grade ->
-                val fail = (grade.numericValue ?: GradeCalculator.parseDutchNumber(grade.value))
-                    ?.let { it < 5.5 } == true
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .testTag("laatste-cijfer")
-                        .hapticOnDown(hapticForGrade(grade.isSufficient))
-                        .clickable { onOpen(grade) },
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
+        grades.forEachIndexed { index, grade ->
+            val fail = (grade.numericValue ?: GradeCalculator.parseDutchNumber(grade.value))
+                ?.let { it < 5.5 } == true
+            val day = localDateOf(grade.enteredAt)?.let { formatDayShort(it) }
+            if (index > 0) {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.22f),
+                )
+            }
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .testTag("laatste-cijfer")
+                    .hapticOnDown(hapticForGrade(grade.isSufficient))
+                    .clickable { onOpen(grade) }
+                    .padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    formatGrade(grade.numericValue, grade.value),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = if (fail) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                )
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        formatGrade(grade.numericValue, grade.value),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = if (fail) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                        grade.displaySubject(),
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(
-                            grade.subjectName,
-                            style = MaterialTheme.typography.titleMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            latestGradeCaption(grade),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
+                    Text(
+                        latestGradeCaption(grade),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (!day.isNullOrBlank()) {
+                    Text(
+                        day,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }

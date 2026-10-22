@@ -3,6 +3,7 @@ package nl.cita.magister.ui.today
 import nl.cita.magister.model.Appointment
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.InfoType
+import nl.cita.magister.subject.displaySubject
 import nl.cita.magister.ui.components.minutesUntil
 import nl.cita.magister.ui.components.overLabel
 import nl.cita.magister.ui.formatTime
@@ -53,8 +54,7 @@ fun dueChipLabel(dueIso: String, today: LocalDate): String {
 
 fun lessonChipLabel(lesson: Appointment): String {
     val time = formatTime(lesson.startIso)
-    val subject = lesson.subjects.firstOrNull()?.trim().orEmpty()
-        .ifBlank { lesson.title.trim() }
+    val subject = lesson.displaySubject()
     return listOf(time, subject).filter { it.isNotBlank() }.joinToString(" ")
 }
 

@@ -3,6 +3,7 @@ package nl.cita.magister.grades
 import nl.cita.magister.model.Grade
 import nl.cita.magister.model.GradeColumnType
 import nl.cita.magister.model.SubjectAverage
+import nl.cita.magister.subject.SubjectNames
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.round
@@ -41,7 +42,7 @@ object GradeCalculator {
         }
     }
 
-    /** Losse behaalde cijfers, nieuwste eerst — geen GEM/SE/eind. */
+    /** Losse behaalde cijfers, nieuwste eerst — geen GEM/SE/eind, geen dubbele CKV. */
     fun latestEarnedGrades(grades: List<Grade>, limit: Int = 3): List<Grade> {
         return grades
             .filter { it.columnType == GradeColumnType.Grade }
@@ -51,16 +52,29 @@ object GradeCalculator {
                 compareByDescending<Grade> { it.enteredAt.orEmpty() }
                     .thenByDescending { it.id },
             )
-            .distinctBy { it.columnId ?: it.id }
+            .distinctBy { it.columnId?.takeIf { id -> id != 0 } ?: it.id }
+            .distinctBy { contentKey(it) }
             .take(limit.coerceAtLeast(0))
+    }
+
+    private fun contentKey(grade: Grade): String {
+        val subject = grade.subjectId.takeIf { it > 0 }?.toString()
+            ?: grade.subjectName.trim().lowercase(nl)
+        val column = grade.columnHeading?.trim()?.lowercase(nl).orEmpty()
+        val day = grade.enteredAt?.take(10).orEmpty()
+        val value = grade.value?.trim().orEmpty()
+        return "$subject|$column|$day|$value"
     }
 
     /** GEM / SE / eind — hoort niet in 'laatste cijfers'. */
     fun isHeadlineColumn(grade: Grade): Boolean {
+        if (grade.columnType == GradeColumnType.Average || grade.columnType == GradeColumnType.End) {
+            return true
+        }
         val heading = grade.columnHeading?.trim()?.lowercase().orEmpty()
         val desc = grade.columnDescription?.trim()?.lowercase().orEmpty()
-        if (heading in setOf("gem", "vg", "se", "eind", "eindc", "rap", "rapp")) return true
-        if (heading.contains("se cijfer")) return true
+        if (heading in setOf("gem", "vg", "se", "eind", "eindc", "rap", "rapp", "ec")) return true
+        if (heading.contains("se cijfer") || heading.contains("se-cijfer")) return true
         val blob = "$heading $desc"
         return blob.contains("gemiddelde") ||
             blob.contains("voortschrijdend") ||
@@ -135,9 +149,13 @@ object GradeCalculator {
             val counted = countedGrades(items)
             val computed = weightedAverage(items)
             val average = magister?.first ?: computed
+            val name = SubjectNames.display(
+                title = first.subjectName,
+                code = first.subjectCode,
+            )
             SubjectAverage(
                 subjectId = subjectId,
-                subjectName = first.subjectName,
+                subjectName = name,
                 subjectCode = first.subjectCode,
                 average = average,
                 averageLabel = magister?.second ?: formatAverage(average),

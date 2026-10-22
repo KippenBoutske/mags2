@@ -52,8 +52,8 @@ object MagisterParsers {
             personId = person.resolvedId ?: error("Persoon zonder id"),
             firstName = person.resolvedFirst,
             lastName = last,
-            className = enrollment?.group?.description ?: enrollment?.group?.code,
-            study = enrollment?.study?.description ?: enrollment?.study?.code,
+            className = enrollment?.group?.resolvedName ?: enrollment?.group?.resolvedCode,
+            study = enrollment?.study?.resolvedName ?: enrollment?.study?.resolvedCode,
             enrollmentId = enrollment?.resolvedId,
             schoolName = schoolName,
             tenantHost = tenantHost,
@@ -94,7 +94,10 @@ object MagisterParsers {
                 counts = type == GradeColumnType.Grade && numeric != null,
                 weight = dto.resolvedWeight,
                 subjectId = subject?.resolvedId ?: 0,
-                subjectName = subject?.resolvedName ?: "Onbekend",
+                subjectName = nl.cita.magister.subject.SubjectNames.display(
+                    title = subject?.resolvedName,
+                    code = subject?.resolvedCode,
+                ),
                 subjectCode = subject?.resolvedCode ?: "?",
                 columnHeading = description,
                 columnDescription = description,
@@ -123,10 +126,14 @@ object MagisterParsers {
                 periodTo = dto.periodTo,
                 title = dto.title ?: "Les",
                 location = dto.location,
-                classroom = dto.rooms?.firstOrNull()?.let { it.name ?: it.nameAlt ?: it.code },
-                teachers = dto.teachers?.mapNotNull { it.name ?: it.code } ?: emptyList(),
-                subjects = dto.subjects?.mapNotNull { it.name ?: it.nameAlt ?: it.description ?: it.code }
-                    ?: emptyList(),
+                classroom = dto.rooms?.firstOrNull()?.let { it.resolvedName ?: it.resolvedCode },
+                teachers = dto.teachers?.mapNotNull {
+                    it.code?.trim()?.takeIf { code -> code.isNotEmpty() } ?: it.name?.trim()
+                } ?: emptyList(),
+                subjects = dto.subjects?.mapNotNull {
+                    it.resolvedName?.trim()?.takeIf { name -> name.isNotEmpty() }
+                        ?: it.resolvedCode?.trim()
+                } ?: emptyList(),
                 content = dto.content?.takeIf { it.isNotBlank() },
                 infoType = InfoType.from(dto.infoType),
                 isCancelled = dto.status == 5,
@@ -149,7 +156,10 @@ object MagisterParsers {
                 id = appointment.id,
                 appointmentId = appointment.id,
                 dueIso = appointment.startIso,
-                subject = appointment.subjects.firstOrNull() ?: appointment.title,
+                subject = nl.cita.magister.subject.SubjectNames.display(
+                    title = appointment.title,
+                    subjects = appointment.subjects,
+                ),
                 title = appointment.title,
                 description = appointment.content,
                 location = appointment.location ?: appointment.classroom,
@@ -168,7 +178,10 @@ object MagisterParsers {
                 id = id,
                 appointmentId = null,
                 dueIso = dto.due.orEmpty(),
-                subject = dto.subject?.name ?: dto.subject?.nameAlt ?: dto.subject?.code ?: "Opdracht",
+                subject = nl.cita.magister.subject.SubjectNames.display(
+                    title = dto.subject?.name ?: dto.subject?.nameAlt,
+                    code = dto.subject?.code,
+                ).takeIf { it != "Les" } ?: "Opdracht",
                 title = dto.title ?: "Opdracht",
                 description = dto.description,
                 location = null,
@@ -360,7 +373,10 @@ object MagisterParsers {
             counts = counts,
             weight = weight,
             subjectId = subject?.id ?: 0,
-            subjectName = subject?.name ?: subject?.nameAlt ?: "Onbekend",
+            subjectName = nl.cita.magister.subject.SubjectNames.display(
+                title = subject?.name ?: subject?.nameAlt,
+                code = subject?.code,
+            ),
             subjectCode = subject?.code ?: "?",
             columnHeading = column?.heading ?: column?.name,
             columnDescription = column?.description,

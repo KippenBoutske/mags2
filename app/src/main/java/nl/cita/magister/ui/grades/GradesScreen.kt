@@ -64,6 +64,8 @@ import nl.cita.magister.model.Grade
 import nl.cita.magister.model.GradeColumnType
 import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.SubjectAverage
+import nl.cita.magister.subject.displaySubject
+import nl.cita.magister.ui.components.EmptyState
 import nl.cita.magister.ui.components.ListSkeleton
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
@@ -125,7 +127,7 @@ fun GradesScreen(
                         start = MagsChrome.PageGutter,
                         end = MagsChrome.PageGutter,
                         top = contentPadding.calculateTopPadding() + 8.dp,
-                        bottom = contentPadding.calculateBottomPadding() + 8.dp,
+                        bottom = contentPadding.calculateBottomPadding() + MagsChrome.ListBottomGap,
                     ),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
@@ -151,7 +153,13 @@ fun GradesScreen(
                             Text("Laatste cijfers", style = MaterialTheme.typography.titleLarge)
                         }
                         item {
-                            LatestGradesStrip(grades = latestGrades.take(3), onOpen = { openGrade = it })
+                            LatestGradesStrip(
+                                grades = GradeCalculator.latestEarnedGrades(latestGrades, 5),
+                                onOpen = { openGrade = it },
+                            )
+                        }
+                        item {
+                            Text("Per vak", style = MaterialTheme.typography.titleLarge)
                         }
                     }
                     if (refreshing && averages.isEmpty()) {
@@ -159,20 +167,11 @@ fun GradesScreen(
                     }
                     if (!refreshing && visible.isEmpty()) {
                         item {
-                            Column(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 24.dp)
-                                    .testTag("cijfers-leeg"),
-                                verticalArrangement = Arrangement.spacedBy(6.dp),
-                            ) {
-                                Text("Nog geen cijfers.", style = MaterialTheme.typography.headlineSmall)
-                                Text(
-                                    "Zodra Magister iets binnen heeft, staat het hier.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
+                            EmptyState(
+                                title = "Nog geen cijfers",
+                                body = "Zodra Magister iets binnen heeft, staat het hier.",
+                                tag = "cijfers-leeg",
+                            )
                         }
                     }
                     itemsIndexed(visible, key = { _, it -> it.subjectId }) { index, item ->
@@ -239,7 +238,7 @@ private fun SubjectCard(
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    subject.subjectName,
+                    subject.displaySubject(),
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -312,7 +311,7 @@ private fun SubjectPage(
             start = MagsChrome.PageGutter,
             end = MagsChrome.PageGutter,
             top = contentPadding.calculateTopPadding() + 4.dp,
-            bottom = contentPadding.calculateBottomPadding() + 8.dp,
+            bottom = contentPadding.calculateBottomPadding() + MagsChrome.ListBottomGap,
         ),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -322,7 +321,7 @@ private fun SubjectPage(
                     Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Terug")
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(subject.subjectName, style = MaterialTheme.typography.displayMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(subject.displaySubject(), style = MaterialTheme.typography.displayMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Text(
                         formatGrade(subject.average, subject.averageLabel),
                         style = MaterialTheme.typography.bodyMedium,
@@ -458,7 +457,7 @@ private fun GradeDetailSheet(
         modifier = Modifier.testTag("cijfer-blad"),
     ) {
         Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(grade.subjectName, style = MaterialTheme.typography.headlineSmall)
+            Text(grade.displaySubject(), style = MaterialTheme.typography.headlineSmall)
             Text(grade.value ?: "–", style = MaterialTheme.typography.displaySmall)
             GradeCalculator.formatWeight(grade.weight)?.let {
                 Text(it, style = MaterialTheme.typography.titleMedium)

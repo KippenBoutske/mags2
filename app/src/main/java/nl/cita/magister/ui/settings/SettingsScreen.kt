@@ -261,7 +261,7 @@ private fun MeerHub(
                 start = MagsChrome.PageGutter,
                 end = MagsChrome.PageGutter,
                 top = contentPadding.calculateTopPadding() + 8.dp,
-                bottom = contentPadding.calculateBottomPadding() + 8.dp,
+                bottom = contentPadding.calculateBottomPadding() + MagsChrome.ListBottomGap,
             )
             .testTag("meer-hub"),
         verticalArrangement = Arrangement.spacedBy(MagsChrome.CardGap),
@@ -391,7 +391,7 @@ private fun MeerListPage(
                 start = MagsChrome.PageGutter,
                 end = MagsChrome.PageGutter,
                 top = contentPadding.calculateTopPadding() + 4.dp,
-                bottom = contentPadding.calculateBottomPadding() + 8.dp,
+                bottom = contentPadding.calculateBottomPadding() + MagsChrome.ListBottomGap,
             )
             .testTag("meer-pagina"),
         verticalArrangement = Arrangement.spacedBy(12.dp),

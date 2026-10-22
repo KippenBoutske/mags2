@@ -31,6 +31,8 @@ import nl.cita.magister.model.Grade
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.MessagePreview
 import nl.cita.magister.model.StudyGuide
+import nl.cita.magister.subject.displaySubject
+import nl.cita.magister.subject.teacherCode
 import nl.cita.magister.ui.nav.MagsPage
 
 data class SearchHit(
@@ -56,17 +58,17 @@ fun searchMags(
         .distinctBy { it.subjectId }
         .take(6)
         .forEach {
-            hits += SearchHit(MagsPage.Cijfers, it.subjectName, listOfNotNull(it.subjectCode, it.value).joinToString(" · "))
+            hits += SearchHit(MagsPage.Cijfers, it.displaySubject(), listOfNotNull(it.value).joinToString(" · "))
         }
-    appointments.filter { matches(q, it.title, it.location, it.classroom, it.teachers.joinToString(), it.content) }
+    appointments.filter { matches(q, it.title, it.displaySubject(), it.location, it.classroom, it.teachers.joinToString(), it.content) }
         .take(6)
         .forEach {
-            hits += SearchHit(MagsPage.Rooster, it.title, listOfNotNull(it.classroom, it.teachers.firstOrNull()).joinToString(" · "))
+            hits += SearchHit(MagsPage.Rooster, it.displaySubject(), listOfNotNull(it.classroom, it.teacherCode()).joinToString(" · "))
         }
-    homework.filter { matches(q, it.subject, it.title, it.description) }
+    homework.filter { matches(q, it.subject, it.title, it.description, it.displaySubject()) }
         .take(6)
         .forEach {
-            hits += SearchHit(MagsPage.Huiswerk, it.title, it.subject)
+            hits += SearchHit(MagsPage.Huiswerk, it.displaySubject(), it.title)
         }
     messages.filter { matches(q, it.subject, it.sender, it.snippet) }
         .take(6)

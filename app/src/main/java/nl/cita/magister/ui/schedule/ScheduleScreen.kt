@@ -57,7 +57,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -71,12 +70,19 @@ import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.Appointment
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.InfoType
+import nl.cita.magister.subject.displaySubject
+import nl.cita.magister.subject.teacherCode
 import nl.cita.magister.ui.components.CookieFlower
+import nl.cita.magister.ui.components.EmptyState
 import nl.cita.magister.ui.components.ListSkeleton
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatTime
 import nl.cita.magister.ui.localDateOf
+import nl.cita.magister.ui.nav.MagsPage
+import nl.cita.magister.ui.nextLessonHint
+import nl.cita.magister.ui.theme.CitaAction
+import nl.cita.magister.ui.upcomingTaskHint
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.magsSharedBounds
 import nl.cita.magister.ui.motion.magsSpring
@@ -113,6 +119,7 @@ fun ScheduleScreen(
     clockTime: LocalTime = LocalTime.now(zone),
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
+    onOpenPage: (MagsPage) -> Unit = {},
 ) {
     val today = clockDate
     val weekendLessons = remember(appointments) { weekendDatesWithLessons(appointments) }
@@ -248,10 +255,14 @@ fun ScheduleScreen(
                 DayTimeline(
                     date = date,
                     lessons = ofDay,
+                    allAppointments = appointments,
+                    homework = homework,
                     contentBottom = contentPadding.calculateBottomPadding(),
                     today = today,
                     now = clockTime,
                     onOpen = { openLesson = it },
+                    onOpenPage = onOpenPage,
+                    onTomorrow = { jumpTo(date.plusDays(1)) },
                     modifier = Modifier.graphicsLayer {
                         scaleX = scale
                         scaleY = scale
@@ -412,47 +423,49 @@ internal fun weekdayOffset(pager: PagerState, days: List<LocalDate>, weekDays: L
 private fun DayTimeline(
     date: LocalDate,
     lessons: List<Appointment>,
+    allAppointments: List<Appointment>,
+    homework: List<HomeworkItem>,
     contentBottom: androidx.compose.ui.unit.Dp,
     today: LocalDate,
     now: LocalTime,
     onOpen: (Appointment) -> Unit,
+    onOpenPage: (MagsPage) -> Unit,
+    onTomorrow: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val weekend = isWeekend(date)
     val slots = remember(lessons) { buildDaySlots(lessons) }
     val isToday = date == today
+    val nextHint = remember(allAppointments, date) { nextLessonHint(allAppointments, date) }
+    val taskHint = remember(homework, date) {
+        upcomingTaskHint(homework, date, testsOnly = true) ?: upcomingTaskHint(homework, date)
+    }
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .testTag("rooster-dag-$date"),
-        userScrollEnabled = slots.isNotEmpty(),
+        userScrollEnabled = true,
         contentPadding = PaddingValues(
             start = MagsChrome.PageGutter,
             end = MagsChrome.PageGutter,
             top = 12.dp,
-            bottom = contentBottom + 8.dp,
+            bottom = contentBottom + MagsChrome.ListBottomGap,
         ),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        if (weekend) {
+        if (weekend || lessons.isEmpty()) {
             item {
-                Text("Weekend", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 24.dp))
-            }
-        } else if (lessons.isEmpty()) {
-            item {
-                Column(
-                    Modifier
-                        .padding(top = 24.dp)
-                        .testTag("rooster-leeg"),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Text("Vrij", style = MaterialTheme.typography.headlineSmall)
-                    Text(
-                        "Geen lessen gepland.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                EmptyState(
+                    title = if (weekend) "Weekend" else "Vrij",
+                    body = if (weekend) "Geen lessen dit weekend." else "Geen lessen.",
+                    hint = listOfNotNull(nextHint, taskHint).joinToString("\n").ifBlank { null },
+                    actions = listOf(
+                        CitaAction("Rooster morgen", onClick = onTomorrow),
+                        CitaAction("Cijfers") { onOpenPage(MagsPage.Cijfers) },
+                        CitaAction("Studiewijzer") { onOpenPage(MagsPage.Meer) },
+                    ),
+                    tag = "rooster-leeg",
+                )
             }
         }
         if (isToday && nowLineBefore(slots, now)) {
@@ -554,7 +567,7 @@ private fun BreakMark() {
         Text(
             "pauze",
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Box(
             Modifier
@@ -574,10 +587,11 @@ private fun LessonCard(
     modifier: Modifier = Modifier,
 ) {
     var cardHeight by remember { mutableIntStateOf(0) }
+    val dimmed = item.isCancelled
     PressScaleCard(
         colors = CardDefaults.cardColors(
             when {
-                item.isCancelled -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f)
+                dimmed -> MaterialTheme.colorScheme.surfaceContainerLow
                 current -> MaterialTheme.colorScheme.primaryContainer
                 else -> MaterialTheme.colorScheme.surfaceContainerHigh
             },
@@ -588,7 +602,7 @@ private fun LessonCard(
         onClick = onClick,
     ) {
         Box(Modifier.onSizeChanged { cardHeight = it.height }) {
-            if (current) {
+            if (current && !dimmed) {
                 CookieFlower(
                     Modifier
                         .align(Alignment.TopEnd)
@@ -610,39 +624,51 @@ private fun LessonCard(
                     Column(
                         Modifier
                             .weight(1f)
-                            .padding(end = if (current) 68.dp else 0.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                            .padding(end = if (current && !dimmed) 68.dp else 0.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Text(
-                            item.title,
-                            style = if (current) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
-                            textDecoration = if (item.isCancelled) TextDecoration.LineThrough else null,
-                            color = if (item.isCancelled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            item.displaySubject(),
+                            style = if (current) MaterialTheme.typography.headlineSmall
+                            else MaterialTheme.typography.titleLarge,
+                            color = if (dimmed) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f)
                             else MaterialTheme.colorScheme.onSurface,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        if (item.isCancelled) {
-                            Text("Uitval", style = MaterialTheme.typography.labelMedium)
+                        if (item.isCancelled || item.isChanged) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                if (item.isCancelled) {
+                                    LessonBadge(
+                                        text = "Uitval",
+                                        container = MaterialTheme.colorScheme.errorContainer,
+                                        content = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                } else if (item.isChanged) {
+                                    LessonBadge(
+                                        text = "Gewijzigd",
+                                        container = MaterialTheme.colorScheme.tertiaryContainer,
+                                        content = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    )
+                                }
+                            }
                         }
-                        Text(
-                            item.teachers.firstOrNull() ?: "–",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        val room = item.classroom ?: item.location ?: "–"
-                        Text(
-                            if (item.isChanged) "$room · gewijzigd" else room,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (item.isChanged) MaterialTheme.colorScheme.tertiary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = if (item.isChanged) FontWeight.SemiBold else FontWeight.Normal,
-                        )
-                        Text(
-                            listOfNotNull(formatTime(item.startIso), formatTime(item.endIso)).joinToString("–"),
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                        if (current) {
+                        val meta = listOfNotNull(
+                            item.teacherCode(),
+                            item.classroom ?: item.location,
+                            listOfNotNull(formatTime(item.startIso), formatTime(item.endIso))
+                                .filter { it.isNotBlank() }
+                                .joinToString("–")
+                                .takeIf { it.isNotBlank() },
+                        ).joinToString("  ·  ")
+                        if (meta.isNotBlank()) {
+                            Text(
+                                meta,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (current && !dimmed) {
                             item.content?.takeIf { it.isNotBlank() }?.let { body ->
                                 Text(
                                     body,
@@ -690,18 +716,26 @@ private fun LessonSheet(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(lesson.title, style = MaterialTheme.typography.headlineSmall)
+            Text(lesson.displaySubject(), style = MaterialTheme.typography.headlineSmall)
             Text(
                 listOfNotNull(formatTime(lesson.startIso), formatTime(lesson.endIso)).joinToString("–"),
                 style = MaterialTheme.typography.titleMedium,
             )
-            lesson.teachers.firstOrNull()?.let { Text(it, style = MaterialTheme.typography.bodyLarge) }
+            lesson.teacherCode()?.let { Text(it, style = MaterialTheme.typography.bodyLarge) }
             (lesson.classroom ?: lesson.location)?.let {
                 Text(it, style = MaterialTheme.typography.bodyLarge)
             }
             when {
-                lesson.isCancelled -> Text("Uitval", color = MaterialTheme.colorScheme.error)
-                lesson.isChanged -> Text("Gewijzigd", color = MaterialTheme.colorScheme.tertiary)
+                lesson.isCancelled -> LessonBadge(
+                    text = "Uitval",
+                    container = MaterialTheme.colorScheme.errorContainer,
+                    content = MaterialTheme.colorScheme.onErrorContainer,
+                )
+                lesson.isChanged -> LessonBadge(
+                    text = "Gewijzigd",
+                    container = MaterialTheme.colorScheme.tertiaryContainer,
+                    content = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
             }
             infoLabel(lesson.infoType)?.let {
                 Text(it, style = MaterialTheme.typography.labelLarge)
@@ -720,6 +754,25 @@ private fun LessonSheet(
             Spacer(Modifier.height(28.dp))
         }
     }
+}
+
+@Composable
+private fun LessonBadge(
+    text: String,
+    container: androidx.compose.ui.graphics.Color,
+    content: androidx.compose.ui.graphics.Color,
+) {
+    Text(
+        text,
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(container)
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .testTag(if (text == "Uitval") "les-uitval" else "les-gewijzigd"),
+        style = MaterialTheme.typography.labelLarge,
+        color = content,
+        fontWeight = FontWeight.SemiBold,
+    )
 }
 
 private fun infoLabel(type: InfoType): String? = when (type) {
