@@ -86,6 +86,7 @@ import nl.cita.magister.ui.settings.SettingsScreen
 import nl.cita.magister.ui.theme.LocalSafeMode
 import nl.cita.magister.ui.today.TodayScreen
 import java.time.LocalDate
+import java.time.LocalTime
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -158,6 +159,8 @@ fun CitaRoot(viewModel: CitaViewModel) {
     val sectionErrors by viewModel.sectionErrors.collectAsStateWithLifecycle()
     val dynamic by viewModel.dynamicColor.collectAsStateWithLifecycle()
     val notifications by viewModel.notifications.collectAsStateWithLifecycle()
+    val clock by viewModel.clock.collectAsStateWithLifecycle()
+    val pendingPage by viewModel.pendingPage.collectAsStateWithLifecycle()
 
     MagsSignedInScaffold(
         profile = profile,
@@ -197,6 +200,10 @@ fun CitaRoot(viewModel: CitaViewModel) {
         notifications = notifications,
         onNotifications = viewModel::setNotifications,
         onVisibleWeek = viewModel::prefetchAgenda,
+        clockDate = clock.date,
+        clockTime = clock.time,
+        pendingPage = pendingPage,
+        onPendingPageConsumed = viewModel::consumePendingPage,
     )
 }
 
@@ -241,13 +248,25 @@ fun MagsSignedInScaffold(
     notifications: Boolean = true,
     onNotifications: (Boolean) -> Unit = {},
     onVisibleWeek: (LocalDate) -> Unit = {},
+    clockDate: LocalDate = LocalDate.now(),
+    clockTime: LocalTime = LocalTime.now(),
+    pendingPage: MagsPage? = null,
+    onPendingPageConsumed: () -> Unit = {},
 ) {
     var page by remember { mutableStateOf(initialPage) }
-    var lastDock by remember { mutableStateOf(MagsPage.Vandaag) }
+    var lastDock by remember { mutableStateOf(if (initialPage.isDockTab) initialPage else MagsPage.Vandaag) }
     var searchOpen by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var expansion by remember { mutableFloatStateOf(1f) }
     var backProgress by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(pendingPage) {
+        val next = pendingPage ?: return@LaunchedEffect
+        if (next.isDockTab) lastDock = next
+        page = next
+        expansion = 1f
+        onPendingPageConsumed()
+    }
     val safe = LocalSafeMode.current
     val density = LocalDensity.current
 
@@ -391,6 +410,8 @@ fun MagsSignedInScaffold(
                                     gradesError = sectionErrors.grades,
                                     messagesError = sectionErrors.messages,
                                     loading = refreshing,
+                                    clockDate = clockDate,
+                                    clockTime = clockTime,
                                 )
                                 MagsPage.Rooster -> ScheduleScreen(
                                     appointments,
@@ -399,6 +420,8 @@ fun MagsSignedInScaffold(
                                     onVisibleWeek = onVisibleWeek,
                                     loading = refreshing,
                                     homework = homework,
+                                    clockDate = clockDate,
+                                    clockTime = clockTime,
                                     sharedTransitionScope = shared,
                                     animatedVisibilityScope = vis,
                                 )
@@ -456,6 +479,8 @@ fun MagsSignedInScaffold(
                                     absencesError = sectionErrors.absences,
                                     studyGuidesError = sectionErrors.studyGuides,
                                     assignmentsError = sectionErrors.assignments,
+                                    unreadMessages = messages.count { !it.isRead },
+                                    onOpenMessages = { page = MagsPage.Berichten },
                                 )
                             }
                         }
@@ -463,16 +488,18 @@ fun MagsSignedInScaffold(
                 }
             }
 
-            MagsTopBar(
-                profile = profile,
-                unreadMessages = messages.count { !it.isRead },
-                onMessages = { page = MagsPage.Berichten },
-                onMore = { page = MagsPage.Meer },
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .zIndex(1f),
-            )
+            if (page != MagsPage.Meer) {
+                MagsTopBar(
+                    profile = profile,
+                    unreadMessages = messages.count { !it.isRead },
+                    onMessages = { page = MagsPage.Berichten },
+                    onMore = { page = MagsPage.Meer },
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .statusBarsPadding()
+                        .zIndex(1f),
+                )
+            }
 
             val scrimBg = MaterialTheme.colorScheme.background
             Box(

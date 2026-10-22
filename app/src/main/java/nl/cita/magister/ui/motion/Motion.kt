@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -89,14 +90,16 @@ fun PressScaleCard(
             scaleY = scale
         }) { content() }
     }
+    val shape = MaterialTheme.shapes.large
     if (onClick != null) {
         Card(
             onClick = onClick,
             modifier = modifier,
             colors = colors,
+            shape = shape,
             interactionSource = interaction,
         ) { body() }
     } else {
-        Card(modifier = modifier, colors = colors) { body() }
+        Card(modifier = modifier, colors = colors, shape = shape) { body() }
     }
 }

@@ -165,6 +165,7 @@ class MagisterRepository(
 
     suspend fun enterDemo() {
         prefs.setDemo(true)
+        prefs.setTenant(nl.cita.magister.api.Tenant.CITADEL_HOST, nl.cita.magister.api.Tenant.CITADEL_DISPLAY, null)
         tokenStore.clear()
         writeCache(KEY_PROFILE, MagisterJson.instance.encodeToString(MockFixtures.profile()))
         writeCache(KEY_GRADES, MagisterJson.instance.encodeToString(MockFixtures.grades()))

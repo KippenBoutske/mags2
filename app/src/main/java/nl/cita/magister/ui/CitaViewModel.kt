@@ -25,6 +25,7 @@ import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.MessageDetail
 import nl.cita.magister.model.SectionErrors
+import nl.cita.magister.ui.nav.MagsPage
 import java.time.LocalDate
 
 class CitaViewModel(
@@ -86,6 +87,13 @@ class CitaViewModel(
     private val _shareJson = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val shareJson = _shareJson.asSharedFlow()
 
+    private val _clock = MutableStateFlow(AppClock.system())
+    val clock = _clock.asStateFlow()
+    private var clockPinned = false
+
+    private val _pendingPage = MutableStateFlow<MagsPage?>(null)
+    val pendingPage = _pendingPage.asStateFlow()
+
     val hasWebhookKey: Boolean get() = repo.webhookConfigured()
 
     private var searchJob: Job? = null
@@ -93,6 +101,7 @@ class CitaViewModel(
     init {
         viewModelScope.launch {
             val demo = repo.isDemo()
+            if (demo && !clockPinned) _clock.value = AppClock.Demo
             _signedIn.value = repo.isLoggedIn() || demo
             if (_signedIn.value && profile.value == null) {
                 runCatching { repo.refreshAll() }
@@ -190,10 +199,24 @@ class CitaViewModel(
     fun enterDemo() {
         viewModelScope.launch {
             repo.enterDemo()
+            if (!clockPinned) _clock.value = AppClock.Demo
             _signedIn.value = true
             _lastError.value = null
             _snackbar.emit("Voorbeeld.")
         }
+    }
+
+    fun setClock(clock: AppClock) {
+        clockPinned = true
+        _clock.value = clock
+    }
+
+    fun openPage(page: MagsPage) {
+        _pendingPage.value = page
+    }
+
+    fun consumePendingPage() {
+        _pendingPage.value = null
     }
 
     fun refresh() {

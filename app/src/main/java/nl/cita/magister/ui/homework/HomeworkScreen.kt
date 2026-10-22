@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +31,7 @@ import nl.cita.magister.ui.today.homeworkBody
 import nl.cita.magister.ui.formatWhen
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.staggerEnter
+import nl.cita.magister.ui.nav.MagsChrome
 import nl.cita.magister.ui.theme.CitaAction
 import nl.cita.magister.ui.theme.CitaActionRow
 
@@ -53,8 +55,8 @@ fun HomeworkScreen(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
+            start = MagsChrome.PageGutter,
+            end = MagsChrome.PageGutter,
             top = contentPadding.calculateTopPadding() + 8.dp,
             bottom = contentPadding.calculateBottomPadding() + 8.dp,
         ),
@@ -98,8 +100,18 @@ fun HomeworkScreen(
                     androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.Top) {
                         CircleCheck(checked = item.isDone, onCheckedChange = { onToggle(item, it) })
                         Column(Modifier.weight(1f).padding(start = 8.dp)) {
-                            Text(item.subject, style = MaterialTheme.typography.titleMedium)
-                            Text(homeworkBody(item), style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                item.subject,
+                                style = MaterialTheme.typography.titleMedium,
+                                textDecoration = if (item.isDone) TextDecoration.LineThrough else null,
+                                color = if (item.isDone) MaterialTheme.colorScheme.onSurfaceVariant
+                                else MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                homeworkBody(item),
+                                style = MaterialTheme.typography.bodyMedium,
+                                textDecoration = if (item.isDone) TextDecoration.LineThrough else null,
+                            )
                             Text(
                                 listOfNotNull(item.infoType.label(), formatWhen(item.dueIso)).joinToString(" · "),
                                 style = MaterialTheme.typography.labelMedium,

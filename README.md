@@ -6,9 +6,10 @@ Mags is **geen** product van Iddink/Magister. Werkt met elke Magister-school. Al
 
 ## Wat zit erin
 
-- **Cijfers** met gewogen gemiddelde per vak, grafiek, *Wat moet ik halen?* en cijferblad
-- **Rooster** met tussenuren, nu-lijn, huidige les en lesblad
-- **Huiswerk**, **berichten**, **afwezigheid**, **studiewijzers** en **opdrachten**
+- **Cijfers** met gewogen gemiddelde per vak, grafiek, *Wat moet ik halen?* (doel-stepper, weging-chips) en cijferblad
+- **Rooster** met tussenuren, nu-lijn in de huidige les, en lesblad
+- **Huiswerk** met lokaal *klaar*-vinkje, **berichten** (alleen lezen), **afwezigheid**, **studiewijzers** en **opdrachten**
+- Startscherm-snelkoppelingen naar Vandaag, Rooster, Cijfers en Huiswerk
 - **Deel** vanuit Cijfers: JSON naar een adres onder Meer → Geavanceerd, anders het Android-deelblad
 - Live schoolzoeken
 - Offline cache, pull-to-refresh, Material 3 Expressive (shared elements, spring-lijst, morphing `LoadingIndicator`)
@@ -33,7 +34,7 @@ cat mags-debug.apk.part-aa mags-debug.apk.part-ab > mags-debug.apk
 sha256sum -c mags-debug.apk.sha256
 ```
 
-3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.11** (`targetSdk` 37).
+3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.12** (`targetSdk` 37).
 4. Bij een crash: scherm **Mags is gestopt** → *Kopieer stacktrace*.
 
 Zelf bouwen:
@@ -62,7 +63,7 @@ OAuth (zelfde stroom als bekende open-source clients):
 
 ## Berichten
 
-Mags probeert eerst `postvakin`, daarna `mappen/1/berichten`, de collectie, en pas daarna de maplijst. Als geen pad werkt, blijft Berichten leeg — paden en HTTP-codes zitten achter **Details**.
+Mags probeert eerst `postvakin`, daarna `mappen/1/berichten`, de collectie, en pas daarna de maplijst. Als geen pad werkt, blijft Berichten leeg — paden en HTTP-codes zitten achter **Details**. Alleen lezen: M6LOAPP heeft geen schrijfrechten voor nieuwe berichten.
 
 ## Cijfers exporteren (Plan Goon)
 

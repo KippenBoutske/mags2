@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="rooster"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/tab_rooster"
+        android:shortcutLongLabel="@string/tab_rooster">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="nl.cita.magister.MainActivity">
+            <extra
+                android:name="page"
+                android:value="rooster" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="cijfers"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/tab_cijfers"
+        android:shortcutLongLabel="@string/tab_cijfers">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="nl.cita.magister.MainActivity">
+            <extra
+                android:name="page"
+                android:value="cijfers" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="huiswerk"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/tab_huiswerk"
+        android:shortcutLongLabel="@string/tab_huiswerk">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="nl.cita.magister.MainActivity">
+            <extra
+                android:name="page"
+                android:value="huiswerk" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="vandaag"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/tab_vandaag"
+        android:shortcutLongLabel="@string/tab_vandaag">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="nl.cita.magister.MainActivity">
+            <extra
+                android:name="page"
+                android:value="vandaag" />
+        </intent>
+    </shortcut>
+</shortcuts>

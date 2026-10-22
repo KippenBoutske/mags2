@@ -28,6 +28,7 @@ import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatWhen
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.staggerEnter
+import nl.cita.magister.ui.nav.MagsChrome
 
 @Composable
 fun MessagesScreen(
@@ -42,8 +43,8 @@ fun MessagesScreen(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
-            start = 20.dp,
-            end = 20.dp,
+            start = MagsChrome.PageGutter,
+            end = MagsChrome.PageGutter,
             top = contentPadding.calculateTopPadding() + 4.dp,
             bottom = contentPadding.calculateBottomPadding() + 8.dp,
         ),

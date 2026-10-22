@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.IntOffset
@@ -76,6 +77,7 @@ import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.magsSharedBounds
 import nl.cita.magister.ui.motion.magsSpring
 import nl.cita.magister.ui.motion.staggerEnter
+import nl.cita.magister.ui.nav.MagsChrome
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalDate
@@ -198,7 +200,7 @@ fun ScheduleScreen(
             .padding(top = contentPadding.calculateTopPadding() + 4.dp),
     ) {
         Column(
-            Modifier.padding(horizontal = 20.dp),
+            Modifier.padding(horizontal = MagsChrome.PageGutter),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             AnimatedContent(
@@ -243,7 +245,7 @@ fun ScheduleScreen(
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                        .padding(horizontal = MagsChrome.PageGutter, vertical = 12.dp),
                 ) {
                     ListSkeleton(rows = 3, contentDescription = "Rooster laden")
                 }
@@ -425,7 +427,12 @@ private fun DayTimeline(
         modifier = modifier
             .fillMaxSize()
             .testTag("rooster-dag-$date"),
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = contentBottom + 8.dp),
+        contentPadding = PaddingValues(
+            start = MagsChrome.PageGutter,
+            end = MagsChrome.PageGutter,
+            top = 12.dp,
+            bottom = contentBottom + 8.dp,
+        ),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (weekend) {
@@ -443,21 +450,22 @@ private fun DayTimeline(
         itemsIndexed(slots, key = { _, slot -> slotKey(slot) }) { index, slot ->
             when (slot) {
                 is DaySlot.Gap -> {
-                    Column(Modifier.staggerEnter(index)) {
-                        if (isToday && nowInsideGap(slot, now)) NowLine()
+                    Box(Modifier.staggerEnter(index)) {
                         GapRow(slot)
+                        if (isToday && nowInsideGap(slot, now)) {
+                            NowLine(Modifier.align(Alignment.Center))
+                        }
                     }
                 }
                 is DaySlot.Lesson -> {
                     val current = isCurrent(slot.item, isToday, now)
-                    Column(Modifier.staggerEnter(index)) {
-                        if (isToday && current) NowLine()
-                        LessonCard(
-                            item = slot.item,
-                            current = current,
-                            onClick = { onOpen(slot.item) },
-                        )
-                    }
+                    LessonCard(
+                        item = slot.item,
+                        current = current,
+                        now = now,
+                        onClick = { onOpen(slot.item) },
+                        modifier = Modifier.staggerEnter(index),
+                    )
                 }
             }
         }
@@ -468,9 +476,9 @@ private fun DayTimeline(
 }
 
 @Composable
-private fun NowLine() {
+private fun NowLine(modifier: Modifier = Modifier) {
     Row(
-        Modifier
+        modifier
             .fillMaxWidth()
             .padding(vertical = 2.dp)
             .testTag("rooster-now-line"),
@@ -519,8 +527,11 @@ private fun GapRow(slot: DaySlot.Gap) {
 private fun LessonCard(
     item: Appointment,
     current: Boolean,
+    now: LocalTime,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
+    var cardHeight by remember { mutableIntStateOf(0) }
     PressScaleCard(
         colors = CardDefaults.cardColors(
             when {
@@ -529,12 +540,12 @@ private fun LessonCard(
                 else -> MaterialTheme.colorScheme.surfaceContainerHigh
             },
         ),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .testTag("les-kaart"),
+            .testTag(if (current) "les-kaart-nu" else "les-kaart"),
         onClick = onClick,
     ) {
-        Box {
+        Box(Modifier.onSizeChanged { cardHeight = it.height }) {
             if (current) {
                 CookieFlower(
                     Modifier
@@ -594,6 +605,19 @@ private fun LessonCard(
                         }
                     }
                 }
+            }
+            if (current) {
+                val progress = lessonProgress(item, now)
+                NowLine(
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(end = 84.dp)
+                        .zIndex(2f)
+                        .offset {
+                            val y = ((cardHeight - 16) * progress).roundToInt().coerceAtLeast(0)
+                            IntOffset(0, y)
+                        },
+                )
             }
         }
     }
@@ -674,6 +698,15 @@ private fun isCurrent(item: Appointment, isToday: Boolean, now: LocalTime): Bool
     val start = lessonTime(item.startIso) ?: return false
     val end = lessonTime(item.endIso) ?: return false
     return !now.isBefore(start) && now.isBefore(end)
+}
+
+internal fun lessonProgress(item: Appointment, now: LocalTime): Float {
+    val start = lessonTime(item.startIso) ?: return 0f
+    val end = lessonTime(item.endIso) ?: return 1f
+    val span = Duration.between(start.atDate(LocalDate.of(2000, 1, 1)), end.atDate(LocalDate.of(2000, 1, 1))).seconds
+    if (span <= 0) return 0f
+    val elapsed = Duration.between(start.atDate(LocalDate.of(2000, 1, 1)), now.atDate(LocalDate.of(2000, 1, 1))).seconds
+    return (elapsed.toFloat() / span.toFloat()).coerceIn(0.08f, 0.92f)
 }
 
 private fun nowLineBefore(slots: List<DaySlot>, now: LocalTime): Boolean {

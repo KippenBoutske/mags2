@@ -45,17 +45,18 @@ import nl.cita.magister.ui.formatGrade
 import nl.cita.magister.ui.formatTime
 import nl.cita.magister.ui.localDateOf
 import nl.cita.magister.ui.motion.PressScaleCard
+import nl.cita.magister.ui.AppClock
+import nl.cita.magister.ui.nav.MagsChrome
 import nl.cita.magister.ui.nav.MagsPage
+import nl.cita.magister.ui.parseInstant
 import nl.cita.magister.ui.theme.GradeGold
 import nl.cita.magister.ui.theme.GradeSage
 import nl.cita.magister.ui.theme.GradeSlate
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val zone = ZoneId.of("Europe/Amsterdam")
 private val nl = Locale("nl", "NL")
 private val longDay = DateTimeFormatter.ofPattern("EEEE d MMMM", nl)
 private val tileColors = listOf(GradeGold, GradeSage, GradeSlate)
@@ -74,14 +75,17 @@ fun TodayScreen(
     gradesError: ApiFailure? = null,
     messagesError: ApiFailure? = null,
     loading: Boolean = false,
+    clockDate: LocalDate = LocalDate.now(AppClock.zone),
+    clockTime: LocalTime = LocalTime.now(AppClock.zone),
 ) {
-    val today = remember { LocalDate.now(zone) }
-    val now = remember { LocalTime.now(zone) }
+    val today = clockDate
+    val now = clockTime
     val ofDay = remember(appointments, today) {
         appointments.filter { localDateOf(it.startIso) == today }.sortedBy { it.startIso }
     }
-    val next = ofDay.firstOrNull { !it.isCancelled && lessonStart(it) >= now }
-        ?: ofDay.firstOrNull { !it.isCancelled }
+    val current = ofDay.firstOrNull { !it.isCancelled && lessonStart(it) <= now && lessonEnd(it) > now }
+    val next = ofDay.firstOrNull { !it.isCancelled && lessonStart(it) > now }
+    val hero = current ?: next
     val openHw = remember(homework) { homework.filter { !it.isDone }.sortedBy { it.dueIso } }
     val latest = remember(averages) { averages.filter { it.average != null }.take(3) }
     val unread = remember(messages) { messages.filter { !it.isRead } }
@@ -89,8 +93,8 @@ fun TodayScreen(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
-            start = 20.dp,
-            end = 20.dp,
+            start = MagsChrome.PageGutter,
+            end = MagsChrome.PageGutter,
             top = contentPadding.calculateTopPadding() + 4.dp,
             bottom = contentPadding.calculateBottomPadding() + 20.dp,
         ),
@@ -120,21 +124,25 @@ fun TodayScreen(
                 ) {
                     CookieFlower()
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("VOLGENDE LES", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        if (next == null) {
+                        Text(
+                            if (current != null) "NU" else "VOLGENDE LES",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (hero == null) {
                             Text("Klaar.", style = MaterialTheme.typography.headlineSmall)
                         } else {
-                            Text(next.title, style = MaterialTheme.typography.headlineSmall)
+                            Text(hero.title, style = MaterialTheme.typography.headlineSmall)
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Outlined.Place, null, Modifier, MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(next.classroom ?: next.location ?: "–", style = MaterialTheme.typography.bodyMedium)
+                                Text(hero.classroom ?: hero.location ?: "–", style = MaterialTheme.typography.bodyMedium)
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Outlined.Schedule, null, Modifier, MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(formatTime(next.startIso), style = MaterialTheme.typography.bodyMedium)
+                                Text(formatTime(hero.startIso), style = MaterialTheme.typography.bodyMedium)
                             }
                             Text(
-                                overLabel(minutesUntil(next.startIso)),
+                                overLabel(minutesUntil(hero.startIso, nowMillis = AppClock(today, now).millis())),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.primary,
                             )
@@ -154,7 +162,7 @@ fun TodayScreen(
                 ) {
                     ofDay.forEach { lesson ->
                         FilterChip(
-                            selected = lesson.id == next?.id,
+                            selected = lesson.id == hero?.id,
                             onClick = { onOpenPage(MagsPage.Rooster) },
                             shape = CircleShape,
                             modifier = Modifier.testTag("today-lesson-chip"),
@@ -270,9 +278,9 @@ private fun HomeworkRow(
     }
 }
 
-private fun lessonStart(item: Appointment): LocalTime {
-    val iso = item.startIso
-    return runCatching { java.time.OffsetDateTime.parse(iso).toLocalTime() }.getOrNull()
-        ?: runCatching { java.time.Instant.parse(iso).atZone(zone).toLocalTime() }.getOrNull()
-        ?: LocalTime.MIDNIGHT
-}
+private fun lessonStart(item: Appointment): LocalTime = lessonLocalTime(item.startIso)
+
+private fun lessonEnd(item: Appointment): LocalTime = lessonLocalTime(item.endIso)
+
+private fun lessonLocalTime(iso: String): LocalTime =
+    parseInstant(iso)?.atZone(AppClock.zone)?.toLocalTime() ?: LocalTime.MIDNIGHT

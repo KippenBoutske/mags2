@@ -39,8 +39,20 @@ object MagsChrome {
     val DockClearance = 152.dp
     val DockGap = 10.dp
     val DockSide = 16.dp
+    val PageGutter = 16.dp
+    val CardGap = 12.dp
     val PillHeight = 56.dp
     val FabSize = 56.dp
     val CompactFabSize = 48.dp
     val ScrimHeight = 176.dp
+
+    fun fromShortcut(value: String?): MagsPage? = when (value?.lowercase()) {
+        "vandaag", "today" -> MagsPage.Vandaag
+        "rooster", "schedule" -> MagsPage.Rooster
+        "cijfers", "grades" -> MagsPage.Cijfers
+        "huiswerk", "homework" -> MagsPage.Huiswerk
+        "berichten", "messages" -> MagsPage.Berichten
+        "meer", "more" -> MagsPage.Meer
+        else -> null
+    }
 }

@@ -9,6 +9,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
@@ -109,7 +110,12 @@ class ScheduleSwipeTest {
         }
         compose.waitForIdle()
         assertTrue(compose.onAllNodesWithTag("tussenuur").fetchSemanticsNodes().isNotEmpty())
-        compose.onNodeWithTag("rooster-now-line").assertExists()
+        compose.onNodeWithTag("rooster-now-line", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("les-kaart-nu").assertExists()
+        compose.onNodeWithTag("les-nu-vorm", useUnmergedTree = true).assertExists()
+        val line = compose.onNodeWithTag("rooster-now-line", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val card = compose.onNodeWithTag("les-kaart-nu").getUnclippedBoundsInRoot()
+        assertTrue("now-line top ${line.top} outside card ${card.top}–${card.bottom}", line.top >= card.top && line.bottom <= card.bottom)
         compose.onNodeWithText("Geschiedenis").assertExists()
         compose.onNodeWithText("Geschiedenis").performClick()
         compose.waitForIdle()

@@ -30,6 +30,7 @@ class MainActivity : ComponentActivity() {
         try {
             runCatching { enableEdgeToEdge() }
             handleAuthIntent(intent)
+            handleLaunchExtras(intent)
             if (BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_DEMO, false)) {
                 viewModel.enterDemo()
             }
@@ -63,6 +64,14 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleAuthIntent(intent)
+        handleLaunchExtras(intent)
+    }
+
+    private fun handleLaunchExtras(intent: Intent?) {
+        val page = nl.cita.magister.ui.nav.MagsChrome.fromShortcut(intent?.getStringExtra(EXTRA_PAGE))
+        if (page != null) viewModel.openPage(page)
+        val clock = nl.cita.magister.ui.AppClock.parse(intent?.getStringExtra(EXTRA_CLOCK))
+        if (clock != null) viewModel.setClock(clock)
     }
 
     private fun handleAuthIntent(intent: Intent?) {
@@ -86,5 +95,7 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_DEMO = "demo"
+        const val EXTRA_PAGE = "page"
+        const val EXTRA_CLOCK = "clock"
     }
 }

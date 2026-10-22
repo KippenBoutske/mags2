@@ -30,6 +30,7 @@ import nl.cita.magister.ui.messages.MessagesScreen
 import nl.cita.magister.ui.nav.MagsPage
 import nl.cita.magister.ui.nav.PhotosDock
 import nl.cita.magister.ui.schedule.ScheduleScreen
+import nl.cita.magister.ui.settings.MeerSection
 import nl.cita.magister.ui.settings.SettingsScreen
 import nl.cita.magister.ui.theme.CitaTheme
 import nl.cita.magister.ui.today.TodayScreen
@@ -71,6 +72,8 @@ class ConceptScreenshotTest {
     @Test fun berichten403() = snap("berichten-403", 412) { messagesForbidden() }
     @Test fun meer412() = snap("meer", 412) { settings() }
     @Test fun meer360() = snap("meer", 360) { settings() }
+    @Test fun meerAfwezigheid412() = snap("meer-afwezigheid", 412) { settings(MeerSection.Absence) }
+    @Test fun meerInstellingen412() = snap("meer-instellingen", 412) { settings(MeerSection.Settings) }
     @Test fun dockVandaag412() = snap("dock-vandaag", 412) { dock(MagsPage.Vandaag) }
     @Test fun dockVandaag360() = snap("dock-vandaag", 360) { dock(MagsPage.Vandaag) }
     @Test fun dockHuiswerk360() = snap("dock-huiswerk", 360) { dock(MagsPage.Huiswerk) }
@@ -119,10 +122,10 @@ class ConceptScreenshotTest {
     private fun outDirs(): List<File> = listOf(
         File("app/build/outputs/self-test/screenshots"),
         File("build/outputs/self-test/screenshots"),
-        File("artifacts/screens-0.1.11"),
-        File("/workspace/artifacts/screens-0.1.11"),
-        File("/cursor/stores/self/artifacts/screens-0.1.11"),
-        File("/opt/cursor/artifacts/0.1.11"),
+        File("artifacts/screens-0.1.12"),
+        File("/workspace/artifacts/screens-0.1.12"),
+        File("/cursor/stores/self/artifacts/screens-0.1.12"),
+        File("/opt/cursor/artifacts/0.1.12"),
     )
 
     @Composable
@@ -165,6 +168,8 @@ class ConceptScreenshotTest {
             messages = MockFixtures.messages(),
             contentPadding = PaddingValues(0.dp),
             onOpenPage = {},
+            clockDate = LocalDate.of(2026, 10, 22),
+            clockTime = LocalTime.of(11, 0),
         )
     }
 
@@ -228,7 +233,7 @@ class ConceptScreenshotTest {
     }
 
     @Composable
-    private fun settings() {
+    private fun settings(section: MeerSection = MeerSection.Hub) {
         SettingsScreen(
             profile = MockFixtures.profile(),
             tenantHost = "citadel.magister.net",
@@ -249,6 +254,7 @@ class ConceptScreenshotTest {
             absences = MockFixtures.absences(),
             studyGuides = MockFixtures.studyGuides(),
             assignments = MockFixtures.assignments(),
+            initialSection = section,
         )
     }
 
@@ -293,6 +299,8 @@ class ConceptScreenshotTest {
             onSaveWebhook = { _, _ -> },
             onLogout = {},
             initialPage = page,
+            clockDate = LocalDate.of(2026, 10, 22),
+            clockTime = LocalTime.of(11, 0),
         )
     }
 }

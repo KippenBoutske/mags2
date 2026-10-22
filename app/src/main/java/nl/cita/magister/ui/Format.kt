@@ -16,6 +16,10 @@ private val shortDay = DateTimeFormatter.ofPattern("EEE d MMM", nl)
 fun formatGrade(value: Double?): String =
     value?.let { String.format(nl, "%.1f", it).replace('.', ',') } ?: "–"
 
+/** Join class, study, school — skip blanks so the line never ends in `·`. */
+fun profileLine(vararg parts: String?): String =
+    parts.mapNotNull { it?.trim()?.takeIf(String::isNotEmpty) }.joinToString(" · ")
+
 fun formatWhen(iso: String?): String {
     val instant = parseInstant(iso) ?: return iso.orEmpty()
     return DateTimeFormatter.ofPattern("d MMM, HH:mm", nl).withZone(zone).format(instant)

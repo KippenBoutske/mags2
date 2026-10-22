@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,19 +22,22 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.IosShare
+import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -67,8 +71,11 @@ import nl.cita.magister.ui.motion.magsFloatSpring
 import nl.cita.magister.ui.motion.magsSharedBounds
 import nl.cita.magister.ui.motion.magsSpring
 import nl.cita.magister.ui.motion.staggerEnter
+import nl.cita.magister.ui.nav.MagsChrome
+import nl.cita.magister.ui.profileLine
 import nl.cita.magister.ui.theme.CitaAction
 import nl.cita.magister.ui.theme.CitaActionRow
+import nl.cita.magister.ui.theme.GradeSage
 
 private enum class GradeFilter { All, Weak, Pta }
 
@@ -111,8 +118,8 @@ fun GradesScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().testTag("cijfers-lijst"),
                     contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
+                        start = MagsChrome.PageGutter,
+                        end = MagsChrome.PageGutter,
                         top = contentPadding.calculateTopPadding() + 8.dp,
                         bottom = contentPadding.calculateBottomPadding() + 8.dp,
                     ),
@@ -121,7 +128,7 @@ fun GradesScreen(
                     item {
                         PageTitle(
                             "Cijfers",
-                            profile?.let { "${it.firstName} · ${it.className ?: it.study ?: ""}".trimEnd(' ', '·') },
+                            profile?.let { profileLine(it.firstName, it.className, it.study) },
                         )
                     }
                     gradesError?.let { item { SectionError(it) } }
@@ -267,8 +274,8 @@ private fun SubjectPage(
             .then(sharedModifier)
             .testTag("cijfers-vak-pagina"),
         contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
+            start = MagsChrome.PageGutter,
+            end = MagsChrome.PageGutter,
             top = contentPadding.calculateTopPadding() + 4.dp,
             bottom = contentPadding.calculateBottomPadding() + 8.dp,
         ),
@@ -425,7 +432,15 @@ private fun CalculatorBlock(
     grades: List<Grade>,
 ) {
     var target by remember { mutableFloatStateOf(7f) }
-    var weight by remember { mutableFloatStateOf(2f) }
+    val columnWeights = remember(grades) {
+        grades.mapNotNull { it.weight?.toInt()?.takeIf { weight -> weight in 1..6 } }
+            .distinct()
+            .sorted()
+    }
+    val weightChoices = remember(columnWeights) {
+        (listOf(1, 2, 3) + columnWeights).distinct().sorted()
+    }
+    var weight by remember { mutableFloatStateOf((columnWeights.firstOrNull() ?: 2).toFloat()) }
     val result = remember(target, weight, grades) {
         runCatching { GradeCalculator.scoreNeeded(grades, target.toDouble(), weight.toDouble()) }.getOrNull()
     }
@@ -433,30 +448,77 @@ private fun CalculatorBlock(
         Modifier
             .fillMaxWidth()
             .testTag("cijfers-reken"),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Text("Wat moet ik halen?", style = MaterialTheme.typography.headlineSmall)
-        Text("Nu ${formatGrade(result?.currentAverage ?: subject.average)}")
-        Text(formatGrade(target.toDouble()))
-        Slider(value = target, onValueChange = { target = it }, valueRange = 5.5f..9f, steps = 6)
-        Text("×${weight.toInt()}")
-        Slider(value = weight, onValueChange = { weight = it }, valueRange = 1f..6f, steps = 4)
-        OutlinedTextField(
-            value = formatGrade(target.toDouble()),
-            onValueChange = { raw ->
-                GradeCalculator.parseDutchNumber(raw)?.toFloat()?.let { target = it }
-            },
-            label = { Text("Doel") },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        Text("Nu ${formatGrade(result?.currentAverage ?: subject.average)}", style = MaterialTheme.typography.bodyMedium)
+        Row(
+            Modifier.fillMaxWidth().testTag("cijfers-doel"),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            FilledTonalIconButton(
+                onClick = { target = (target - 0.1f).coerceIn(4f, 10f) },
+                modifier = Modifier.testTag("cijfers-doel-min"),
+            ) {
+                Icon(Icons.Outlined.Remove, contentDescription = "Doel lager")
+            }
+            Text(
+                "Doel ${formatGrade(target.toDouble())}",
+                style = MaterialTheme.typography.titleLarge,
+            )
+            FilledTonalIconButton(
+                onClick = { target = (target + 0.1f).coerceIn(4f, 10f) },
+                modifier = Modifier.testTag("cijfers-doel-plus"),
+            ) {
+                Icon(Icons.Outlined.Add, contentDescription = "Doel hoger")
+            }
+        }
+        Text("Weging ×${weight.toInt()}", style = MaterialTheme.typography.titleMedium)
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .testTag("cijfers-weging"),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            weightChoices.forEach { choice ->
+                FilterChip(
+                    selected = weight.toInt() == choice,
+                    onClick = { weight = choice.toFloat() },
+                    label = { Text("${choice}×") },
+                    modifier = Modifier.testTag("cijfers-weging-$choice"),
+                )
+            }
+        }
+        val needed = result?.let { GradeCalculator.round1(it.needed) }
+        val tone = when {
+            result == null -> MaterialTheme.colorScheme.onSurface
+            result.alreadyReached -> GradeSage
+            !result.reachable -> MaterialTheme.colorScheme.error
+            (needed ?: 10.0) <= 6.5 -> GradeSage
+            (needed ?: 10.0) <= 8.5 -> MaterialTheme.colorScheme.primary
+            else -> MaterialTheme.colorScheme.error
+        }
         when {
             result == null -> Text("Te weinig cijfers.")
-            result.alreadyReached -> Text("Al gehaald.")
-            !result.reachable -> Text("Niet haalbaar.")
-            else -> Text(
-                formatGrade(GradeCalculator.round1(result.needed)),
-                style = MaterialTheme.typography.headlineSmall,
-            )
+            result.alreadyReached -> {
+                Text("–", style = MaterialTheme.typography.displayMedium, color = tone, modifier = Modifier.testTag("cijfers-nodig"))
+                Text("al gehaald", style = MaterialTheme.typography.bodyMedium, color = tone)
+            }
+            else -> {
+                Text(
+                    formatGrade(needed),
+                    style = MaterialTheme.typography.displayMedium,
+                    color = tone,
+                    modifier = Modifier.testTag("cijfers-nodig"),
+                )
+                Text(
+                    if (result.reachable) "nodig voor je volgende" else "niet haalbaar",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = tone,
+                )
+            }
         }
         Spacer(Modifier.height(12.dp))
     }
