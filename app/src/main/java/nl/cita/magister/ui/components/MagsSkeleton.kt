@@ -19,13 +19,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -33,26 +34,35 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.ui.theme.LocalSafeMode
 
-/** Concept-1 skeleton: warme, ronde balken met een zachte pulse. */
 @Composable
 fun MagsSkeletonBar(
     modifier: Modifier = Modifier,
     height: Dp = 14.dp,
 ) {
-    val pulse by rememberInfiniteTransition(label = "skel").animateFloat(
-        initialValue = 0.42f,
-        targetValue = 0.78f,
+    val shift by rememberInfiniteTransition(label = "skel").animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            tween(1100, easing = LinearEasing),
-            RepeatMode.Reverse,
+            tween(1200, easing = LinearEasing),
+            RepeatMode.Restart,
         ),
-        label = "skel-pulse",
+        label = "skel-shimmer",
     )
+    val base = MaterialTheme.colorScheme.surfaceContainerHigh
+    val hi = MaterialTheme.colorScheme.surfaceContainerHighest
     Box(
         modifier
             .height(height)
             .clip(RoundedCornerShape(10.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = pulse)),
+            .background(
+                Brush.linearGradient(
+                    0f to base,
+                    0.45f to hi,
+                    1f to base,
+                    start = Offset(1000f * (shift - 1f), 0f),
+                    end = Offset(1000f * shift, 0f),
+                ),
+            ),
     )
 }
 
@@ -65,7 +75,7 @@ fun MagsSkeletonCard(
         modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(28.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .padding(20.dp)
             .testTag("skeleton-card")
             .semantics { contentDescription = "Laden" },
@@ -81,7 +91,6 @@ fun MagsSkeletonCard(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TodaySkeleton(modifier: Modifier = Modifier) {
     Column(
@@ -90,16 +99,13 @@ fun TodaySkeleton(modifier: Modifier = Modifier) {
             .testTag("today-skeleton")
             .semantics { contentDescription = "Vandaag laden" },
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        MorphLoader()
         MagsSkeletonCard(lines = 4)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             repeat(2) {
                 MagsSkeletonBar(
                     Modifier
                         .width(128.dp)
-                        .height(36.dp)
                         .clip(CircleShape),
                     height = 36.dp,
                 )
@@ -107,12 +113,9 @@ fun TodaySkeleton(modifier: Modifier = Modifier) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             repeat(3) {
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .height(96.dp)
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                MagsSkeletonCard(
+                    modifier = Modifier.weight(1f),
+                    lines = 1,
                 )
             }
         }
@@ -120,7 +123,6 @@ fun TodaySkeleton(modifier: Modifier = Modifier) {
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ListSkeleton(
     rows: Int = 3,
@@ -133,9 +135,7 @@ fun ListSkeleton(
             .testTag("list-skeleton")
             .semantics { this.contentDescription = contentDescription },
         verticalArrangement = Arrangement.spacedBy(10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        MorphLoader()
         repeat(rows) { MagsSkeletonCard(lines = 2) }
     }
 }
@@ -146,7 +146,7 @@ fun MorphLoader(modifier: Modifier = Modifier) {
     if (LocalSafeMode.current) {
         androidx.compose.material3.CircularProgressIndicator(modifier.size(48.dp))
     } else {
-        LoadingIndicator(modifier.size(56.dp).testTag("morph-loader"))
+        androidx.compose.material3.LoadingIndicator(modifier.size(56.dp).testTag("morph-loader"))
     }
 }
 

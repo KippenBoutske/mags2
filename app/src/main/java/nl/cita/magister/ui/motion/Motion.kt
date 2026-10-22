@@ -9,36 +9,63 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import nl.cita.magister.haptics.HapticEvent
 import nl.cita.magister.haptics.hapticOnDown
 
 fun <T> magsSpring(
-    dampingRatio: Float = 0.78f,
+    dampingRatio: Float = Spring.DampingRatioNoBouncy,
     stiffness: Float = Spring.StiffnessMediumLow,
 ) = spring<T>(dampingRatio = dampingRatio, stiffness = stiffness)
 
 fun magsFloatSpring(
-    dampingRatio: Float = 0.78f,
+    dampingRatio: Float = Spring.DampingRatioNoBouncy,
     stiffness: Float = Spring.StiffnessMediumLow,
 ) = spring<Float>(dampingRatio = dampingRatio, stiffness = stiffness)
 
-/** Photos-achtige indicator: zacht, een tikje overshoot. */
-fun dockIndicatorSpring() = spring<Float>(
-    dampingRatio = 0.72f,
-    stiffness = 380f,
+/** Fade-through / shared-axis: ~250 ms settle, geen bounce. */
+fun pageFadeSpring() = spring<Float>(
+    dampingRatio = Spring.DampingRatioNoBouncy,
+    stiffness = Spring.StiffnessMediumLow,
 )
+
+/** Navbar-pill: LowBouncy + MediumLow, geen layout-jump. */
+fun dockIndicatorSpring() = spring<Float>(
+    dampingRatio = Spring.DampingRatioLowBouncy,
+    stiffness = Spring.StiffnessMediumLow,
+)
+
+fun pressSpring() = spring<Float>(
+    dampingRatio = Spring.DampingRatioNoBouncy,
+    stiffness = Spring.StiffnessMedium,
+)
+
+class StaggerGate {
+    private val seen = HashSet<Any>()
+    fun first(key: Any): Boolean = seen.add(key)
+}
+
+val LocalStaggerGate = staticCompositionLocalOf<StaggerGate?> { null }
+
+@Composable
+fun StaggerScope(content: @Composable () -> Unit) {
+    val gate = remember { StaggerGate() }
+    CompositionLocalProvider(LocalStaggerGate provides gate, content = content)
+}
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -58,17 +85,29 @@ fun magsSharedBounds(
 }
 
 @Composable
-fun Modifier.staggerEnter(index: Int, enabled: Boolean = true): Modifier {
+fun Modifier.staggerEnter(
+    index: Int,
+    key: Any? = null,
+    enabled: Boolean = true,
+): Modifier {
     if (!enabled) return this
-    val progress = remember { Animatable(0f) }
-    LaunchedEffect(index) {
-        delay(index.coerceIn(0, 10) * 28L)
-        progress.animateTo(1f, magsFloatSpring(dampingRatio = 0.86f, stiffness = 420f))
+    val gate = LocalStaggerGate.current
+    val id = key ?: index
+    val play = remember(id) { gate?.first(id) ?: true }
+    val progress = remember { Animatable(if (play) 0f else 1f) }
+    val shiftPx = with(LocalDensity.current) { 24.dp.toPx() }
+    LaunchedEffect(play, id) {
+        if (!play) {
+            progress.snapTo(1f)
+            return@LaunchedEffect
+        }
+        delay(index.coerceIn(0, 8) * 36L)
+        progress.animateTo(1f, magsFloatSpring())
     }
     return graphicsLayer {
         val t = progress.value
         alpha = t
-        translationY = (1f - t) * 16f
+        translationY = (1f - t) * shiftPx
     }
 }
 
@@ -83,27 +122,22 @@ fun PressScaleCard(
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.975f else 1f,
-        animationSpec = magsFloatSpring(dampingRatio = 0.65f, stiffness = 500f),
+        targetValue = if (pressed) 0.96f else 1f,
+        animationSpec = pressSpring(),
         label = "press-scale",
     )
-    val body: @Composable () -> Unit = {
-        Box(Modifier.graphicsLayer {
+    val shape = MaterialTheme.shapes.large
+    val cardModifier = modifier
+        .then(if (haptic != null) Modifier.hapticOnDown(haptic) else Modifier)
+        .graphicsLayer {
             scaleX = scale
             scaleY = scale
-        }) { content() }
-    }
-    val shape = MaterialTheme.shapes.large
-    val cardModifier = if (haptic != null) modifier.hapticOnDown(haptic) else modifier
-    if (onClick != null) {
-        Card(
-            onClick = onClick,
-            modifier = cardModifier,
-            colors = colors,
-            shape = shape,
-            interactionSource = interaction,
-        ) { body() }
-    } else {
-        Card(modifier = cardModifier, colors = colors, shape = shape) { body() }
-    }
+        }
+    Card(
+        onClick = onClick ?: {},
+        modifier = cardModifier,
+        colors = colors,
+        shape = shape,
+        interactionSource = interaction,
+    ) { content() }
 }

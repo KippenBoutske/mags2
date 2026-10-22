@@ -446,11 +446,18 @@ private fun SettingsPane(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("Material You", modifier = Modifier.weight(1f))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("Systeemkleuren")
+            Text(
+                "Blijft donker. Uit = Donker warm.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Switch(
             checked = dynamicColor,
             onCheckedChange = onDynamicColor,
-            modifier = Modifier.semantics { contentDescription = "Material You" },
+            modifier = Modifier.semantics { contentDescription = "Systeemkleuren" },
         )
     }
     Row(

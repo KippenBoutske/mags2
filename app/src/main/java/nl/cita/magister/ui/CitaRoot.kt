@@ -9,8 +9,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -84,7 +82,9 @@ import nl.cita.magister.ui.login.BootSplash
 import nl.cita.magister.ui.login.LoginScreen
 import nl.cita.magister.ui.login.LoginWebView
 import nl.cita.magister.ui.messages.MessagesScreen
+import nl.cita.magister.ui.motion.StaggerScope
 import nl.cita.magister.ui.motion.magsSpring
+import nl.cita.magister.ui.motion.pageFadeSpring
 import nl.cita.magister.ui.nav.MagsChrome
 import nl.cita.magister.ui.nav.MagsPage
 import nl.cita.magister.ui.nav.MagsTopBar
@@ -411,20 +411,13 @@ fun MagsSignedInScaffold(
                     AnimatedContent(
                         targetState = page,
                         transitionSpec = {
-                            val forward = targetState.ordinal >= initialState.ordinal
-                            val slide = if (forward) 28 else -28
                             (
-                                fadeIn(magsSpring()) +
-                                    slideInHorizontally { slide } +
-                                    scaleIn(initialScale = 0.97f, animationSpec = magsSpring())
-                                ) togetherWith (
-                                fadeOut() + slideOutHorizontally { -slide / 2 }
-                                )
+                                fadeIn(animationSpec = pageFadeSpring()) +
+                                    scaleIn(initialScale = 0.92f, animationSpec = pageFadeSpring())
+                                ) togetherWith fadeOut(animationSpec = pageFadeSpring())
                         },
                         label = "page",
                     ) { dest ->
-                        val vis = this@AnimatedContent
-                        val shared = this@SharedTransitionLayout
                         Box(
                             Modifier
                                 .fillMaxSize()
@@ -434,6 +427,7 @@ fun MagsSignedInScaffold(
                                     alpha = overlayAlpha
                                 },
                         ) {
+                            StaggerScope {
                             when (dest) {
                                 MagsPage.Vandaag -> TodayScreen(
                                     profile = profile,
@@ -466,8 +460,6 @@ fun MagsSignedInScaffold(
                                     homework = homework,
                                     clockDate = clockDate,
                                     clockTime = clockTime,
-                                    sharedTransitionScope = shared,
-                                    animatedVisibilityScope = vis,
                                     onOpenPage = { next ->
                                         if (next.isDockTab) lastDock = next
                                         page = next
@@ -545,6 +537,7 @@ fun MagsSignedInScaffold(
                                     unreadMessages = messages.count { !it.isRead },
                                     onOpenMessages = { page = MagsPage.Berichten },
                                 )
+                            }
                             }
                         }
                     }

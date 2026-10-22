@@ -2,14 +2,17 @@ package nl.cita.magister.ui.schedule
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +42,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -84,8 +88,9 @@ import nl.cita.magister.ui.nextLessonHint
 import nl.cita.magister.ui.theme.CitaAction
 import nl.cita.magister.ui.upcomingTaskHint
 import nl.cita.magister.ui.motion.PressScaleCard
-import nl.cita.magister.ui.motion.magsSharedBounds
-import nl.cita.magister.ui.motion.magsSpring
+import nl.cita.magister.ui.motion.StaggerScope
+import nl.cita.magister.ui.motion.pageFadeSpring
+import nl.cita.magister.ui.motion.pressSpring
 import nl.cita.magister.ui.motion.staggerEnter
 import nl.cita.magister.ui.nav.MagsChrome
 import java.time.DayOfWeek
@@ -105,7 +110,6 @@ private val nl = Locale("nl", "NL")
 private val titleDay = DateTimeFormatter.ofPattern("EEEE d MMMM", nl)
 private const val WeekRadius = 40
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ScheduleScreen(
     appointments: List<Appointment>,
@@ -117,8 +121,6 @@ fun ScheduleScreen(
     homework: List<HomeworkItem> = emptyList(),
     clockDate: LocalDate = LocalDate.now(zone),
     clockTime: LocalTime = LocalTime.now(zone),
-    sharedTransitionScope: SharedTransitionScope? = null,
-    animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onOpenPage: (MagsPage) -> Unit = {},
 ) {
     val today = clockDate
@@ -204,7 +206,16 @@ fun ScheduleScreen(
             AnimatedContent(
                 targetState = selected,
                 modifier = Modifier.testTag("rooster-titel-$selected"),
-                transitionSpec = { fadeIn(magsSpring()) togetherWith fadeOut() },
+                transitionSpec = {
+                    val dir = if (targetState.isAfter(initialState)) 1 else -1
+                    (
+                        fadeIn(pageFadeSpring()) +
+                            slideInVertically { dir * 16 } +
+                            scaleIn(initialScale = 0.98f, animationSpec = pageFadeSpring())
+                        ) togetherWith (
+                        fadeOut(pageFadeSpring()) + slideOutVertically { -dir * 12 }
+                    )
+                },
                 label = "rooster-titel",
             ) { date ->
                 PageTitle("Rooster", date.format(titleDay).replaceFirstChar { it.titlecase(nl) })
@@ -218,8 +229,6 @@ fun ScheduleScreen(
                 today = today,
                 weekendLessons = weekendLessons,
                 onPick = ::jumpTo,
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope,
             )
             if (today in days && selected != today) {
                 FilledTonalButton(
@@ -242,32 +251,43 @@ fun ScheduleScreen(
             val date = days[page]
             val ofDay = (byDate[date] ?: emptyList()).sortedBy { it.startIso }
             val pageOffset = (pager.currentPage - page) + pager.currentPageOffsetFraction
-            val scale = 1f - 0.035f * abs(pageOffset).coerceAtMost(1f)
-            if (loading && appointments.isEmpty()) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = MagsChrome.PageGutter, vertical = 12.dp),
-                ) {
-                    ListSkeleton(rows = 3, contentDescription = "Rooster laden")
+            val away = abs(pageOffset).coerceAtMost(1f)
+            val scale = 1f - 0.06f * away
+            val pageAlpha = 1f - 0.14f * away
+            Crossfade(
+                targetState = loading && appointments.isEmpty(),
+                animationSpec = pageFadeSpring(),
+                label = "rooster-load",
+            ) { skeleton ->
+                if (skeleton) {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = MagsChrome.PageGutter, vertical = 12.dp),
+                    ) {
+                        ListSkeleton(rows = 3, contentDescription = "Rooster laden")
+                    }
+                } else {
+                    StaggerScope {
+                        DayTimeline(
+                            date = date,
+                            lessons = ofDay,
+                            allAppointments = appointments,
+                            homework = homework,
+                            contentBottom = contentPadding.calculateBottomPadding(),
+                            today = today,
+                            now = clockTime,
+                            onOpen = { openLesson = it },
+                            onOpenPage = onOpenPage,
+                            onTomorrow = { jumpTo(date.plusDays(1)) },
+                            modifier = Modifier.graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                                alpha = pageAlpha
+                            },
+                        )
+                    }
                 }
-            } else {
-                DayTimeline(
-                    date = date,
-                    lessons = ofDay,
-                    allAppointments = appointments,
-                    homework = homework,
-                    contentBottom = contentPadding.calculateBottomPadding(),
-                    today = today,
-                    now = clockTime,
-                    onOpen = { openLesson = it },
-                    onOpenPage = onOpenPage,
-                    onTomorrow = { jumpTo(date.plusDays(1)) },
-                    modifier = Modifier.graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                    },
-                )
             }
         }
     }
@@ -281,7 +301,6 @@ fun ScheduleScreen(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun WeekStrip(
     weekPager: PagerState,
@@ -291,8 +310,6 @@ private fun WeekStrip(
     today: LocalDate,
     weekendLessons: Set<LocalDate>,
     onPick: (LocalDate) -> Unit,
-    sharedTransitionScope: SharedTransitionScope?,
-    animatedVisibilityScope: AnimatedVisibilityScope?,
 ) {
     HorizontalPager(
         state = weekPager,
@@ -311,13 +328,10 @@ private fun WeekStrip(
             days = days,
             today = today,
             onPick = onPick,
-            sharedTransitionScope = sharedTransitionScope,
-            animatedVisibilityScope = animatedVisibilityScope,
         )
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun WeekChips(
     weekDays: List<LocalDate>,
@@ -325,16 +339,16 @@ private fun WeekChips(
     days: List<LocalDate>,
     today: LocalDate,
     onPick: (LocalDate) -> Unit,
-    sharedTransitionScope: SharedTransitionScope?,
-    animatedVisibilityScope: AnimatedVisibilityScope?,
 ) {
     val density = LocalDensity.current
     var stripWidth by remember { mutableIntStateOf(0) }
     val slot = if (weekDays.isEmpty() || stripWidth == 0) 0f else stripWidth / weekDays.size.toFloat()
-    val pillIndex = weekdayOffset(dayPager, days, weekDays)
     val onThisWeek = weekDays.any { it == days.getOrNull(dayPager.currentPage) }
-    val pillAlpha = if (onThisWeek) 1f else 0f
-    val selectedDate = days.getOrNull(dayPager.currentPage)
+    val pillAlpha by animateFloatAsState(
+        targetValue = if (onThisWeek) 1f else 0f,
+        animationSpec = pageFadeSpring(),
+        label = "week-pill-alpha",
+    )
 
     Box(
         Modifier
@@ -342,22 +356,19 @@ private fun WeekChips(
             .height(64.dp)
             .onSizeChanged { stripWidth = it.width },
     ) {
-        if (slot > 0f && pillAlpha > 0f) {
+        if (slot > 0f) {
             Box(
                 Modifier
-                    .offset { IntOffset((pillIndex * slot).roundToInt(), 0) }
+                    .offset {
+                        val index = weekdayOffset(dayPager, days, weekDays)
+                        IntOffset((index * slot).roundToInt(), 0)
+                    }
                     .width(with(density) { slot.toDp() })
                     .fillMaxHeight()
                     .padding(horizontal = 2.dp)
-                    .then(
-                        magsSharedBounds(
-                            key = "week-day-${selectedDate ?: today}",
-                            scope = sharedTransitionScope,
-                            visibility = animatedVisibilityScope,
-                        ),
-                    )
+                    .graphicsLayer { alpha = pillAlpha }
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = pillAlpha))
+                    .background(MaterialTheme.colorScheme.secondaryContainer)
                     .testTag("week-pill"),
             )
         }
@@ -368,13 +379,27 @@ private fun WeekChips(
             weekDays.forEach { day ->
                 val closest = days.getOrNull(dayPager.currentPage)
                 val selectedDay = closest == day
+                val chipInteraction = remember(day) { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                val chipPressed by chipInteraction.collectIsPressedAsState()
+                val chipScale by animateFloatAsState(
+                    targetValue = if (chipPressed) 0.96f else 1f,
+                    animationSpec = pressSpring(),
+                    label = "week-press-$day",
+                )
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
+                        .graphicsLayer {
+                            scaleX = chipScale
+                            scaleY = chipScale
+                        }
                         .clip(CircleShape)
                         .hapticOnDown(HapticEvent.WeekChip)
-                        .clickable { onPick(day) }
+                        .clickable(
+                            interactionSource = chipInteraction,
+                            indication = androidx.compose.material3.ripple(bounded = true),
+                        ) { onPick(day) }
                         .padding(vertical = 6.dp)
                         .testTag("week-pick-$day"),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -383,7 +408,7 @@ private fun WeekChips(
                     Text(
                         day.dayOfWeek.getDisplayName(TextStyle.SHORT, nl).replaceFirstChar { it.titlecase(nl) },
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = if (selectedDay) FontWeight.SemiBold else FontWeight.Medium,
+                        fontWeight = FontWeight.Medium,
                         color = if (selectedDay) MaterialTheme.colorScheme.onSecondaryContainer
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -474,7 +499,7 @@ private fun DayTimeline(
         itemsIndexed(slots, key = { _, slot -> slotKey(slot) }) { index, slot ->
             when (slot) {
                 is DaySlot.Gap -> {
-                    Box(Modifier.staggerEnter(index)) {
+                    Box(Modifier.staggerEnter(index, key = slotKey(slot))) {
                         if (slot.kind == GapKind.FreePeriod) GapRow(slot) else BreakMark()
                         if (isToday && nowInsideGap(slot, now)) {
                             NowLine(Modifier.align(Alignment.Center))
@@ -488,7 +513,7 @@ private fun DayTimeline(
                         current = current,
                         now = now,
                         onClick = { onOpen(slot.item) },
-                        modifier = Modifier.staggerEnter(index),
+                        modifier = Modifier.staggerEnter(index, key = slotKey(slot)),
                     )
                 }
             }

@@ -1,5 +1,6 @@
 package nl.cita.magister.ui.homework
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -59,6 +60,7 @@ import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatWhen
 import nl.cita.magister.ui.latestGradeHint
 import nl.cita.magister.ui.motion.PressScaleCard
+import nl.cita.magister.ui.motion.pageFadeSpring
 import nl.cita.magister.ui.motion.staggerEnter
 import nl.cita.magister.ui.nav.MagsChrome
 import nl.cita.magister.ui.nav.MagsPage
@@ -109,14 +111,31 @@ fun HomeworkScreen(
         }
     }
 
+    val showSkeleton = loading && items.isEmpty()
+    val listPadding = PaddingValues(
+        start = MagsChrome.PageGutter,
+        end = MagsChrome.PageGutter,
+        top = contentPadding.calculateTopPadding() + 8.dp,
+        bottom = contentPadding.calculateBottomPadding() + MagsChrome.ListBottomGap,
+    )
+    Crossfade(
+        targetState = showSkeleton,
+        animationSpec = pageFadeSpring(),
+        label = "huiswerk-load",
+        modifier = Modifier.fillMaxSize(),
+    ) { skeleton ->
+    if (skeleton) {
+        Column(
+            Modifier.fillMaxSize().padding(listPadding),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            PageTitle("Huiswerk", "$openCount open")
+            ListSkeleton(rows = 3, contentDescription = "Huiswerk laden")
+        }
+    } else {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag("huiswerk-lijst"),
-        contentPadding = PaddingValues(
-            start = MagsChrome.PageGutter,
-            end = MagsChrome.PageGutter,
-            top = contentPadding.calculateTopPadding() + 8.dp,
-            bottom = contentPadding.calculateBottomPadding() + MagsChrome.ListBottomGap,
-        ),
+        contentPadding = listPadding,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
@@ -132,9 +151,6 @@ fun HomeworkScreen(
                 ),
                 modifier = Modifier.fillMaxWidth(),
             )
-        }
-        if (loading && items.isEmpty()) {
-            item { ListSkeleton(rows = 3, contentDescription = "Huiswerk laden") }
         }
         if (buckets.isEmpty() && !loading) {
             item {
@@ -230,6 +246,8 @@ fun HomeworkScreen(
             }
         }
     }
+    }
+    }
 }
 
 @Composable
@@ -323,7 +341,7 @@ private fun HomeworkCard(
         },
         modifier = modifier
             .fillMaxWidth()
-            .staggerEnter(index)
+            .staggerEnter(index, key = item.id)
             .testTag("hw-kaart"),
     ) {
         PressScaleCard(colors = CardDefaults.cardColors(tone), modifier = Modifier.fillMaxWidth()) {

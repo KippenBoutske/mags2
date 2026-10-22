@@ -6,6 +6,7 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -75,6 +76,7 @@ import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.magsFloatSpring
 import nl.cita.magister.ui.motion.magsSharedBounds
 import nl.cita.magister.ui.motion.magsSpring
+import nl.cita.magister.ui.motion.pageFadeSpring
 import nl.cita.magister.ui.motion.staggerEnter
 import nl.cita.magister.ui.nav.MagsChrome
 import nl.cita.magister.ui.profileLine
@@ -121,6 +123,31 @@ fun GradesScreen(
             label = "cijfers-vak",
         ) { subject ->
             if (subject == null) {
+                Crossfade(
+                    targetState = refreshing && averages.isEmpty(),
+                    animationSpec = pageFadeSpring(),
+                    label = "cijfers-load",
+                    modifier = Modifier.fillMaxSize(),
+                ) { skeleton ->
+                if (skeleton) {
+                    Column(
+                        Modifier
+                            .fillMaxSize()
+                            .padding(
+                                start = MagsChrome.PageGutter,
+                                end = MagsChrome.PageGutter,
+                                top = contentPadding.calculateTopPadding() + 8.dp,
+                                bottom = contentPadding.calculateBottomPadding() + MagsChrome.ListBottomGap,
+                            ),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        PageTitle(
+                            "Cijfers",
+                            profile?.let { profileLine(it.firstName, it.className, it.study) },
+                        )
+                        ListSkeleton(rows = 3, contentDescription = "Cijfers laden")
+                    }
+                } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().testTag("cijfers-lijst"),
                     contentPadding = PaddingValues(
@@ -162,9 +189,6 @@ fun GradesScreen(
                             Text("Per vak", style = MaterialTheme.typography.titleLarge)
                         }
                     }
-                    if (refreshing && averages.isEmpty()) {
-                        item { ListSkeleton(rows = 3, contentDescription = "Cijfers laden") }
-                    }
                     if (!refreshing && visible.isEmpty()) {
                         item {
                             EmptyState(
@@ -180,7 +204,7 @@ fun GradesScreen(
                             grades = grades.filter { it.subjectId == item.subjectId && it.columnType == GradeColumnType.Grade },
                             onOpen = { openSubject = item },
                             modifier = Modifier
-                                .staggerEnter(index)
+                                .staggerEnter(index, key = item.subjectId)
                                 .animateItem()
                                 .then(
                                     magsSharedBounds(
@@ -191,6 +215,8 @@ fun GradesScreen(
                                 ),
                         )
                     }
+                }
+                }
                 }
             } else {
                 SubjectPage(
@@ -356,7 +382,7 @@ private fun SubjectPage(
             PressScaleCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .staggerEnter(index)
+                    .staggerEnter(index, key = grade.id)
                     .testTag("cijfers-cijfer"),
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
                 onClick = { onGrade(grade) },

@@ -9,7 +9,6 @@ import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -134,11 +133,8 @@ fun CitaTheme(
     val context = LocalContext.current
     val scheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (androidx.compose.foundation.isSystemInDarkTheme()) {
-                dynamicDarkColorScheme(context)
-            } else {
-                dynamicLightColorScheme(context)
-            }
+            // Mags is Donker warm; systeem-licht (Pixel beige) nooit volgen.
+            dynamicDarkColorScheme(context)
         }
         else -> WarmDarkScheme
     }

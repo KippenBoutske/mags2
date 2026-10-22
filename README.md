@@ -15,8 +15,10 @@ Mags is **geen** product van Iddink/Magister. Werkt met elke Magister-school. Al
 - **Deel**-icoon rechtsboven op Cijfers: JSON naar Meer → Geavanceerd, anders het Android-deelblad
 - Adaptive icoon + Android 13-monochroom + SplashScreen-animatie
 - Live schoolzoeken
-- Offline cache, pull-to-refresh, Material 3 Expressive (shared elements, spring-lijst, morphing `LoadingIndicator`)
-- Donker-warm thema (concept 1), Photos-stijl zwevende navbar
+- Offline cache, pull-to-refresh, Material 3 Expressive (shared elements, spring-lijst)
+- Tabwissels als fade-through (fade + scale), navbar-pill op spring, rooster-dagindicator volgt de pager
+- Kaarten staggeren bij eerste verschijning; laden via shimmer-skeletons i.p.v. spinner
+- Donker-warm thema (concept 1, default; systeemkleuren blijven donker), Photos-stijl zwevende navbar
 - Material You onder Meer
 - Pixel-achtige haptics (direct op touch, Trillen + Licht/Normaal/Sterk onder Meer)
 - 48 dp-targets, font-schaal 1.3×

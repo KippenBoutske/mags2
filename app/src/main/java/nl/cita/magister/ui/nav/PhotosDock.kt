@@ -1,6 +1,7 @@
 package nl.cita.magister.ui.nav
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -14,10 +15,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
@@ -40,38 +39,39 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import nl.cita.magister.haptics.HapticEvent
 import nl.cita.magister.haptics.hapticOnDown
 import nl.cita.magister.ui.motion.dockIndicatorSpring
+import nl.cita.magister.ui.motion.pressSpring
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
- * Photos-stijl dock: precies één indicator, geen per-item ripple/selected-laag.
+ * Photos-stijl dock: één spring-pill (LowBouncy / MediumLow) over de tabs.
  *
- * Ghost pill (0.1.9): `clip(CircleShape)` + `ripple(bounded)` tekende een
- * persistente state-layer achter Vandaag, én de overlay-indicator kon op een
- * stale offset (x=0) blijven staan. Tabs hebben `indication = null` (pressed
- * is alleen schaal). De indicator leeft in de geselecteerde tab via
- * `matchParentSize` — die kan niet op een andere tab hinterblijven — en een
- * optionele overlay animeert alleen als we een geldige doel-rect hebben.
- * De pill wrapt haar inhoud (geen `weight(1f)`).
+ * Breedte en X gaan via Animatable + `Modifier.layout`, dus geen per-frame
+ * recompose. Label/tint-alpha volgt de overlap met die pill in `graphicsLayer`.
+ * FontWeight blijft Medium (geen breedte-pop). Press: bounded ripple + 0.96.
  */
 @Composable
 fun PhotosDock(
@@ -126,7 +126,6 @@ private fun DockPill(
     onIndicator: Color,
     onSelect: (MagsPage) -> Unit,
 ) {
-    val density = LocalDensity.current
     val tabBounds = remember { mutableStateMapOf<MagsPage, Rect>() }
     val indicatorX = remember { Animatable(0f) }
     val indicatorW = remember { Animatable(0f) }
@@ -160,14 +159,27 @@ private fun DockPill(
             .onGloballyPositioned { pillCoords = it }
             .testTag("dock-pill"),
     ) {
-        val sliding = placed && canSlide && indicatorW.value > 0.5f
+        val sliding = placed && canSlide
         Box(Modifier.matchParentSize()) {
             if (sliding) {
                 Box(
                     Modifier
-                        .offset { IntOffset(indicatorX.value.roundToInt(), 0) }
-                        .width(with(density) { indicatorW.value.toDp() })
                         .fillMaxHeight()
+                        .layout { measurable, constraints ->
+                            val w = indicatorW.value.roundToInt().coerceAtLeast(0)
+                            val x = indicatorX.value.roundToInt()
+                            val placeable = measurable.measure(
+                                constraints.copy(
+                                    minWidth = w,
+                                    maxWidth = w,
+                                    minHeight = constraints.maxHeight,
+                                    maxHeight = constraints.maxHeight,
+                                ),
+                            )
+                            layout(constraints.maxWidth, constraints.maxHeight) {
+                                placeable.placeRelative(x, 0)
+                            }
+                        }
                         .clip(CircleShape)
                         .background(indicatorColor)
                         .testTag("dock-indicator"),
@@ -185,10 +197,17 @@ private fun DockPill(
                 val isSelected = tab.page == selected
                 val interaction = remember(tab.page) { MutableInteractionSource() }
                 val pressed by interaction.collectIsPressedAsState()
+                val pressScale by animateFloatAsState(
+                    targetValue = if (pressed) 0.96f else 1f,
+                    animationSpec = pressSpring(),
+                    label = "dock-press-${tab.page}",
+                )
+                val bounds = tabBounds[tab.page]
                 Box(
                     modifier = Modifier
                         .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
                         .fillMaxHeight()
+                        .clip(CircleShape)
                         .onGloballyPositioned { coords ->
                             val pill = pillCoords ?: return@onGloballyPositioned
                             if (!pill.isAttached || !coords.isAttached) return@onGloballyPositioned
@@ -210,14 +229,13 @@ private fun DockPill(
                         .hapticOnDown(HapticEvent.TabSwitch, enabled = tab.page != selected)
                         .clickable(
                             interactionSource = interaction,
-                            indication = null,
+                            indication = ripple(bounded = true),
                         ) {
                             onSelect(tab.page)
                         }
                         .graphicsLayer {
-                            val scale = if (pressed) 0.94f else 1f
-                            scaleX = scale
-                            scaleY = scale
+                            scaleX = pressScale
+                            scaleY = pressScale
                         }
                         .testTag("dock-tab-${tab.page.name}")
                         .semantics {
@@ -238,7 +256,21 @@ private fun DockPill(
                     Column(
                         modifier = Modifier
                             .widthIn(min = 52.dp, max = 64.dp)
-                            .padding(horizontal = 4.dp),
+                            .padding(horizontal = 4.dp)
+                            .graphicsLayer {
+                                val cover = if (sliding && bounds != null && bounds.width > 0f) {
+                                    val left = max(bounds.left, indicatorX.value)
+                                    val right = min(bounds.right, indicatorX.value + indicatorW.value)
+                                    ((right - left) / bounds.width).coerceIn(0f, 1f)
+                                } else {
+                                    if (isSelected) 1f else 0f
+                                }
+                                alpha = 0.72f + 0.28f * cover
+                                colorFilter = ColorFilter.tint(
+                                    lerp(onPill, onIndicator, cover),
+                                    BlendMode.SrcIn,
+                                )
+                            },
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(1.dp),
                     ) {
@@ -246,14 +278,14 @@ private fun DockPill(
                             tab.icon,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
-                            tint = if (isSelected) onIndicator else onPill,
+                            tint = Color.White,
                         )
                         Text(
                             tab.label,
-                            color = if (isSelected) onIndicator else onPill,
+                            color = Color.White,
                             fontSize = 9.sp,
                             lineHeight = 11.sp,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                            fontWeight = FontWeight.Medium,
                             maxLines = 1,
                             overflow = TextOverflow.Clip,
                             softWrap = false,
@@ -273,9 +305,19 @@ private fun SearchFab(
     onClick: () -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (pressed) 0.96f else 1f,
+        animationSpec = pressSpring(),
+        label = "search-press",
+    )
     Box(
         modifier = Modifier
             .size(size)
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            }
             .shadow(6.dp, CircleShape, ambientColor = Color.Black.copy(alpha = 0.28f), spotColor = Color.Black.copy(alpha = 0.34f))
             .clip(CircleShape)
             .background(container)

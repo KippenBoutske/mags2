@@ -1,5 +1,6 @@
 package nl.cita.magister.ui.messages
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,6 +28,7 @@ import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatWhen
 import nl.cita.magister.ui.motion.PressScaleCard
+import nl.cita.magister.ui.motion.pageFadeSpring
 import nl.cita.magister.ui.motion.staggerEnter
 import nl.cita.magister.ui.nav.MagsChrome
 
@@ -40,25 +42,36 @@ fun MessagesScreen(
     messagesError: ApiFailure? = null,
     loading: Boolean = false,
 ) {
+    val showSkeleton = loading && messages.isEmpty() && messagesError == null
+    val listPadding = PaddingValues(
+        start = MagsChrome.PageGutter,
+        end = MagsChrome.PageGutter,
+        top = contentPadding.calculateTopPadding() + 4.dp,
+        bottom = contentPadding.calculateBottomPadding() + MagsChrome.ListBottomGap,
+    )
+    Crossfade(
+        targetState = showSkeleton,
+        animationSpec = pageFadeSpring(),
+        label = "berichten-load",
+        modifier = Modifier.fillMaxSize(),
+    ) { skeleton ->
+    if (skeleton) {
+        Column(
+            Modifier.fillMaxSize().padding(listPadding),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            PageTitle("Berichten", null)
+            ListSkeleton(rows = 4, contentDescription = "Berichten laden")
+        }
+    } else {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            start = MagsChrome.PageGutter,
-            end = MagsChrome.PageGutter,
-            top = contentPadding.calculateTopPadding() + 4.dp,
-            bottom = contentPadding.calculateBottomPadding() + MagsChrome.ListBottomGap,
-        ),
+        contentPadding = listPadding,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item { PageTitle("Berichten", null) }
         messagesError?.let { item { SectionError(it) } }
-        if (loading && messages.isEmpty() && messagesError == null) {
-            item { ListSkeleton(rows = 4, contentDescription = "Berichten laden") }
-        }
-        if (messages.isEmpty() && messagesError == null && !loading) {
-            item { Text("Geen berichten.") }
-        }
-        if (messages.isEmpty() && messagesError != null) {
+        if (messages.isEmpty()) {
             item { Text("Geen berichten.") }
         }
         itemsIndexed(messages, key = { _, it -> it.id }) { index, message ->
@@ -71,7 +84,7 @@ fun MessagesScreen(
                 colors = colors,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .staggerEnter(index)
+                    .staggerEnter(index, key = message.id)
                     .animateItem(),
                 onClick = { onOpen(message.id) },
             ) {
@@ -89,6 +102,8 @@ fun MessagesScreen(
                 }
             }
         }
+    }
+    }
     }
     if (detail != null) {
         ModalBottomSheet(onDismissRequest = onClose, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {

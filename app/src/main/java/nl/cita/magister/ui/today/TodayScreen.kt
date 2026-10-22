@@ -1,5 +1,6 @@
 package nl.cita.magister.ui.today
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -43,6 +44,8 @@ import nl.cita.magister.ui.components.TodaySkeleton
 import nl.cita.magister.ui.grades.LatestGradesStrip
 import nl.cita.magister.ui.localDateOf
 import nl.cita.magister.ui.motion.PressScaleCard
+import nl.cita.magister.ui.motion.pageFadeSpring
+import nl.cita.magister.ui.motion.staggerEnter
 import nl.cita.magister.ui.nextLessonHint
 import nl.cita.magister.ui.AppClock
 import nl.cita.magister.ui.nav.MagsChrome
@@ -87,15 +90,35 @@ fun TodayScreen(
     val openHw = remember(homework) { homework.filter { !it.isDone }.sortedBy { it.dueIso } }
     val latest = remember(grades) { GradeCalculator.latestEarnedGrades(grades) }
     val unread = remember(messages) { messages.filter { !it.isRead } }
+    val showSkeleton = loading && ofDay.isEmpty() && openHw.isEmpty() && latest.isEmpty()
+    val listPadding = PaddingValues(
+        start = MagsChrome.PageGutter,
+        end = MagsChrome.PageGutter,
+        top = contentPadding.calculateTopPadding() + 4.dp,
+        bottom = contentPadding.calculateBottomPadding() + MagsChrome.ListBottomGap,
+    )
 
+    Crossfade(
+        targetState = showSkeleton,
+        animationSpec = pageFadeSpring(),
+        label = "today-load",
+        modifier = Modifier.fillMaxSize(),
+    ) { skeleton ->
+    if (skeleton) {
+        Column(
+            Modifier.fillMaxSize().padding(listPadding),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            PageTitle(
+                title = "Vandaag",
+                subtitle = today.format(longDay).replaceFirstChar { it.titlecase(nl) },
+            )
+            TodaySkeleton()
+        }
+    } else {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            start = MagsChrome.PageGutter,
-            end = MagsChrome.PageGutter,
-            top = contentPadding.calculateTopPadding() + 4.dp,
-            bottom = contentPadding.calculateBottomPadding() + MagsChrome.ListBottomGap,
-        ),
+        contentPadding = listPadding,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
@@ -115,13 +138,11 @@ fun TodayScreen(
             }
         }
         agendaError?.let { item { SectionError(it) } }
-        if (loading && ofDay.isEmpty() && openHw.isEmpty() && latest.isEmpty()) {
-            item { TodaySkeleton() }
-            return@LazyColumn
-        }
         item {
             PressScaleCard(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .staggerEnter(0, key = "hero"),
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
                 onClick = { onOpenPage(MagsPage.Rooster) },
             ) {
@@ -219,6 +240,7 @@ fun TodayScreen(
             PressScaleCard(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .staggerEnter(1, key = "hw")
                     .testTag("today-homework"),
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
                 onClick = { onOpenPage(MagsPage.Huiswerk) },
@@ -250,7 +272,9 @@ fun TodayScreen(
         if (unread.isNotEmpty()) {
             item {
                 PressScaleCard(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .staggerEnter(2, key = "mail"),
                     colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
                     onClick = { onOpenPage(MagsPage.Berichten) },
                 ) {
@@ -268,6 +292,8 @@ fun TodayScreen(
                 Text("Hoi $it", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
+    }
+    }
     }
 }
 
