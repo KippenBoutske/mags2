@@ -22,6 +22,7 @@ enum class FakeScenario {
     NoGrades,
     LongNames,
     ManyHomework,
+    CitadelAverages,
 }
 
 /**
@@ -59,6 +60,7 @@ class FakeMagister(
             path.endsWith("/api/versie") -> json(200, """{"ApiVersie":"1.0","core":"fake"}""")
             path.endsWith("/api/account") -> json(200, MockFixtures.accountJson)
             path.contains("/aanmeldingen") && !path.contains("cijfers") -> json(200, MockFixtures.enrollmentsJson)
+            path.contains("extracijferkolominfo") -> extraColumn(path)
             path.contains("/cijfers/") || path.contains("/cijfers") -> grades()
             path.contains("/afspraken") -> agenda()
             path.contains("/absenties") -> extra(FakeScenario.AbsencesForbidden, MockFixtures.absencesJson)
@@ -98,12 +100,18 @@ class FakeMagister(
         when (scenario) {
             FakeScenario.GradesForbidden -> json(403, """{"fouttype":"OnvoldoendePrivileges"}""")
             FakeScenario.NoGrades -> json(200, """{"Items":[]}""")
+            FakeScenario.CitadelAverages -> json(200, MockFixtures.citadelGradesJson)
             FakeScenario.LongNames -> json(
                 200,
                 MockFixtures.gradesJson.replace("Nederlands", "Maatschappijwetenschappen en levensbeschouwing"),
             )
             else -> json(200, MockFixtures.gradesJson)
         }
+
+    private fun extraColumn(path: String): MockResponse {
+        val columnId = path.substringAfterLast('/').substringBefore('?').toIntOrNull() ?: 0
+        return json(200, MockFixtures.extraColumnInfoJson(columnId))
+    }
 
     private fun agenda(): MockResponse =
         when (scenario) {

@@ -81,23 +81,26 @@ object MagisterParsers {
         val items = MagisterJson.instance.decodeFromString<ItemsDto<RecentGradeDto>>(json).all
         return items.mapIndexed { index, dto ->
             val value = dto.value
+            val numeric = GradeCalculator.parseDutchNumber(value)
+            val type = columnType(null, dto.description, dto.description, dto.description)
             Grade(
                 id = dto.columnId ?: -(index + 1),
                 value = value,
-                numericValue = GradeCalculator.parseDutchNumber(value),
-                isSufficient = dto.isSufficient ?: ((GradeCalculator.parseDutchNumber(value) ?: 0.0) >= 5.5),
-                counts = true,
+                numericValue = numeric,
+                isSufficient = dto.isSufficient ?: ((numeric ?: 0.0) >= 5.5),
+                counts = type == GradeColumnType.Grade && numeric != null,
                 weight = dto.weight,
                 subjectId = dto.subject?.id ?: 0,
                 subjectName = dto.subject?.name ?: "Onbekend",
                 subjectCode = dto.subject?.code ?: "?",
                 columnHeading = dto.description,
                 columnDescription = dto.description,
-                columnType = GradeColumnType.Grade,
+                columnType = type,
                 teacher = null,
                 enteredAt = dto.enteredAt,
                 periodName = null,
                 isPta = false,
+                columnId = dto.columnId,
             )
         }
     }
@@ -260,10 +263,69 @@ object MagisterParsers {
         }
     }
 
-    fun columnType(code: Int?): GradeColumnType = when (code) {
-        1 -> GradeColumnType.Grade
-        2, 13 -> if (code == 13) GradeColumnType.End else GradeColumnType.Average
-        else -> GradeColumnType.Other
+    fun columnType(
+        code: Int?,
+        name: String? = null,
+        heading: String? = null,
+        description: String? = null,
+    ): GradeColumnType {
+        if (looksLikeEnd(name, heading, description) || code == 13) return GradeColumnType.End
+        if (looksLikeAverage(name, heading, description) || code == 2) return GradeColumnType.Average
+        return when (code) {
+            1 -> GradeColumnType.Grade
+            else -> GradeColumnType.Other
+        }
+    }
+
+    fun looksLikeAverage(name: String?, heading: String?, description: String?): Boolean {
+        val headingNorm = heading?.trim()?.lowercase().orEmpty()
+        if (headingNorm in setOf("gem", "vg", "se") || headingNorm.contains("se cijfer")) return true
+        if (name?.trim()?.equals("gem", ignoreCase = true) == true) return true
+        val blob = listOfNotNull(name, heading, description).joinToString(" ").lowercase()
+        return blob.contains("gemiddelde") || blob.contains("voortschrijdend")
+    }
+
+    fun looksLikeEnd(name: String?, heading: String?, description: String?): Boolean {
+        val headingNorm = heading?.trim()?.lowercase().orEmpty()
+        if (headingNorm in setOf("eind", "eindc", "rap", "rapp")) return true
+        val blob = listOfNotNull(name, heading, description).joinToString(" ").lowercase()
+        return blob.contains("eindcijfer") || blob.contains("rapportcijfer")
+    }
+
+    fun applyColumnInfo(
+        grades: List<Grade>,
+        extra: Map<Int, nl.cita.magister.dto.GradeColumnInfoDto>,
+        extraWeights: Map<Int, Double> = emptyMap(),
+    ): List<Grade> {
+        if (extra.isEmpty() && extraWeights.isEmpty()) return grades
+        return grades.map { grade ->
+            val columnId = grade.columnId ?: return@map grade
+            val info = extra[columnId]
+            val weight = extraWeights[columnId] ?: info?.resolvedWeight ?: grade.weight
+            val type = if (info != null) {
+                columnType(info.type, info.name ?: grade.columnHeading, info.heading ?: grade.columnHeading, info.description)
+            } else {
+                grade.columnType
+            }
+            val retakeOf = info?.resolvedRetakeOf
+                ?: if (info?.isRetake == true || info?.isRetakeColumn == true) grade.replacesColumnId else grade.replacesColumnId
+            val numeric = grade.numericValue ?: GradeCalculator.parseDutchNumber(grade.value)
+            val counts = when {
+                type != GradeColumnType.Grade -> false
+                info?.counts == false || info?.countsInRunning == false -> false
+                numeric == null -> false
+                weight != null && weight <= 0.0 -> false
+                else -> grade.counts
+            }
+            grade.copy(
+                weight = weight,
+                columnType = type,
+                replacesColumnId = retakeOf ?: grade.replacesColumnId,
+                counts = counts,
+                columnHeading = info?.heading?.takeIf { it.isNotBlank() } ?: grade.columnHeading,
+                columnDescription = info?.description?.takeIf { it.isNotBlank() } ?: grade.columnDescription,
+            )
+        }
     }
 
     private fun mapGrade(dto: GradeDto, extraWeights: Map<Int, Double>): Grade? {
@@ -271,14 +333,28 @@ object MagisterParsers {
         val subject = dto.subject
         val column = dto.column
         val columnId = column?.id
-        val weight = extraWeights[columnId] ?: column?.weight ?: dto.weightAlt
-        val type = columnType(column?.type)
+        val weight = extraWeights[columnId]
+            ?: column?.weight
+            ?: column?.weightRow
+            ?: dto.weightPascal
+            ?: dto.weightRow
+            ?: dto.weightAlt
+        val type = columnType(column?.type, column?.name, column?.heading, column?.description)
+        val numeric = GradeCalculator.parseDutchNumber(dto.value)
+        val retakeOf = column?.retakeOf ?: column?.retakeOfAlt
+        val counts = when {
+            type != GradeColumnType.Grade -> false
+            dto.counts == false -> false
+            numeric == null -> false
+            weight != null && weight <= 0.0 -> false
+            else -> dto.counts ?: true
+        }
         return Grade(
             id = id,
             value = dto.value,
-            numericValue = GradeCalculator.parseDutchNumber(dto.value),
-            isSufficient = dto.isSufficient ?: ((GradeCalculator.parseDutchNumber(dto.value) ?: 0.0) >= 5.5),
-            counts = dto.counts ?: (type == GradeColumnType.Grade),
+            numericValue = numeric,
+            isSufficient = dto.isSufficient ?: ((numeric ?: 0.0) >= 5.5),
+            counts = counts,
             weight = weight,
             subjectId = subject?.id ?: 0,
             subjectName = subject?.name ?: subject?.nameAlt ?: "Onbekend",
@@ -290,6 +366,8 @@ object MagisterParsers {
             enteredAt = dto.enteredAt,
             periodName = dto.period?.name,
             isPta = column?.isPta == true,
+            columnId = columnId,
+            replacesColumnId = retakeOf,
         )
     }
 }

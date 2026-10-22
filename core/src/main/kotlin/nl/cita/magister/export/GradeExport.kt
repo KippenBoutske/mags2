@@ -4,7 +4,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import nl.cita.magister.grades.GradeCalculator
 import nl.cita.magister.model.Grade
-import nl.cita.magister.model.GradeColumnType
 import nl.cita.magister.model.StudentProfile
 import java.time.Instant
 
@@ -67,11 +66,12 @@ object GradeExport {
         val bySubject = grades.groupBy { it.subjectId }
         val subjects = bySubject.values.map { items ->
             val first = items.first()
-            val counted = countedGrades(items)
+            val counted = GradeCalculator.countedGrades(items)
+            val summary = GradeCalculator.averagesBySubject(items).firstOrNull()
             ExportSubject(
                 code = first.subjectCode,
                 name = first.subjectName,
-                average = GradeCalculator.round1Nullable(GradeCalculator.weightedAverage(items)),
+                average = summary?.average?.let { GradeCalculator.round2(it) },
                 weighted = counted.any { (it.weight ?: 1.0) != 1.0 },
                 grades = counted.sortedBy { it.enteredAt.orEmpty() }.map { grade ->
                     ExportGrade(
@@ -134,11 +134,5 @@ object GradeExport {
         return false
     }
 
-    private fun countedGrades(grades: List<Grade>): List<Grade> =
-        grades.filter { it.counts && it.columnType == GradeColumnType.Grade }
-
     private fun formatNl(value: Double): String = String.format("%.1f", value).replace('.', ',')
 }
-
-private fun GradeCalculator.round1Nullable(value: Double?): Double? =
-    value?.let { GradeCalculator.round1(it) }

@@ -21,7 +21,7 @@ class GradeExportTest {
         assertEquals("citadel.magister.net", payload.student.tenant)
         assertTrue(payload.subjects.any { it.code == "wi" && it.weighted })
         val wiskunde = payload.subjects.first { it.code == "wi" }
-        assertEquals(5.9, wiskunde.average!!, 0.05)
+        assertEquals(5.85, wiskunde.average!!, 0.0001)
         assertTrue(payload.attention.any { it.code == "wi" })
         assertTrue(payload.attention.first { it.code == "wi" }.reason.contains("onder de 6,0"))
     }

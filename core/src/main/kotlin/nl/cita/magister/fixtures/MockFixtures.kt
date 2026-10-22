@@ -35,6 +35,44 @@ object MockFixtures {
     val accountJson get() = load("account.json")
     val enrollmentsJson get() = load("enrollments.json")
     val gradesJson get() = load("grades.json")
+    val citadelGradesJson get() = load("grades-citadel.json")
+
+    fun extraColumnInfoJson(columnId: Int): String {
+        data class Extra(
+            val weight: Double?,
+            val type: Int,
+            val heading: String,
+            val name: String,
+            val retakeOf: Int? = null,
+            val counts: Boolean = true,
+        )
+        val extra = when (columnId) {
+            101, 102, 103, 202, 301, 302 -> Extra(0.0, 2, "SE cijfer", "SE", counts = false)
+            201 -> Extra(2.0, 1, "Klassenwerk", "KW1")
+            303, 304 -> Extra(1.0, 1, "Toetsen/PO", "PO")
+            401 -> Extra(3.0, 1, "PW1", "PW1")
+            402 -> Extra(3.0, 1, "PW2", "PW2")
+            411 -> Extra(3.0, 1, "PW1", "PW1H", retakeOf = 401)
+            409 -> Extra(0.0, 2, "GEM", "gem", counts = false)
+            601 -> Extra(1.0, 1, "PW1", "PW1")
+            602 -> Extra(1.0, 1, "PW2", "PW2")
+            603 -> Extra(1.0, 1, "Houding", "LO")
+            else -> Extra(null, 1, "kolom $columnId", "K")
+        }
+        val weightJson = extra.weight?.let { """"Weging":$it,"Weegfactor":$it,""" }.orEmpty()
+        val retakeJson = extra.retakeOf?.let { """"IsHerkansing":true,"HerkansingVanKolomId":$it,""" }.orEmpty()
+        return """{"KolomNaam":"${extra.name}","KolomKop":"${extra.heading}","KolomOmschrijving":"${extra.heading}",$weightJson$retakeJson"KolomSoort":${extra.type},"TeltMee":${extra.counts}}"""
+    }
+
+    fun citadelGrades(withExtra: Boolean = true): List<Grade> {
+        val parsed = MagisterParsers.parseGrades(citadelGradesJson)
+        if (!withExtra) return parsed
+        val extra = parsed.mapNotNull { it.columnId }.distinct().associateWith { columnId ->
+            MagisterParsers.parseColumnInfo(extraColumnInfoJson(columnId))
+        }
+        return MagisterParsers.applyColumnInfo(parsed, extra)
+    }
+
     val appointmentsJson get() = load("appointments.json")
     val messagesJson get() = load("messages.json")
     val foldersJson get() = load("message_folders.json")

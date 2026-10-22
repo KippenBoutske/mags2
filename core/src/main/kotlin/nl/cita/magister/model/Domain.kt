@@ -32,6 +32,8 @@ data class Grade(
     val enteredAt: String?,
     val periodName: String?,
     val isPta: Boolean,
+    val columnId: Int? = null,
+    val replacesColumnId: Int? = null,
 )
 
 @Serializable
@@ -48,6 +50,7 @@ data class SubjectAverage(
     val subjectName: String,
     val subjectCode: String,
     val average: Double?,
+    val averageLabel: String? = null,
     val magisterAverage: Double?,
     val gradesCounted: Int,
     val weightSum: Double,

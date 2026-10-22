@@ -1,9 +1,15 @@
 package nl.cita.magister.data.repo
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.encodeToString
+import nl.cita.magister.dto.GradeColumnInfoDto
 import nl.cita.magister.api.KnownSchools
 import nl.cita.magister.api.MagisterEndpoints
 import nl.cita.magister.api.School
@@ -328,7 +334,34 @@ class MagisterRepository(
         val parsed = runCatching { MagisterParsers.parseGrades(json) }.getOrElse {
             MagisterParsers.parseRecentGrades(json)
         }
-        writeCache(KEY_GRADES, MagisterJson.instance.encodeToString(parsed))
+        val extra = fetchColumnInfo(root, resolved.personId, enrollmentId, parsed)
+        val enriched = MagisterParsers.applyColumnInfo(parsed, extra)
+        writeCache(KEY_GRADES, MagisterJson.instance.encodeToString(enriched))
+    }
+
+    private suspend fun fetchColumnInfo(
+        root: String,
+        personId: Int,
+        enrollmentId: Int,
+        grades: List<Grade>,
+    ): Map<Int, GradeColumnInfoDto> {
+        val ids = grades.mapNotNull { it.columnId }.distinct()
+        if (ids.isEmpty()) return emptyMap()
+        val limit = Semaphore(6)
+        return coroutineScope {
+            ids.map { columnId ->
+                async {
+                    limit.withPermit {
+                        runCatching {
+                            val body = http.get(
+                                MagisterEndpoints.gradeColumnInfo(root, personId, enrollmentId, columnId),
+                            )
+                            columnId to MagisterParsers.parseColumnInfo(body)
+                        }.getOrNull()
+                    }
+                }
+            }.awaitAll().filterNotNull().toMap()
+        }
     }
 
     suspend fun refreshAgenda(profile: StudentProfile? = null) {

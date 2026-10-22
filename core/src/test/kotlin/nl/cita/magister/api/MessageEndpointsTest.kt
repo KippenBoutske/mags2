@@ -30,6 +30,19 @@ class MessageEndpointsTest {
     }
 
     @Test
+    fun gradeColumnInfoUsesExtraCijferKolomInfo() {
+        assertEquals(
+            "https://citadel.magister.net/api/personen/424242/aanmeldingen/2025001/cijfers/extracijferkolominfo/201",
+            MagisterEndpoints.gradeColumnInfo(
+                "https://citadel.magister.net",
+                424242,
+                2025001,
+                201,
+            ),
+        )
+    }
+
+    @Test
     fun m6loappScopeUnchanged() {
         assertEquals(
             "openid profile offline_access magister.mobile magister.ecs",

@@ -1,0 +1,127 @@
+{
+  "Items": [
+    {
+      "CijferId": 1101,
+      "CijferStr": "6,9",
+      "TeltMee": true,
+      "Vak": { "Id": 10, "Afkorting": "anw", "Omschrijving": "algemene natuurwetenschappen" },
+      "CijferKolom": { "Id": 101, "KolomNaam": "SE", "KolomKop": "SE cijfer", "KolomOmschrijving": "SE cijfer", "KolomSoort": 1 },
+      "CijferPeriode": { "Id": 1, "Naam": "P1" }
+    },
+    {
+      "CijferId": 1102,
+      "CijferStr": "6,9",
+      "TeltMee": true,
+      "Vak": { "Id": 10, "Afkorting": "anw", "Omschrijving": "algemene natuurwetenschappen" },
+      "CijferKolom": { "Id": 102, "KolomNaam": "SE", "KolomKop": "SE cijfer", "KolomOmschrijving": "SE cijfer", "KolomSoort": 1 },
+      "CijferPeriode": { "Id": 2, "Naam": "P2" }
+    },
+    {
+      "CijferId": 1103,
+      "CijferStr": "6,9",
+      "TeltMee": true,
+      "Vak": { "Id": 10, "Afkorting": "anw", "Omschrijving": "algemene natuurwetenschappen" },
+      "CijferKolom": { "Id": 103, "KolomNaam": "SE", "KolomKop": "SE cijfer", "KolomOmschrijving": "SE cijfer", "KolomSoort": 1 },
+      "CijferPeriode": { "Id": 3, "Naam": "P3" }
+    },
+    {
+      "CijferId": 1201,
+      "CijferStr": "7,6",
+      "IsVoldoende": true,
+      "DatumIngevoerd": "2026-09-12T10:00:00.0000000Z",
+      "TeltMee": true,
+      "Vak": { "Id": 6, "Afkorting": "bi", "Omschrijving": "biologie" },
+      "CijferKolom": { "Id": 201, "KolomNaam": "KW1", "KolomKop": "Klassenwerk", "KolomOmschrijving": "Klassenwerk", "KolomSoort": 1 }
+    },
+    {
+      "CijferId": 1202,
+      "CijferStr": "4,8",
+      "IsVoldoende": false,
+      "TeltMee": true,
+      "Vak": { "Id": 6, "Afkorting": "bi", "Omschrijving": "biologie" },
+      "CijferKolom": { "Id": 202, "KolomNaam": "SE", "KolomKop": "SE cijfer", "KolomOmschrijving": "SE cijfer", "KolomSoort": 1 }
+    },
+    {
+      "CijferId": 1301,
+      "CijferStr": "6,4",
+      "TeltMee": true,
+      "Vak": { "Id": 8, "Afkorting": "ckv", "Omschrijving": "culturele kunstzinnige vorming" },
+      "CijferKolom": { "Id": 301, "KolomNaam": "SE", "KolomKop": "SE cijfer", "KolomSoort": 1 },
+      "CijferPeriode": { "Id": 1, "Naam": "P1" }
+    },
+    {
+      "CijferId": 1302,
+      "CijferStr": "6,4",
+      "TeltMee": true,
+      "Vak": { "Id": 8, "Afkorting": "ckv", "Omschrijving": "culturele kunstzinnige vorming" },
+      "CijferKolom": { "Id": 302, "KolomNaam": "SE", "KolomKop": "SE cijfer", "KolomSoort": 1 },
+      "CijferPeriode": { "Id": 2, "Naam": "P2" }
+    },
+    {
+      "CijferId": 1303,
+      "CijferStr": "V",
+      "TeltMee": true,
+      "Vak": { "Id": 8, "Afkorting": "ckv", "Omschrijving": "culturele kunstzinnige vorming" },
+      "CijferKolom": { "Id": 303, "KolomNaam": "PO1", "KolomKop": "Toetsen/PO", "KolomSoort": 1 }
+    },
+    {
+      "CijferId": 1304,
+      "CijferStr": "V",
+      "TeltMee": true,
+      "Vak": { "Id": 8, "Afkorting": "ckv", "Omschrijving": "culturele kunstzinnige vorming" },
+      "CijferKolom": { "Id": 304, "KolomNaam": "PO2", "KolomKop": "Toetsen/PO", "KolomSoort": 1 }
+    },
+    {
+      "CijferId": 1401,
+      "CijferStr": "6,8",
+      "TeltMee": true,
+      "DatumIngevoerd": "2026-09-01T10:00:00.0000000Z",
+      "Vak": { "Id": 9, "Afkorting": "wi", "Omschrijving": "wiskunde B" },
+      "CijferKolom": { "Id": 401, "KolomNaam": "PW1", "KolomKop": "PW1", "KolomSoort": 1 }
+    },
+    {
+      "CijferId": 1402,
+      "CijferStr": "5,0",
+      "TeltMee": true,
+      "DatumIngevoerd": "2026-10-01T10:00:00.0000000Z",
+      "Vak": { "Id": 9, "Afkorting": "wi", "Omschrijving": "wiskunde B" },
+      "CijferKolom": { "Id": 402, "KolomNaam": "PW2", "KolomKop": "PW2", "KolomSoort": 1 }
+    },
+    {
+      "CijferId": 1411,
+      "CijferStr": "7,5",
+      "TeltMee": true,
+      "DatumIngevoerd": "2026-09-20T10:00:00.0000000Z",
+      "Vak": { "Id": 9, "Afkorting": "wi", "Omschrijving": "wiskunde B" },
+      "CijferKolom": { "Id": 411, "KolomNaam": "PW1H", "KolomKop": "PW1", "KolomSoort": 1, "IsHerkansing": true, "HerkansingVanKolomId": 401 }
+    },
+    {
+      "CijferId": 1403,
+      "CijferStr": "6,3",
+      "TeltMee": false,
+      "Vak": { "Id": 9, "Afkorting": "wi", "Omschrijving": "wiskunde B" },
+      "CijferKolom": { "Id": 409, "KolomNaam": "gem", "KolomKop": "GEM", "KolomOmschrijving": "Voortschrijdend gemiddelde", "KolomSoort": 2 }
+    },
+    {
+      "CijferId": 1601,
+      "CijferStr": "inh",
+      "TeltMee": true,
+      "Vak": { "Id": 12, "Afkorting": "ec", "Omschrijving": "economie" },
+      "CijferKolom": { "Id": 601, "KolomNaam": "PW1", "KolomKop": "PW1", "KolomSoort": 1 }
+    },
+    {
+      "CijferId": 1602,
+      "CijferStr": "-",
+      "TeltMee": true,
+      "Vak": { "Id": 12, "Afkorting": "ec", "Omschrijving": "economie" },
+      "CijferKolom": { "Id": 602, "KolomNaam": "PW2", "KolomKop": "PW2", "KolomSoort": 1 }
+    },
+    {
+      "CijferId": 1603,
+      "CijferStr": "O",
+      "TeltMee": true,
+      "Vak": { "Id": 12, "Afkorting": "ec", "Omschrijving": "economie" },
+      "CijferKolom": { "Id": 603, "KolomNaam": "LO", "KolomKop": "Houding", "KolomSoort": 1 }
+    }
+  ]
+}

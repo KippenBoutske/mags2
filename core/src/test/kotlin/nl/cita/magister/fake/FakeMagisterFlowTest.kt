@@ -1,6 +1,7 @@
 package nl.cita.magister.fake
 
 import nl.cita.magister.api.MagisterEndpoints
+import nl.cita.magister.grades.GradeCalculator
 import nl.cita.magister.parse.MagisterParsers
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
@@ -161,6 +162,41 @@ class FakeMagisterFlowTest {
         assertTrue(MagisterParsers.parseAssignments(work).any { it.title.contains("PWS") })
         val files = get("/api/berichten/berichten/9001/bijlagen", "live-access")
         assertEquals("PWS-sjabloon.docx", MagisterParsers.parseAttachments(files).single().name)
+    }
+
+    @Test
+    fun citadelAveragesFetchKolomInfoAndPreferSe() {
+        fake.scenario = FakeScenario.CitadelAverages
+        val overview = get(
+            "/api/personen/424242/aanmeldingen/2025001/cijfers/cijferoverzichtvooraanmelding",
+            "live-access",
+        )
+        val parsed = MagisterParsers.parseGrades(overview)
+        assertTrue(parsed.all { it.weight == null })
+        val extra = parsed.mapNotNull { it.columnId }.distinct().associateWith { columnId ->
+            val body = get(
+                "/api/personen/424242/aanmeldingen/2025001/cijfers/extracijferkolominfo/$columnId",
+                "live-access",
+            )
+            MagisterParsers.parseColumnInfo(body)
+        }
+        assertEquals(2.0, extra.getValue(201).resolvedWeight!!, 0.0001)
+        assertEquals(0.0, extra.getValue(202).resolvedWeight!!, 0.0001)
+        val grades = MagisterParsers.applyColumnInfo(parsed, extra)
+        val averages = GradeCalculator.averagesBySubject(grades)
+        val bio = averages.first { it.subjectCode == "bi" }
+        assertEquals(4.8, bio.average!!, 0.0001)
+        assertEquals(1, bio.gradesCounted)
+        assertEquals(2.0, bio.weightSum, 0.0001)
+        val anw = averages.first { it.subjectCode == "anw" }
+        assertEquals(6.9, anw.average!!, 0.0001)
+        assertEquals(0, anw.gradesCounted)
+        val ckv = averages.first { it.subjectCode == "ckv" }
+        assertEquals(6.4, ckv.average!!, 0.0001)
+        assertEquals(0, ckv.gradesCounted)
+        val wi = averages.first { it.subjectCode == "wi" }
+        assertEquals(6.3, wi.average!!, 0.0001)
+        assertEquals(2, wi.gradesCounted)
     }
 
     @Test

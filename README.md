@@ -6,7 +6,7 @@ Mags is **geen** product van Iddink/Magister. Werkt met elke Magister-school. Al
 
 ## Wat zit erin
 
-- **Cijfers** met gewogen gemiddelde per vak (onvoldoendes in foutkleur), balk t.o.v. 10 met 5,5-streep, grafiek, *Wat moet ik halen?* en cijferblad
+- **Cijfers** met Magister’s eigen GEM/SE als kopcijfer, weging uit kolom-info, zonder gemiddelde-kolommen of V/G/O; balk t.o.v. 10 met 5,5-streep, grafiek, *Wat moet ik halen?* en cijferblad
 - **Rooster** met tussenuren, nu-lijn in de huidige les, en lesblad
 - **Huiswerk** gegroepeerd per dag, *Verlopen* ingeklapt, Toets in de meta-regel, swipe-naar-klaar met herstel
 - **Berichten** (alleen lezen), **afwezigheid**, **studiewijzers** en **opdrachten**
@@ -36,7 +36,7 @@ cat mags-debug.apk.part-aa mags-debug.apk.part-ab > mags-debug.apk
 sha256sum -c mags-debug.apk.sha256
 ```
 
-3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.14** (`targetSdk` 37).
+3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.15** (`targetSdk` 37).
 4. Er is ook een **release-APK** (`mags-release.apk`, applicationId `app.mags`) met R8. Die is getekend met de lokale dev-keystore in `app/keystore/` — **niet** voor Play.
 5. Bij een crash: scherm **Mags is gestopt** → *Kopieer stacktrace*.
 

@@ -70,8 +70,84 @@ class GradeCalculatorTest {
     fun fixtureNederlandsUsesMagisterAverageColumn() {
         val averages = GradeCalculator.averagesBySubject(MockFixtures.grades())
         val dutch = averages.first { it.subjectCode == "ne" }
-        assertEquals(7.0666, dutch.average!!, 0.01)
+        assertEquals(7.1, dutch.average!!, 0.0001)
         assertEquals(7.1, dutch.magisterAverage!!, 0.0001)
+        assertEquals("7,1", dutch.averageLabel)
+        assertEquals(2, dutch.gradesCounted)
+    }
+
+    @Test
+    fun citadelScreenshotDoesNotUseUnweightedMean() {
+        val parsed = MockFixtures.citadelGrades(withExtra = false)
+        val averages = GradeCalculator.averagesBySubject(parsed)
+        val bio = averages.first { it.subjectCode == "bi" }
+        assertEquals(4.8, bio.average!!, 0.0001)
+        assertEquals("4,8", bio.averageLabel)
+        assertEquals(1, bio.gradesCounted)
+        val countedBio = GradeCalculator.countedGrades(parsed.filter { it.subjectCode == "bi" })
+        assertEquals(listOf("Klassenwerk"), countedBio.map { it.columnHeading })
+        assertTrue((bio.average ?: 0.0) != 6.2)
+    }
+
+    @Test
+    fun citadelAnwAndCkvDropDuplicateSeAndLetterGrades() {
+        val grades = MockFixtures.citadelGrades()
+        val averages = GradeCalculator.averagesBySubject(grades)
+        val anw = averages.first { it.subjectCode == "anw" }
+        assertEquals(6.9, anw.average!!, 0.0001)
+        assertEquals("6,9", anw.averageLabel)
+        assertEquals(0, anw.gradesCounted)
+        val ckv = averages.first { it.subjectCode == "ckv" }
+        assertEquals(6.4, ckv.average!!, 0.0001)
+        assertEquals(0, ckv.gradesCounted)
+        val economy = averages.first { it.subjectCode == "ec" }
+        assertNull(economy.average)
+        assertEquals("–", economy.averageLabel)
+    }
+
+    @Test
+    fun citadelExtraColumnInfoSuppliesWeightsAndRetake() {
+        val grades = MockFixtures.citadelGrades()
+        val bio = GradeCalculator.countedGrades(grades.filter { it.subjectCode == "bi" }).single()
+        assertEquals(2.0, bio.weight!!, 0.0001)
+        assertEquals("×2", GradeCalculator.formatWeight(bio.weight))
+        val wi = GradeCalculator.countedGrades(grades.filter { it.subjectCode == "wi" })
+        assertEquals(setOf(402, 411), wi.map { it.columnId }.toSet())
+        assertTrue(wi.all { it.weight == 3.0 })
+        val summary = GradeCalculator.averagesBySubject(grades).first { it.subjectCode == "wi" }
+        assertEquals(6.3, summary.average!!, 0.0001)
+        assertEquals("6,3", summary.averageLabel)
+        assertEquals(2, summary.gradesCounted)
+    }
+
+    @Test
+    fun skipsZeroWeightAndNonNumeric() {
+        val grades = listOf(
+            grade(8.0, 0.0),
+            grade(7.0, 1.0, raw = "V"),
+            grade(6.0, 2.0),
+        )
+        assertEquals(6.0, GradeCalculator.weightedAverage(grades)!!, 0.0001)
+        assertEquals(1, GradeCalculator.countedGrades(grades).size)
+    }
+
+    @Test
+    fun herkansingReplacesOriginalColumn() {
+        val original = grade(4.0, 3.0, id = 1, columnId = 401)
+        val retake = grade(7.5, 3.0, id = 2, columnId = 411, replacesColumnId = 401)
+        val later = grade(5.0, 3.0, id = 3, columnId = 402)
+        val counted = GradeCalculator.countedGrades(listOf(original, retake, later))
+        assertEquals(setOf(2, 3), counted.map { it.id }.toSet())
+        assertEquals(6.25, GradeCalculator.weightedAverage(listOf(original, retake, later))!!, 0.0001)
+    }
+
+    @Test
+    fun formatAverageKeepsOneOrTwoDecimals() {
+        assertEquals("6,9", GradeCalculator.formatAverage(6.9, "6,9"))
+        assertEquals("5,85", GradeCalculator.formatAverage(5.85))
+        assertEquals("–", GradeCalculator.formatAverage(null))
+        assertNull(GradeCalculator.formatWeight(null))
+        assertNull(GradeCalculator.formatWeight(0.0))
     }
 
     private fun grade(
@@ -79,22 +155,29 @@ class GradeCalculatorTest {
         weight: Double,
         counts: Boolean = true,
         type: GradeColumnType = GradeColumnType.Grade,
+        id: Int = value.toInt(),
+        columnId: Int? = null,
+        replacesColumnId: Int? = null,
+        heading: String = "T",
+        raw: String? = null,
     ) = Grade(
-        id = value.toInt(),
-        value = value.toString(),
-        numericValue = value,
+        id = id,
+        value = raw ?: value.toString(),
+        numericValue = if (raw != null) GradeCalculator.parseDutchNumber(raw) else value,
         isSufficient = value >= 5.5,
         counts = counts,
         weight = weight,
         subjectId = 1,
         subjectName = "Test",
         subjectCode = "te",
-        columnHeading = "T",
+        columnHeading = heading,
         columnDescription = null,
         columnType = type,
         teacher = null,
         enteredAt = null,
         periodName = null,
         isPta = false,
+        columnId = columnId,
+        replacesColumnId = replacesColumnId,
     )
 }

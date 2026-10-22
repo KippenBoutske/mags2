@@ -233,7 +233,7 @@ private fun SubjectCard(
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    if (avg == null) "–" else formatGrade(animated.toDouble()),
+                    if (avg == null) "–" else formatGrade(animated.toDouble(), subject.averageLabel),
                     style = MaterialTheme.typography.displaySmall,
                     color = numberColor,
                     modifier = Modifier.testTag("cijfers-gemiddelde"),
@@ -242,10 +242,11 @@ private fun SubjectCard(
             if (avg != null) {
                 AverageBar(average = avg.toFloat(), modifier = Modifier.fillMaxWidth().testTag("cijfers-balk"))
             }
-            grades.sortedByDescending { it.enteredAt }.take(4).forEach { grade ->
+            GradeCalculator.countedGrades(grades).sortedByDescending { it.enteredAt }.take(4).forEach { grade ->
                 val gradeFail = isFailing(grade.numericValue ?: GradeCalculator.parseDutchNumber(grade.value))
+                val weightBit = GradeCalculator.formatWeight(grade.weight)?.let { "  ·  $it" }.orEmpty()
                 Text(
-                    "${grade.columnHeading ?: "Cijfer"}  ${grade.value ?: "–"}  ·  ×${(grade.weight ?: 1.0).toInt()}",
+                    "${grade.columnHeading ?: "Cijfer"}  ${grade.value ?: "–"}$weightBit",
                     style = MaterialTheme.typography.bodySmall,
                     color = if (gradeFail) MaterialTheme.colorScheme.error
                     else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -285,8 +286,7 @@ private fun SubjectPage(
     sharedModifier: Modifier,
 ) {
     val counted = remember(grades) {
-        grades.filter { it.counts && it.columnType == GradeColumnType.Grade }
-            .sortedBy { it.enteredAt.orEmpty() }
+        GradeCalculator.countedGrades(grades).sortedBy { it.enteredAt.orEmpty() }
     }
     val values = counted.mapNotNull { it.numericValue ?: GradeCalculator.parseDutchNumber(it.value) }
     val trend = averageTrend(values)
@@ -311,7 +311,7 @@ private fun SubjectPage(
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(subject.subjectName, style = MaterialTheme.typography.displayMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Text(
-                        formatGrade(subject.average),
+                        formatGrade(subject.average, subject.averageLabel),
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (isFailing(subject.average)) MaterialTheme.colorScheme.error
                         else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -446,7 +446,9 @@ private fun GradeDetailSheet(
         Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(grade.subjectName, style = MaterialTheme.typography.headlineSmall)
             Text(grade.value ?: "–", style = MaterialTheme.typography.displaySmall)
-            Text("×${(grade.weight ?: 1.0).toInt()}", style = MaterialTheme.typography.titleMedium)
+            GradeCalculator.formatWeight(grade.weight)?.let {
+                Text(it, style = MaterialTheme.typography.titleMedium)
+            }
             formatWhen(grade.enteredAt).takeIf { it.isNotBlank() }?.let {
                 Text(it, style = MaterialTheme.typography.bodyLarge)
             }

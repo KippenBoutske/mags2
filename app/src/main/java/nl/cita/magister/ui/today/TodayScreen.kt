@@ -201,7 +201,7 @@ fun TodayScreen(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     latest.forEachIndexed { index, subject ->
                         GradeTile(
-                            value = formatGrade(subject.average),
+                            value = formatGrade(subject.average, subject.averageLabel),
                             subject = subject.subjectName,
                             code = subject.subjectCode,
                             color = tileColors[index % tileColors.size],

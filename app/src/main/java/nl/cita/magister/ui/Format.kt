@@ -6,6 +6,7 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import nl.cita.magister.grades.GradeCalculator
 
 private val zone = ZoneId.of("Europe/Amsterdam")
 private val nl = Locale("nl", "NL")
@@ -13,8 +14,8 @@ private val timeFmt = DateTimeFormatter.ofPattern("HH:mm", nl)
 private val dayFmt = DateTimeFormatter.ofPattern("EEEE d MMMM", nl)
 private val shortDay = DateTimeFormatter.ofPattern("EEE d MMM", nl)
 
-fun formatGrade(value: Double?): String =
-    value?.let { String.format(nl, "%.1f", it).replace('.', ',') } ?: "–"
+fun formatGrade(value: Double?, label: String? = null): String =
+    GradeCalculator.formatAverage(value, label)
 
 /** Join class, study, school — skip blanks so the line never ends in `·`. */
 fun profileLine(vararg parts: String?): String =

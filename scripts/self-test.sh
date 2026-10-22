@@ -2,8 +2,8 @@
 # Zelftest-pipeline: unit + screenshots + (als /dev/kvm leeft) echte emulator-smoke.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-OUT="${SELF_TEST_OUT:-/cursor/stores/self/artifacts/screens-0.1.14}"
-mkdir -p "$OUT" /opt/cursor/artifacts/0.1.14 || true
+OUT="${SELF_TEST_OUT:-/cursor/stores/self/artifacts/screens-0.1.15}"
+mkdir -p "$OUT" /opt/cursor/artifacts/0.1.15 || true
 export ANDROID_HOME="${ANDROID_HOME:-/home/ubuntu/android-sdk}"
 export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
 export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"

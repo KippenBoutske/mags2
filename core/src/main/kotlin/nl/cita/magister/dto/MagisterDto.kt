@@ -73,6 +73,8 @@ data class GradeDto(
     @SerialName("CijferKolom") val column: GradeColumnDto? = null,
     @SerialName("CijferPeriode") val period: PeriodDto? = null,
     @SerialName("weegfactor") val weightAlt: Double? = null,
+    @SerialName("Weegfactor") val weightPascal: Double? = null,
+    @SerialName("Weging") val weightRow: Double? = null,
 )
 
 @Serializable
@@ -92,6 +94,11 @@ data class GradeColumnDto(
     @SerialName("KolomSoort") val type: Int? = null,
     @SerialName("IsPTAKolom") val isPta: Boolean? = null,
     @SerialName("Weegfactor") val weight: Double? = null,
+    @SerialName("Weging") val weightRow: Double? = null,
+    @SerialName("IsHerkansing") val isRetake: Boolean? = null,
+    @SerialName("IsHerkansingKolom") val isRetakeColumn: Boolean? = null,
+    @SerialName("HerkansingVanKolomId") val retakeOf: Int? = null,
+    @SerialName("IsHerkansingVanKolomId") val retakeOfAlt: Int? = null,
 )
 
 @Serializable
@@ -104,8 +111,21 @@ data class PeriodDto(
 data class GradeColumnInfoDto(
     @SerialName("Weging") val weight: Double? = null,
     @SerialName("weegfactor") val weightAlt: Double? = null,
+    @SerialName("Weegfactor") val weightPascal: Double? = null,
     @SerialName("KolomOmschrijving") val description: String? = null,
-)
+    @SerialName("KolomKop") val heading: String? = null,
+    @SerialName("KolomNaam") val name: String? = null,
+    @SerialName("KolomSoort") val type: Int? = null,
+    @SerialName("TeltMee") val counts: Boolean? = null,
+    @SerialName("IsHerkansing") val isRetake: Boolean? = null,
+    @SerialName("IsHerkansingKolom") val isRetakeColumn: Boolean? = null,
+    @SerialName("HerkansingVanKolomId") val retakeOf: Int? = null,
+    @SerialName("IsHerkansingVanKolomId") val retakeOfAlt: Int? = null,
+    @SerialName("WerktMeeInVoortschrijdendGemiddelde") val countsInRunning: Boolean? = null,
+) {
+    val resolvedWeight: Double? get() = weight ?: weightPascal ?: weightAlt
+    val resolvedRetakeOf: Int? get() = retakeOf ?: retakeOfAlt
+}
 
 @Serializable
 data class RecentGradeDto(

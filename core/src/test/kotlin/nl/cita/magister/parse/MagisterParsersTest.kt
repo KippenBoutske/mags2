@@ -10,6 +10,7 @@ import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.InfoType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -44,6 +45,33 @@ class MagisterParsersTest {
         val avg = grades.first { it.id == 103 }
         assertEquals(GradeColumnType.Average, avg.columnType)
         assertFalse(avg.counts)
+    }
+
+    @Test
+    fun seCijferWithKolomSoort1IsAverageNotAGrade() {
+        val grades = MagisterParsers.parseGrades(MockFixtures.citadelGradesJson)
+        val se = grades.filter { it.columnHeading == "SE cijfer" }
+        assertTrue(se.isNotEmpty())
+        assertTrue(se.all { it.columnType == GradeColumnType.Average })
+        assertTrue(se.all { !it.counts })
+        val klassenwerk = grades.first { it.id == 1201 }
+        assertEquals(GradeColumnType.Grade, klassenwerk.columnType)
+        assertNull(klassenwerk.weight)
+        val v = grades.first { it.value == "V" }
+        assertEquals(GradeColumnType.Grade, v.columnType)
+        assertFalse(v.counts)
+        assertNull(v.numericValue)
+    }
+
+    @Test
+    fun extraColumnInfoFillsWeightWithoutClobberingHeading() {
+        val parsed = MagisterParsers.parseGrades(MockFixtures.citadelGradesJson)
+        val extra = mapOf(201 to MagisterParsers.parseColumnInfo(MockFixtures.extraColumnInfoJson(201)))
+        val applied = MagisterParsers.applyColumnInfo(parsed, extra)
+        val klassenwerk = applied.first { it.id == 1201 }
+        assertEquals(2.0, klassenwerk.weight!!, 0.0001)
+        assertEquals("Klassenwerk", klassenwerk.columnHeading)
+        assertTrue(klassenwerk.counts)
     }
 
     @Test
