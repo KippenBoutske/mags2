@@ -138,11 +138,27 @@ class FakeMagisterFlowTest {
     }
 
     @Test
+    fun officialExtrasHappyPath() {
+        val absences = get("/api/personen/424242/absenties?van=2026-06-01&tot=2026-10-22", "live-access")
+        assertTrue(MagisterParsers.parseAbsences(absences).any { it.description == "Te laat" })
+        val guides = get("/api/leerlingen/424242/studiewijzers?peildatum=2026-10-22", "live-access")
+        assertTrue(MagisterParsers.parseStudyGuides(guides).any { it.title.contains("Wiskunde") })
+        val work = get("/api/personen/424242/opdrachten?skip=0&top=50", "live-access")
+        assertTrue(MagisterParsers.parseAssignments(work).any { it.title.contains("PWS") })
+        val files = get("/api/berichten/berichten/9001/bijlagen", "live-access")
+        assertEquals("PWS-sjabloon.docx", MagisterParsers.parseAttachments(files).single().name)
+    }
+
+    @Test
     fun perSection403() {
         fake.scenario = FakeScenario.GradesForbidden
         assertEquals(403, raw("/api/personen/1/aanmeldingen/1/cijfers/overzicht", "live-access").first)
         fake.scenario = FakeScenario.AgendaForbidden
         assertEquals(403, raw("/api/personen/1/afspraken", "live-access").first)
+        fake.scenario = FakeScenario.AbsencesForbidden
+        assertEquals(403, raw("/api/personen/1/absenties", "live-access").first)
+        fake.scenario = FakeScenario.GuidesForbidden
+        assertEquals(403, raw("/api/leerlingen/1/studiewijzers", "live-access").first)
         fake.scenario = FakeScenario.Happy
         assertEquals(200, raw("/api/personen/1/afspraken", "live-access").first)
     }

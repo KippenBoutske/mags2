@@ -159,6 +159,49 @@ data class AssignmentDto(
     @SerialName("InleverenVoor") val due: String? = null,
     @SerialName("Afgesloten") val closed: Boolean? = null,
     @SerialName("Vak") val subject: SubjectDto? = null,
+    @SerialName("Links") val links: List<RelLinkDto>? = null,
+)
+
+@Serializable
+data class RelLinkDto(
+    @SerialName("Rel") val rel: String? = null,
+    @SerialName("Href") val href: String? = null,
+    @SerialName("rel") val relAlt: String? = null,
+    @SerialName("href") val hrefAlt: String? = null,
+) {
+    val resolvedRel: String? get() = rel ?: relAlt
+    val resolvedHref: String? get() = href ?: hrefAlt
+}
+
+@Serializable
+data class AbsenceDto(
+    @SerialName("Id") val id: Int? = null,
+    @SerialName("Omschrijving") val description: String? = null,
+    @SerialName("Code") val code: String? = null,
+    @SerialName("Start") val start: String? = null,
+    @SerialName("Eind") val end: String? = null,
+    @SerialName("Geoorloofd") val excused: Boolean? = null,
+    @SerialName("Lesuur") val period: Int? = null,
+    @SerialName("Afspraak") val appointment: AppointmentDto? = null,
+)
+
+@Serializable
+data class StudyGuideDto(
+    @SerialName("Id") val id: Int? = null,
+    @SerialName("Titel") val title: String? = null,
+    @SerialName("VakCodes") val subjectCodes: List<String>? = null,
+    @SerialName("Van") val from: String? = null,
+    @SerialName("TotEnMet") val to: String? = null,
+    @SerialName("Links") val links: List<RelLinkDto>? = null,
+)
+
+@Serializable
+data class AttachmentDto(
+    @SerialName("naam") val name: String? = null,
+    @SerialName("Naam") val nameAlt: String? = null,
+    @SerialName("contentType") val contentType: String? = null,
+    @SerialName("grootte") val size: Long? = null,
+    @SerialName("links") val links: Map<String, LinkDto>? = null,
 )
 
 @Serializable

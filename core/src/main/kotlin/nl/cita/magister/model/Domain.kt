@@ -120,8 +120,40 @@ data class MessagePreview(
 )
 
 @Serializable
+data class Attachment(
+    val name: String,
+    val contentType: String? = null,
+    val sizeBytes: Long? = null,
+    val href: String? = null,
+)
+
+@Serializable
 data class MessageDetail(
     val preview: MessagePreview,
     val bodyHtml: String?,
     val recipients: List<String>,
+    val attachments: List<Attachment> = emptyList(),
+)
+
+@Serializable
+data class Absence(
+    val id: Int,
+    val startIso: String?,
+    val endIso: String?,
+    val period: Int?,
+    val description: String,
+    val code: String?,
+    val excused: Boolean,
+    val lesson: String?,
+)
+
+@Serializable
+data class StudyGuide(
+    val id: Int,
+    val title: String,
+    val subjectCodes: List<String>,
+    val fromIso: String?,
+    val toIso: String?,
+    val href: String?,
+    val isProject: Boolean = false,
 )

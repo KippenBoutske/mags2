@@ -6,6 +6,7 @@ import nl.cita.magister.auth.AuthRequestFactory
 import nl.cita.magister.auth.Pkce
 import nl.cita.magister.fixtures.MockFixtures
 import nl.cita.magister.model.GradeColumnType
+import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.InfoType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -58,6 +59,22 @@ class MagisterParsersTest {
     }
 
     @Test
+    fun parseAbsencesGuidesAssignmentsAndAttachments() {
+        val absences = MagisterParsers.parseAbsences(MockFixtures.absencesJson)
+        assertEquals(2, absences.size)
+        assertTrue(absences.first().excused)
+        assertEquals("Nederlands", absences.first().lesson)
+        val guides = MagisterParsers.parseStudyGuides(MockFixtures.studyGuidesJson)
+        assertEquals(2, guides.size)
+        assertTrue(guides.any { it.title.contains("Wiskunde") })
+        val work = MagisterParsers.parseAssignments(MockFixtures.assignmentsJson)
+        assertEquals(2, work.size)
+        assertEquals(HomeworkItem.Source.Assignment, work.first().source)
+        val files = MagisterParsers.parseAttachments(MockFixtures.attachmentsJson)
+        assertEquals("PWS-sjabloon.docx", files.single().name)
+    }
+
+    @Test
     fun parseMessages() {
         val messages = MagisterParsers.parseMessages(MockFixtures.messagesJson)
         assertEquals(3, messages.size)
@@ -65,6 +82,7 @@ class MagisterParsersTest {
         val detail = MockFixtures.message(9001)!!
         assertTrue(detail.bodyHtml!!.contains("PWS-plan"))
         assertEquals("Deadline profielwerkstuk", detail.preview.subject)
+        assertEquals("PWS-sjabloon.docx", detail.attachments.single().name)
     }
 
     @Test

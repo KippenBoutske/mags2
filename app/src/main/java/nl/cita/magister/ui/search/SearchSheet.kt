@@ -22,10 +22,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
+import nl.cita.magister.model.Absence
 import nl.cita.magister.model.Appointment
 import nl.cita.magister.model.Grade
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.MessagePreview
+import nl.cita.magister.model.StudyGuide
 import nl.cita.magister.ui.nav.MagsPage
 
 data class SearchHit(
@@ -41,6 +43,8 @@ fun searchMags(
     appointments: List<Appointment>,
     homework: List<HomeworkItem>,
     messages: List<MessagePreview>,
+    absences: List<Absence> = emptyList(),
+    studyGuides: List<StudyGuide> = emptyList(),
 ): List<SearchHit> {
     val q = query.trim().lowercase()
     if (q.length < 2) return emptyList()
@@ -66,6 +70,16 @@ fun searchMags(
         .forEach {
             hits += SearchHit(MagsPage.Berichten, it.subject, it.sender, messageId = it.id)
         }
+    absences.filter { matches(q, it.description, it.lesson, it.code) }
+        .take(4)
+        .forEach {
+            hits += SearchHit(MagsPage.Meer, it.description, it.lesson ?: it.code.orEmpty())
+        }
+    studyGuides.filter { matches(q, it.title, it.subjectCodes.joinToString()) }
+        .take(4)
+        .forEach {
+            hits += SearchHit(MagsPage.Meer, it.title, it.subjectCodes.joinToString(" · "))
+        }
     return hits
 }
 
@@ -80,11 +94,13 @@ fun SearchSheet(
     appointments: List<Appointment>,
     homework: List<HomeworkItem>,
     messages: List<MessagePreview>,
+    absences: List<Absence> = emptyList(),
+    studyGuides: List<StudyGuide> = emptyList(),
     onDismiss: () -> Unit,
     onOpen: (SearchHit) -> Unit,
 ) {
-    val hits = remember(query, grades, appointments, homework, messages) {
-        searchMags(query, grades, appointments, homework, messages)
+    val hits = remember(query, grades, appointments, homework, messages, absences, studyGuides) {
+        searchMags(query, grades, appointments, homework, messages, absences, studyGuides)
     }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
@@ -108,7 +124,7 @@ fun SearchSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focus),
-                label = { Text("Vak, les, huiswerk, bericht") },
+                label = { Text("Vak, les, huiswerk, bericht, afwezigheid") },
                 singleLine = true,
             )
             when {

@@ -6,12 +6,15 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import nl.cita.magister.api.Tenant
 import nl.cita.magister.dto.EnrollmentDto
+import nl.cita.magister.model.Absence
 import nl.cita.magister.model.Appointment
+import nl.cita.magister.model.Attachment
 import nl.cita.magister.model.Grade
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.MessageDetail
 import nl.cita.magister.model.MessagePreview
 import nl.cita.magister.model.StudentProfile
+import nl.cita.magister.model.StudyGuide
 import nl.cita.magister.parse.MagisterJson
 import nl.cita.magister.parse.MagisterParsers
 
@@ -35,6 +38,10 @@ object MockFixtures {
     val appointmentsJson get() = load("appointments.json")
     val messagesJson get() = load("messages.json")
     val foldersJson get() = load("message_folders.json")
+    val absencesJson get() = load("absences.json")
+    val studyGuidesJson get() = load("studyguides.json")
+    val assignmentsJson get() = load("assignments.json")
+    val attachmentsJson get() = load("attachments.json")
 
     fun profile(): StudentProfile {
         val enrollment: EnrollmentDto? = MagisterParsers.currentEnrollment(
@@ -57,6 +64,14 @@ object MockFixtures {
 
     fun messages(): List<MessagePreview> = MagisterParsers.parseMessages(messagesJson)
 
+    fun absences(): List<Absence> = MagisterParsers.parseAbsences(absencesJson)
+
+    fun studyGuides(): List<StudyGuide> = MagisterParsers.parseStudyGuides(studyGuidesJson)
+
+    fun assignments(): List<HomeworkItem> = MagisterParsers.parseAssignments(assignmentsJson)
+
+    fun attachments(): List<Attachment> = MagisterParsers.parseAttachments(attachmentsJson)
+
     fun message(id: Int): MessageDetail? {
         val preview = messages().firstOrNull { it.id == id } ?: return null
         val items = MagisterJson.instance.parseToJsonElement(messagesJson)
@@ -66,6 +81,10 @@ object MockFixtures {
         val raw = items.firstOrNull { element ->
             element.jsonObject["id"]?.toString() == id.toString()
         } ?: return MessageDetail(preview, preview.snippet, emptyList())
-        return MagisterParsers.parseMessageDetail(Json.encodeToString(JsonObject.serializer(), raw.jsonObject), preview)
+        val detail = MagisterParsers.parseMessageDetail(
+            Json.encodeToString(JsonObject.serializer(), raw.jsonObject),
+            preview,
+        )
+        return if (id == 9001) detail.copy(attachments = attachments()) else detail
     }
 }

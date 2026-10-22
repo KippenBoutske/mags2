@@ -1,9 +1,11 @@
 package nl.cita.magister.parse
 
 import kotlinx.serialization.json.Json
+import nl.cita.magister.dto.AbsenceDto
 import nl.cita.magister.dto.AccountDto
 import nl.cita.magister.dto.AppointmentDto
 import nl.cita.magister.dto.AssignmentDto
+import nl.cita.magister.dto.AttachmentDto
 import nl.cita.magister.dto.EnrollmentDto
 import nl.cita.magister.dto.GradeColumnInfoDto
 import nl.cita.magister.dto.GradeDto
@@ -11,8 +13,11 @@ import nl.cita.magister.dto.ItemsDto
 import nl.cita.magister.dto.MessageDto
 import nl.cita.magister.dto.MessageFolderDto
 import nl.cita.magister.dto.RecentGradeDto
+import nl.cita.magister.dto.StudyGuideDto
 import nl.cita.magister.grades.GradeCalculator
+import nl.cita.magister.model.Absence
 import nl.cita.magister.model.Appointment
+import nl.cita.magister.model.Attachment
 import nl.cita.magister.model.Grade
 import nl.cita.magister.model.GradeColumnType
 import nl.cita.magister.model.HomeworkItem
@@ -20,6 +25,7 @@ import nl.cita.magister.model.InfoType
 import nl.cita.magister.model.MessageDetail
 import nl.cita.magister.model.MessagePreview
 import nl.cita.magister.model.StudentProfile
+import nl.cita.magister.model.StudyGuide
 
 object MagisterJson {
     val instance: Json = Json {
@@ -203,7 +209,55 @@ object MagisterParsers {
             preview = preview,
             bodyHtml = dto.body,
             recipients = emptyList(),
+            attachments = emptyList(),
         )
+    }
+
+    fun parseAttachments(json: String): List<Attachment> {
+        val items = MagisterJson.instance.decodeFromString<ItemsDto<AttachmentDto>>(json).all
+        return items.mapNotNull { dto ->
+            val name = dto.name ?: dto.nameAlt ?: return@mapNotNull null
+            Attachment(
+                name = name,
+                contentType = dto.contentType,
+                sizeBytes = dto.size,
+                href = dto.links?.get("self")?.href ?: dto.links?.get("download")?.href,
+            )
+        }
+    }
+
+    fun parseAbsences(json: String): List<Absence> {
+        val items = MagisterJson.instance.decodeFromString<ItemsDto<AbsenceDto>>(json).all
+        return items.mapNotNull { dto ->
+            val id = dto.id ?: return@mapNotNull null
+            Absence(
+                id = id,
+                startIso = dto.start,
+                endIso = dto.end,
+                period = dto.period,
+                description = dto.description ?: "Afwezig",
+                code = dto.code,
+                excused = dto.excused == true,
+                lesson = dto.appointment?.title,
+            )
+        }
+    }
+
+    fun parseStudyGuides(json: String, isProject: Boolean = false): List<StudyGuide> {
+        val items = MagisterJson.instance.decodeFromString<ItemsDto<StudyGuideDto>>(json).all
+        return items.mapNotNull { dto ->
+            val id = dto.id ?: return@mapNotNull null
+            StudyGuide(
+                id = id,
+                title = dto.title ?: if (isProject) "Project" else "Studiewijzer",
+                subjectCodes = dto.subjectCodes.orEmpty(),
+                fromIso = dto.from,
+                toIso = dto.to,
+                href = dto.links?.firstOrNull { it.resolvedRel.equals("Self", ignoreCase = true) }?.resolvedHref
+                    ?: dto.links?.firstOrNull()?.resolvedHref,
+                isProject = isProject,
+            )
+        }
     }
 
     fun columnType(code: Int?): GradeColumnType = when (code) {

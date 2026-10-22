@@ -45,4 +45,26 @@ class ApiFailureTest {
         assertEquals(403, sections.agenda?.code)
         assertEquals(403, sections.messages?.code)
     }
+
+    @Test
+    fun extras403StayPerSection() {
+        assertEquals(
+            "Afwezigheid is nu niet beschikbaar.",
+            ApiFailure("/api/personen/1/absenties", 403, "").friendly(),
+        )
+        assertEquals(
+            "Studiewijzers zijn nu niet beschikbaar.",
+            ApiFailure("/api/leerlingen/1/studiewijzers", 403, "").friendly(),
+        )
+        val sections = SectionErrors.from(
+            listOf(
+                ApiFailure("/absenties", 403, ""),
+                ApiFailure("/studiewijzers", 403, ""),
+                ApiFailure("/opdrachten", 403, ""),
+            ),
+        )
+        assertEquals(403, sections.absences?.code)
+        assertEquals(403, sections.studyGuides?.code)
+        assertEquals(403, sections.assignments?.code)
+    }
 }

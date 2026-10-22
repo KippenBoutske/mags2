@@ -7,7 +7,7 @@ Mags is **geen** product van Iddink/Magister. Werkt met elke Magister-school. Al
 ## Wat zit erin
 
 - **Cijfers** met gewogen gemiddelde per vak en *Wat moet ik halen?*
-- **Rooster**, **huiswerk** en **berichten**
+- **Rooster**, **huiswerk**, **berichten**, **afwezigheid**, **studiewijzers** en **opdrachten**
 - **Cijfers exporteren** naar Plan Goon of als JSON
 - Live schoolzoeken via Magister tenant-search
 - Offline cache, pull-to-refresh, Material 3 Expressive
@@ -22,10 +22,12 @@ Mags is **geen** product van Iddink/Magister. Werkt met elke Magister-school. Al
 
 ```bash
 cat mags-debug.apk.part-aa mags-debug.apk.part-ab > mags-debug.apk
+# of, als de parts 00/01 heten:
+# cat mags-debug.apk.part-00 mags-debug.apk.part-01 > mags-debug.apk
 sha256sum -c mags-debug.apk.sha256
 ```
 
-3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.7** (`targetSdk` 37).
+3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.8** (`targetSdk` 37).
 4. Bij een crash: scherm **Mags is gestopt** → *Kopieer stacktrace*.
 
 Zelf bouwen:

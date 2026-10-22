@@ -139,4 +139,20 @@ object MagisterEndpoints {
 
     fun photo(root: String, personId: Int) =
         "$root/api/leerlingen/$personId/foto?redirect_type=body"
+
+    /** Otarium/MagisterAPIKt AbsenceFlow + officiële web (ghuron/skills). */
+    fun absences(root: String, personId: Int, from: String, to: String) =
+        "$root/api/personen/$personId/absenties?van=$from&tot=$to"
+
+    /** Otarium/MagisterAPIKt StudyGuideFlow. */
+    fun studyGuides(root: String, personId: Int, peildatum: String) =
+        "$root/api/leerlingen/$personId/studiewijzers?peildatum=$peildatum"
+
+    fun studyProjects(root: String, personId: Int, peildatum: String) =
+        "$root/api/leerlingen/$personId/projecten?peildatum=$peildatum"
+
+    fun assignment(root: String, href: String) = "$root/${href.trimStart('/')}"
+
+    fun messageAttachments(root: String, messageId: Int) =
+        "$root/api/berichten/berichten/$messageId/bijlagen"
 }

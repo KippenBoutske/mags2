@@ -15,6 +15,9 @@ enum class FakeScenario {
     RefreshExpired,
     GradesForbidden,
     AgendaForbidden,
+    AbsencesForbidden,
+    GuidesForbidden,
+    AssignmentsForbidden,
 }
 
 /**
@@ -52,8 +55,12 @@ class FakeMagister(
             path.endsWith("/api/versie") -> json(200, """{"ApiVersie":"1.0","core":"fake"}""")
             path.endsWith("/api/account") -> json(200, MockFixtures.accountJson)
             path.contains("/aanmeldingen") && !path.contains("cijfers") -> json(200, MockFixtures.enrollmentsJson)
-            path.contains("/cijfers/") -> grades()
+            path.contains("/cijfers/") || path.contains("/cijfers") -> grades()
             path.contains("/afspraken") -> agenda()
+            path.contains("/absenties") -> extra(FakeScenario.AbsencesForbidden, MockFixtures.absencesJson)
+            path.contains("/studiewijzers") || path.contains("/projecten") ->
+                extra(FakeScenario.GuidesForbidden, if (path.contains("projecten")) """{"Items":[]}""" else MockFixtures.studyGuidesJson)
+            path.contains("/opdrachten") -> extra(FakeScenario.AssignmentsForbidden, MockFixtures.assignmentsJson)
             path.contains("/berichten") -> messages(path)
             else -> json(404, """{"fouttype":"NotFound","path":"$path"}""")
         }
@@ -121,10 +128,11 @@ class FakeMagister(
                 json(403, """{"fouttype":"OnvoldoendePrivileges"}""")
             }
         }
+        if (path.contains("/bijlagen")) return json(200, MockFixtures.attachmentsJson)
         val inbox = postvakin ||
             path.contains("/berichten/mappen/1/berichten") ||
             path.contains("mapId=") ||
-            path.endsWith("/api/berichten/berichten") ||
+            path.contains("/berichten/berichten") ||
             (path.contains("/personen/") && path.contains("/berichten"))
         return if (inbox) {
             json(200, MockFixtures.messagesJson)
@@ -132,6 +140,13 @@ class FakeMagister(
             json(404, """{"fouttype":"NotFound","path":"$path"}""")
         }
     }
+
+    private fun extra(forbidden: FakeScenario, body: String): MockResponse =
+        if (scenario == forbidden) {
+            json(403, """{"fouttype":"OnvoldoendePrivileges"}""")
+        } else {
+            json(200, body)
+        }
 
     companion object {
         const val TOKEN_LIVE = "live-access"

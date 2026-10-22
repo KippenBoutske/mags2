@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CancellationException
 import nl.cita.magister.api.School
+import nl.cita.magister.model.Absence
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.Appointment
 import nl.cita.magister.model.Grade
@@ -58,6 +59,7 @@ import nl.cita.magister.model.MessageDetail
 import nl.cita.magister.model.MessagePreview
 import nl.cita.magister.model.SectionErrors
 import nl.cita.magister.model.StudentProfile
+import nl.cita.magister.model.StudyGuide
 import nl.cita.magister.model.SubjectAverage
 import nl.cita.magister.ui.grades.GradesScreen
 import nl.cita.magister.ui.homework.HomeworkScreen
@@ -133,6 +135,9 @@ fun CitaRoot(viewModel: CitaViewModel) {
     val appointments by viewModel.appointments.collectAsStateWithLifecycle()
     val homework by viewModel.homework.collectAsStateWithLifecycle()
     val messages by viewModel.messages.collectAsStateWithLifecycle()
+    val absences by viewModel.absences.collectAsStateWithLifecycle()
+    val studyGuides by viewModel.studyGuides.collectAsStateWithLifecycle()
+    val assignments by viewModel.assignments.collectAsStateWithLifecycle()
     val detail by viewModel.messageDetail.collectAsStateWithLifecycle()
     val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
     val exporting by viewModel.exporting.collectAsStateWithLifecycle()
@@ -153,6 +158,9 @@ fun CitaRoot(viewModel: CitaViewModel) {
         appointments = appointments,
         homework = homework,
         messages = messages,
+        absences = absences,
+        studyGuides = studyGuides,
+        assignments = assignments,
         detail = detail,
         refreshing = refreshing,
         exporting = exporting,
@@ -191,6 +199,9 @@ fun MagsSignedInScaffold(
     appointments: List<Appointment>,
     homework: List<HomeworkItem>,
     messages: List<MessagePreview>,
+    absences: List<Absence> = emptyList(),
+    studyGuides: List<StudyGuide> = emptyList(),
+    assignments: List<HomeworkItem> = emptyList(),
     detail: MessageDetail?,
     refreshing: Boolean,
     exporting: Boolean,
@@ -415,6 +426,12 @@ fun MagsSignedInScaffold(
                                     onLogout = onLogout,
                                     dynamicColor = dynamicColor,
                                     onDynamicColor = onDynamicColor,
+                                    absences = absences,
+                                    studyGuides = studyGuides,
+                                    assignments = assignments,
+                                    absencesError = sectionErrors.absences,
+                                    studyGuidesError = sectionErrors.studyGuides,
+                                    assignmentsError = sectionErrors.assignments,
                                 )
                             }
                         }
@@ -462,6 +479,8 @@ fun MagsSignedInScaffold(
             appointments = appointments,
             homework = homework,
             messages = messages,
+            absences = absences,
+            studyGuides = studyGuides,
             onDismiss = {
                 searchOpen = false
                 searchQuery = ""

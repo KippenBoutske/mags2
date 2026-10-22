@@ -1,0 +1,10 @@
+{
+  "items": [
+    {
+      "naam": "PWS-sjabloon.docx",
+      "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "grootte": 18432,
+      "links": { "self": { "href": "api/berichten/berichten/9001/bijlagen/1" } }
+    }
+  ]
+}

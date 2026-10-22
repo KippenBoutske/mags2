@@ -50,6 +50,14 @@ class TokenStore(context: Context) {
     }
 
     @Synchronized
+    fun expiringSoon(withinMs: Long = 90_000L): Boolean {
+        val session = read() ?: return false
+        if (session.refreshToken.isNullOrBlank()) return false
+        val expires = session.expiresAtEpochMs
+        return expires > 0L && expires - System.currentTimeMillis() < withinMs
+    }
+
+    @Synchronized
     fun clear() {
         prefs.edit().clear().apply()
     }

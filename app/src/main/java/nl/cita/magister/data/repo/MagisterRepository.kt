@@ -25,6 +25,7 @@ import nl.cita.magister.dto.SendMessageRequest
 import nl.cita.magister.dto.ReceiverDto
 import nl.cita.magister.fixtures.MockFixtures
 import nl.cita.magister.grades.GradeCalculator
+import nl.cita.magister.model.Absence
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.Appointment
 import nl.cita.magister.model.Grade
@@ -33,6 +34,7 @@ import nl.cita.magister.model.MessageDetail
 import nl.cita.magister.model.MessagePreview
 import nl.cita.magister.model.SessionHydration
 import nl.cita.magister.model.StudentProfile
+import nl.cita.magister.model.StudyGuide
 import nl.cita.magister.model.SubjectAverage
 import nl.cita.magister.parse.MagisterJson
 import nl.cita.magister.parse.MagisterParsers
@@ -81,6 +83,18 @@ class MagisterRepository(
 
     fun observeMessages(): Flow<List<MessagePreview>> = cache.observe(KEY_MESSAGES).map { blob ->
         blob?.json?.let { MagisterJson.instance.decodeFromString(ListSerializerMessage, it) } ?: emptyList()
+    }
+
+    fun observeAbsences(): Flow<List<Absence>> = cache.observe(KEY_ABSENCES).map { blob ->
+        blob?.json?.let { MagisterJson.instance.decodeFromString(ListSerializerAbsence, it) } ?: emptyList()
+    }
+
+    fun observeStudyGuides(): Flow<List<StudyGuide>> = cache.observe(KEY_GUIDES).map { blob ->
+        blob?.json?.let { MagisterJson.instance.decodeFromString(ListSerializerGuide, it) } ?: emptyList()
+    }
+
+    fun observeAssignments(): Flow<List<HomeworkItem>> = cache.observe(KEY_ASSIGNMENTS).map { blob ->
+        blob?.json?.let { MagisterJson.instance.decodeFromString(ListSerializerHomework, it) } ?: emptyList()
     }
 
     suspend fun completeLogin(code: String, verifier: String, tenantHost: String): SessionHydration {
@@ -147,6 +161,9 @@ class MagisterRepository(
         writeCache(KEY_APPOINTMENTS, MagisterJson.instance.encodeToString(MockFixtures.appointments()))
         writeCache(KEY_HOMEWORK, MagisterJson.instance.encodeToString(MockFixtures.homework()))
         writeCache(KEY_MESSAGES, MagisterJson.instance.encodeToString(MockFixtures.messages()))
+        writeCache(KEY_ABSENCES, MagisterJson.instance.encodeToString(MockFixtures.absences()))
+        writeCache(KEY_GUIDES, MagisterJson.instance.encodeToString(MockFixtures.studyGuides()))
+        writeCache(KEY_ASSIGNMENTS, MagisterJson.instance.encodeToString(MockFixtures.assignments()))
     }
 
     suspend fun logout() {
@@ -226,6 +243,9 @@ class MagisterRepository(
                 runCatching { refreshGrades(profile) }.onFailure { warnings += failureOf(it, "/cijfers") }
                 runCatching { refreshAgenda(profile) }.onFailure { warnings += failureOf(it, "/afspraken") }
                 runCatching { refreshMessages(profile) }.onFailure { warnings += failureOf(it, "/berichten") }
+                runCatching { refreshAbsences(profile) }.onFailure { warnings += failureOf(it, "/absenties") }
+                runCatching { refreshStudyGuides(profile) }.onFailure { warnings += failureOf(it, "/studiewijzers") }
+                runCatching { refreshAssignments(profile) }.onFailure { warnings += failureOf(it, "/opdrachten") }
             }
         }
         return SessionHydration(profile, warnings)
@@ -280,10 +300,17 @@ class MagisterRepository(
         val session = tokenStore.read() ?: return
         val root = MagisterEndpoints.tenantRoot(session.tenantHost)
         val peildatum = LocalDate.now().toString()
-        val json = http.get(
-            MagisterEndpoints.gradesOverview(root, resolved.personId, enrollmentId, false, peildatum),
-        )
-        writeCache(KEY_GRADES, MagisterJson.instance.encodeToString(MagisterParsers.parseGrades(json)))
+        val json = try {
+            http.get(MagisterEndpoints.gradesOverview(root, resolved.personId, enrollmentId, false, peildatum))
+        } catch (error: Throwable) {
+            val forbidden = error is MagisterApiException && error.code in listOf(403, 404)
+            if (!forbidden) throw error
+            http.get(MagisterEndpoints.recentGrades(root, resolved.personId))
+        }
+        val parsed = runCatching { MagisterParsers.parseGrades(json) }.getOrElse {
+            MagisterParsers.parseRecentGrades(json)
+        }
+        writeCache(KEY_GRADES, MagisterJson.instance.encodeToString(parsed))
     }
 
     suspend fun refreshAgenda(profile: StudentProfile? = null) {
@@ -304,13 +331,9 @@ class MagisterRepository(
         val appointments = MagisterParsers.parseAppointments(json)
         writeCache(KEY_APPOINTMENTS, MagisterJson.instance.encodeToString(appointments))
         val homework = MagisterParsers.homeworkFromAppointments(appointments).toMutableList()
-        runCatching {
-            val assignments = http.get(
-                MagisterEndpoints.assignments(root, resolved.personId, from.format(fmt), to.format(fmt)),
-            )
-            homework += MagisterParsers.parseAssignments(assignments)
-        }
-        writeCache(KEY_HOMEWORK, MagisterJson.instance.encodeToString(homework))
+        runCatching { refreshAssignments(resolved) }
+            .onSuccess { homework += cachedAssignments() }
+        writeCache(KEY_HOMEWORK, MagisterJson.instance.encodeToString(homework.distinctBy { it.id }))
     }
 
     /** Fetch a window around a visible week and merge it into the cached agenda. */
@@ -397,8 +420,72 @@ class MagisterRepository(
             ?.firstOrNull { it.id == id }
         val href = cached?.href ?: "api/berichten/berichten/$id"
         val json = http.get(MagisterEndpoints.message(root, href))
-        return MagisterParsers.parseMessageDetail(json, cached)
+        val detail = MagisterParsers.parseMessageDetail(json, cached)
+        val attachments = runCatching {
+            MagisterParsers.parseAttachments(http.get(MagisterEndpoints.messageAttachments(root, id)))
+        }.getOrDefault(emptyList())
+        return detail.copy(attachments = attachments)
     }
+
+    suspend fun refreshAbsences(profile: StudentProfile? = null) {
+        val resolved = profile ?: cachedProfile()
+        if (prefs.isDemo() || resolved == null) {
+            writeCache(KEY_ABSENCES, MagisterJson.instance.encodeToString(MockFixtures.absences()))
+            return
+        }
+        val session = tokenStore.read() ?: return
+        val root = MagisterEndpoints.tenantRoot(session.tenantHost)
+        val from = LocalDate.now().minusMonths(4)
+        val to = LocalDate.now().plusWeeks(1)
+        val fmt = DateTimeFormatter.ISO_LOCAL_DATE
+        val json = http.get(MagisterEndpoints.absences(root, resolved.personId, from.format(fmt), to.format(fmt)))
+        writeCache(KEY_ABSENCES, MagisterJson.instance.encodeToString(MagisterParsers.parseAbsences(json)))
+    }
+
+    suspend fun refreshStudyGuides(profile: StudentProfile? = null) {
+        val resolved = profile ?: cachedProfile()
+        if (prefs.isDemo() || resolved == null) {
+            writeCache(KEY_GUIDES, MagisterJson.instance.encodeToString(MockFixtures.studyGuides()))
+            return
+        }
+        val session = tokenStore.read() ?: return
+        val root = MagisterEndpoints.tenantRoot(session.tenantHost)
+        val peildatum = LocalDate.now().toString()
+        var last: Throwable? = null
+        val guides = runCatching {
+            MagisterParsers.parseStudyGuides(http.get(MagisterEndpoints.studyGuides(root, resolved.personId, peildatum)))
+        }.onFailure { last = it }.getOrDefault(emptyList())
+        val projects = runCatching {
+            MagisterParsers.parseStudyGuides(
+                http.get(MagisterEndpoints.studyProjects(root, resolved.personId, peildatum)),
+                isProject = true,
+            )
+        }.onFailure { last = it }.getOrDefault(emptyList())
+        writeCache(KEY_GUIDES, MagisterJson.instance.encodeToString((guides + projects).sortedBy { it.title }))
+        if (guides.isEmpty() && projects.isEmpty() && last != null) throw last!!
+    }
+
+    suspend fun refreshAssignments(profile: StudentProfile? = null) {
+        val resolved = profile ?: cachedProfile()
+        if (prefs.isDemo() || resolved == null) {
+            writeCache(KEY_ASSIGNMENTS, MagisterJson.instance.encodeToString(MockFixtures.assignments()))
+            return
+        }
+        val session = tokenStore.read() ?: return
+        val root = MagisterEndpoints.tenantRoot(session.tenantHost)
+        val from = LocalDate.now().minusWeeks(8)
+        val to = LocalDate.now().plusWeeks(8)
+        val fmt = DateTimeFormatter.ISO_LOCAL_DATE
+        val json = http.get(
+            MagisterEndpoints.assignments(root, resolved.personId, from.format(fmt), to.format(fmt)),
+        )
+        writeCache(KEY_ASSIGNMENTS, MagisterJson.instance.encodeToString(MagisterParsers.parseAssignments(json)))
+    }
+
+    private suspend fun cachedAssignments(): List<HomeworkItem> =
+        cache.get(KEY_ASSIGNMENTS)?.json?.let {
+            MagisterJson.instance.decodeFromString(ListSerializerHomework, it)
+        } ?: emptyList()
 
     suspend fun markHomeworkDone(item: HomeworkItem, done: Boolean) {
         homeworkDao.upsert(LocalHomeworkState(item.id, done))
@@ -492,10 +579,15 @@ class MagisterRepository(
         const val KEY_APPOINTMENTS = "appointments"
         const val KEY_HOMEWORK = "homework"
         const val KEY_MESSAGES = "messages"
+        const val KEY_ABSENCES = "absences"
+        const val KEY_GUIDES = "studyguides"
+        const val KEY_ASSIGNMENTS = "assignments"
 
         val ListSerializerGrade = kotlinx.serialization.builtins.ListSerializer(Grade.serializer())
         val ListSerializerAppointment = kotlinx.serialization.builtins.ListSerializer(Appointment.serializer())
         val ListSerializerHomework = kotlinx.serialization.builtins.ListSerializer(HomeworkItem.serializer())
         val ListSerializerMessage = kotlinx.serialization.builtins.ListSerializer(MessagePreview.serializer())
+        val ListSerializerAbsence = kotlinx.serialization.builtins.ListSerializer(Absence.serializer())
+        val ListSerializerGuide = kotlinx.serialization.builtins.ListSerializer(StudyGuide.serializer())
     }
 }

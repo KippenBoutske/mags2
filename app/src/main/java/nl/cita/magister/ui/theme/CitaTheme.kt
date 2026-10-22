@@ -84,14 +84,14 @@ private val WarmTypography = Typography(
         fontWeight = FontWeight.Light,
         fontSize = 52.sp,
         lineHeight = 56.sp,
-        letterSpacing = (-1.2).sp,
+        letterSpacing = 0.sp,
     ),
     displayMedium = TextStyle(
         fontFamily = FontFamily.Serif,
         fontWeight = FontWeight.Light,
         fontSize = 44.sp,
         lineHeight = 48.sp,
-        letterSpacing = (-0.8).sp,
+        letterSpacing = 0.sp,
     ),
     headlineLarge = TextStyle(
         fontFamily = FontFamily.Serif,

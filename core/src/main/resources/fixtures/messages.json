@@ -8,7 +8,10 @@
       "isGelezen": false,
       "heeftBijlagen": true,
       "inhoud": "<p>Beste 5 VWO-A,</p><p>Lever je PWS-plan uiterlijk <strong>vrijdag 31 oktober</strong> in via Magister. Gebruik het sjabloon in de bijlage.</p>",
-      "links": { "self": { "href": "api/berichten/berichten/9001" } }
+      "links": {
+        "self": { "href": "api/berichten/berichten/9001" },
+        "bijlagen": { "href": "api/berichten/berichten/9001/bijlagen" }
+      }
     },
     {
       "id": 9002,

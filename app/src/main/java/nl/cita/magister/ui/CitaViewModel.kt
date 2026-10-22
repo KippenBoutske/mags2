@@ -39,6 +39,9 @@ class CitaViewModel(
     val appointments = repo.observeAppointments().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val homework = repo.observeHomework().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val messages = repo.observeMessages().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val absences = repo.observeAbsences().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val studyGuides = repo.observeStudyGuides().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val assignments = repo.observeAssignments().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val tenantHost = container.prefs.tenantHost.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     val schoolName = container.prefs.schoolName.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     val tenantId = container.prefs.tenantId.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
@@ -287,8 +290,7 @@ class CitaViewModel(
                 warning.path.contains("oauth", ignoreCase = true)
         }
         _lastError.value = loginish
-        val first = warnings.firstOrNull() ?: return
-        viewModelScope.launch { _snackbar.emit(first.friendly()) }
+        loginish?.let { viewModelScope.launch { _snackbar.emit(it.friendly()) } }
     }
 
     private fun rememberFailure(error: Throwable) {

@@ -73,7 +73,13 @@ fun MessagesScreen(
                     Text(if (message.isRead) message.sender else "●  ${message.sender}", style = MaterialTheme.typography.labelLarge)
                     Text(message.subject, style = MaterialTheme.typography.titleMedium)
                     message.snippet?.let { Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 2) }
-                    Text(formatWhen(message.sentAt), style = MaterialTheme.typography.labelSmall)
+                    Text(
+                        buildString {
+                            append(formatWhen(message.sentAt))
+                            if (message.hasAttachments) append(" · bijlage")
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                    )
                 }
             }
         }
@@ -90,6 +96,18 @@ fun MessagesScreen(
                 Text(detail.preview.sender, style = MaterialTheme.typography.titleSmall)
                 Text(formatWhen(detail.preview.sentAt), style = MaterialTheme.typography.labelMedium)
                 Text(detail.bodyHtml?.stripHtml() ?: detail.preview.snippet.orEmpty())
+                if (detail.attachments.isNotEmpty()) {
+                    Text("Bijlagen", style = MaterialTheme.typography.titleSmall)
+                    detail.attachments.forEach { file ->
+                        Text(
+                            buildString {
+                                append(file.name)
+                                file.sizeBytes?.let { append(" · ${it / 1024} kB") }
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
             }
         }
     }

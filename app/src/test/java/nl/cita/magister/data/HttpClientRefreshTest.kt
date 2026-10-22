@@ -37,7 +37,7 @@ class HttpClientRefreshTest {
                 accessToken = "expired-access",
                 refreshToken = "refresh-good",
                 idToken = null,
-                expiresAtEpochMs = 1L,
+                expiresAtEpochMs = System.currentTimeMillis() + 3_600_000L,
                 tenantHost = "citadel.magister.net",
                 personId = 424242,
                 enrollmentId = 1,
@@ -91,6 +91,22 @@ class HttpClientRefreshTest {
         assertTrue(body.contains("Jens"))
         assertEquals(2, accountHits)
         assertEquals(1, refreshHits)
+        assertEquals("live-access", tokens.read()?.accessToken)
+    }
+
+    @Test
+    fun executeAuthedRefreshesWhenTokenIsAlmostExpired() = runBlocking {
+        tokens.write(tokens.read()!!.copy(expiresAtEpochMs = System.currentTimeMillis() + 10_000L))
+        val rewrite = Interceptor { chain ->
+            val mapped = chain.request().url.newBuilder()
+                .scheme("http").host(server.hostName).port(server.port).build()
+            chain.proceed(chain.request().newBuilder().url(mapped).build())
+        }
+        val http = MagisterHttpClient(tokens, listOf(rewrite))
+        val body = http.get("https://citadel.magister.net/api/account?noCache=0")
+        assertTrue(body.contains("Jens"))
+        assertEquals(1, refreshHits)
+        assertEquals(1, accountHits)
         assertEquals("live-access", tokens.read()?.accessToken)
     }
 

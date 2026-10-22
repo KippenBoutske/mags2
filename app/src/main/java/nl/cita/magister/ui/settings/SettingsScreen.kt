@@ -2,6 +2,7 @@ package nl.cita.magister.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,10 +26,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.api.School
+import nl.cita.magister.model.Absence
 import nl.cita.magister.model.ApiFailure
+import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.StudentProfile
+import nl.cita.magister.model.StudyGuide
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
+import nl.cita.magister.ui.formatWhen
 import nl.cita.magister.ui.school.SchoolPicker
 import nl.cita.magister.ui.theme.CitaAction
 import nl.cita.magister.ui.theme.CitaActionRow
@@ -53,6 +58,12 @@ fun SettingsScreen(
     onLogout: () -> Unit,
     dynamicColor: Boolean = false,
     onDynamicColor: (Boolean) -> Unit = {},
+    absences: List<Absence> = emptyList(),
+    studyGuides: List<StudyGuide> = emptyList(),
+    assignments: List<HomeworkItem> = emptyList(),
+    absencesError: ApiFailure? = null,
+    studyGuidesError: ApiFailure? = null,
+    assignmentsError: ApiFailure? = null,
 ) {
     var url by remember(webhookUrl) { mutableStateOf(webhookUrl) }
     var key by remember { mutableStateOf("") }
@@ -97,6 +108,63 @@ fun SettingsScreen(
             }
         }
         lastError?.let { SectionError(it) }
+        ExtraCard("Afwezigheid", absencesError) {
+            if (absences.isEmpty() && absencesError == null) {
+                Text("Geen afwezigheid in de laatste maanden.")
+            }
+            absences.take(8).forEach { item ->
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(item.description, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        listOfNotNull(
+                            item.lesson,
+                            item.code,
+                            if (item.excused) "geoorloofd" else "ongeoorloofd",
+                            formatWhen(item.startIso),
+                        ).joinToString(" · "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        ExtraCard("Studiewijzers", studyGuidesError) {
+            if (studyGuides.isEmpty() && studyGuidesError == null) {
+                Text("Geen studiewijzers voor deze peildatum.")
+            }
+            studyGuides.forEach { guide ->
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(guide.title, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        buildString {
+                            if (guide.isProject) append("Project")
+                            if (guide.subjectCodes.isNotEmpty()) {
+                                if (isNotEmpty()) append(" · ")
+                                append(guide.subjectCodes.joinToString())
+                            }
+                        }.ifBlank { "Studiewijzer" },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        ExtraCard("Opdrachten", assignmentsError) {
+            if (assignments.isEmpty() && assignmentsError == null) {
+                Text("Geen open opdrachten.")
+            }
+            assignments.forEach { item ->
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(item.title, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        listOfNotNull(item.subject, formatWhen(item.dueIso).takeIf { it.isNotBlank() })
+                            .joinToString(" · "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
         Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Weergave", style = MaterialTheme.typography.titleMedium)
@@ -158,5 +226,20 @@ fun SettingsScreen(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun ExtraCard(
+    title: String,
+    error: ApiFailure?,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            SectionError(error)
+            content()
+        }
     }
 }

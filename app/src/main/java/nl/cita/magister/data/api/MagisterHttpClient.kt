@@ -140,6 +140,9 @@ class MagisterHttpClient(
         }
 
     private suspend fun executeAuthed(request: Request): String {
+        if (tokenStore.expiringSoon()) {
+            runCatching { refreshIfNeeded() }
+        }
         val first = client.newCall(request).execute()
         val firstBody = first.body?.string().orEmpty()
         if (first.code != 401) {

@@ -1,0 +1,21 @@
+{
+  "Items": [
+    {
+      "Id": 501,
+      "Titel": "PWS-plan",
+      "Omschrijving": "Lever het plan in via Magister. Sjabloon staat bij het bericht van je mentor.",
+      "InleverenVoor": "2026-10-31T22:00:00.0000000Z",
+      "Afgesloten": false,
+      "Vak": { "Id": 80, "Afkorting": "ANW", "Omschrijving": "ANW" },
+      "Links": [{ "Rel": "Self", "Href": "/api/personen/424242/opdrachten/501" }]
+    },
+    {
+      "Id": 502,
+      "Titel": "Practicumverslag zuren",
+      "Omschrijving": "Maximaal 4 pagina's, inleveren als PDF.",
+      "InleverenVoor": "2026-10-28T16:00:00.0000000Z",
+      "Afgesloten": false,
+      "Vak": { "Id": 40, "Afkorting": "sk", "Omschrijving": "Scheikunde" }
+    }
+  ]
+}

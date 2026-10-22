@@ -1,0 +1,27 @@
+{
+  "Items": [
+    {
+      "Id": 7101,
+      "Omschrijving": "Te laat",
+      "Code": "L",
+      "Start": "2026-10-14T07:30:00.0000000Z",
+      "Eind": "2026-10-14T08:20:00.0000000Z",
+      "Geoorloofd": true,
+      "Lesuur": 1,
+      "AfspraakId": 8001,
+      "Verantwoordingtype": 1,
+      "Afspraak": { "Omschrijving": "Nederlands" }
+    },
+    {
+      "Id": 7102,
+      "Omschrijving": "Ziek",
+      "Code": "Z",
+      "Start": "2026-10-08T07:00:00.0000000Z",
+      "Eind": "2026-10-08T16:00:00.0000000Z",
+      "Geoorloofd": true,
+      "Lesuur": 0,
+      "AfspraakId": 0,
+      "Verantwoordingtype": 2
+    }
+  ]
+}
