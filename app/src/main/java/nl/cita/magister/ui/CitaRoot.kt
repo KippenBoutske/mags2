@@ -119,7 +119,6 @@ fun CitaRoot(viewModel: CitaViewModel) {
         val hits by viewModel.schoolHits.collectAsStateWithLifecycle()
         val searching by viewModel.schoolSearching.collectAsStateWithLifecycle()
         val error by viewModel.lastError.collectAsStateWithLifecycle()
-        val dynamic by viewModel.dynamicColor.collectAsStateWithLifecycle()
         Scaffold(snackbarHost = { SnackbarHost(snackbarHost) }) {
             LoginScreen(
                 schoolName = school,
@@ -132,8 +131,6 @@ fun CitaRoot(viewModel: CitaViewModel) {
                 onStartLogin = { viewModel.startLogin().authorizeUrl },
                 onWebViewLogin = viewModel::openWebViewLogin,
                 onDemo = viewModel::enterDemo,
-                dynamicColor = dynamic,
-                onDynamicColor = viewModel::setDynamicColor,
             )
         }
         return
@@ -365,6 +362,8 @@ fun MagsSignedInScaffold(
                         },
                         label = "page",
                     ) { dest ->
+                        val vis = this@AnimatedContent
+                        val shared = this@SharedTransitionLayout
                         Box(
                             Modifier
                                 .fillMaxSize()
@@ -399,6 +398,9 @@ fun MagsSignedInScaffold(
                                     agendaError = sectionErrors.agenda,
                                     onVisibleWeek = onVisibleWeek,
                                     loading = refreshing,
+                                    homework = homework,
+                                    sharedTransitionScope = shared,
+                                    animatedVisibilityScope = vis,
                                 )
                                 MagsPage.Cijfers -> GradesScreen(
                                     profile = profile,

@@ -114,10 +114,10 @@
     },
     {
       "Id": 8008,
-      "Start": "2026-10-22T08:20:00.0000000Z",
+      "Start": "2026-10-22T08:40:00.0000000Z",
       "Einde": "2026-10-22T10:15:00.0000000Z",
-      "LesuurVan": 2,
-      "LesuurTotMet": 3,
+      "LesuurVan": 3,
+      "LesuurTotMet": 4,
       "Omschrijving": "Geschiedenis",
       "Lokatie": "Griftdijk",
       "Inhoud": "Inleveren bronnenonderzoek Koude Oorlog.",

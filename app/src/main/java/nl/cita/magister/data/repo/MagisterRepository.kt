@@ -549,11 +549,11 @@ class MagisterRepository(
     suspend fun exportToPlanGoon(): Result<Int> {
         val url = prefs.webhookUrlNow()
         val key = secrets.webhookKey()
-        if (url.isBlank() || key.isNullOrBlank()) {
-            return Result.failure(IllegalStateException("Zet eerst de webhook-URL en -key onder Meer."))
+        if (url.isBlank()) {
+            return Result.failure(IllegalStateException("geen-adres"))
         }
         val body = exportJson(pretty = false)
-        return planGoon.post(url, key, body)
+        return planGoon.post(url, key.orEmpty(), body)
     }
 
     suspend fun sendMessage(subject: String, body: String, recipientId: Int) {

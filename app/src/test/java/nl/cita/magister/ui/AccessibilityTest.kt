@@ -69,7 +69,7 @@ class AccessibilityTest {
     }
 
     @Test
-    fun loginHasSchoolSearchAndMaterialYou() {
+    fun loginHasSchoolSearchAndDemo() {
         compose.setContent {
             Box(Modifier.requiredSize(412.dp, 915.dp)) {
                 CitaTheme {
@@ -87,14 +87,12 @@ class AccessibilityTest {
                         onStartLogin = { "https://accounts.magister.net/connect/authorize" },
                         onWebViewLogin = {},
                         onDemo = {},
-                        dynamicColor = false,
                     )
                 }
             }
         }
         compose.waitForIdle()
-        compose.onNodeWithContentDescription("Zoek je Magister-school").assertExists()
-        compose.onNodeWithContentDescription("Material You").assertExists()
+        compose.onNodeWithContentDescription("Zoek je school").assertExists()
         compose.onNodeWithContentDescription("Inloggen bij Magister").assertExists()
         compose.onNodeWithContentDescription("Voorbeeld zonder account").assertExists()
         compose.onNodeWithContentDescription("Kies Citadel College").assertExists()
@@ -127,7 +125,7 @@ class AccessibilityTest {
         compose.waitForIdle()
         compose.onNodeWithText("Mags").assertIsDisplayed()
         compose.onNodeWithText("Inloggen").assertIsDisplayed()
-        compose.onNodeWithText("Material You").assertIsDisplayed()
+        compose.onNodeWithTag("login-demo").assertIsDisplayed()
         val screen = compose.onNodeWithTag("a11y-scale").getUnclippedBoundsInRoot()
         compose.onNodeWithTag("login-demo").getUnclippedBoundsInRoot().also { demo ->
             assertTrue(demo.bottom <= screen.bottom + 8.dp)

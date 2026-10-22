@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -15,7 +17,9 @@ import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.fixtures.MockFixtures
 import nl.cita.magister.ui.schedule.ScheduleScreen
+import nl.cita.magister.ui.schedule.buildDaySlots
 import nl.cita.magister.ui.theme.CitaTheme
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -79,5 +83,39 @@ class ScheduleSwipeTest {
         compose.onNodeWithTag("rooster-weekstrip").performTouchInput { swipeRight() }
         compose.waitForIdle()
         compose.onNodeWithTag("week-pick-$thursday").assertExists()
+    }
+
+    @Test
+    fun thursdayShowsTussenuurAndLessonSheet() {
+        val thursday = LocalDate.of(2026, 10, 22)
+        val ofDay = MockFixtures.appointments().filter {
+            it.startIso.startsWith("2026-10-22")
+        }
+        val slots = buildDaySlots(ofDay)
+        assertTrue(slots.any { it is nl.cita.magister.ui.schedule.DaySlot.Gap })
+
+        compose.setContent {
+            Box(Modifier.requiredSize(412.dp, 915.dp)) {
+                CitaTheme {
+                    ScheduleScreen(
+                        appointments = MockFixtures.appointments(),
+                        contentPadding = PaddingValues(0.dp),
+                        initialDate = thursday,
+                        clockDate = thursday,
+                        clockTime = java.time.LocalTime.of(11, 0),
+                    )
+                }
+            }
+        }
+        compose.waitForIdle()
+        assertTrue(compose.onAllNodesWithTag("tussenuur").fetchSemanticsNodes().isNotEmpty())
+        compose.onNodeWithTag("rooster-now-line").assertExists()
+        compose.onNodeWithText("Geschiedenis").assertExists()
+        compose.onNodeWithText("Geschiedenis").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag("les-blad").assertExists()
+        compose.onAllNodesWithText("Meers").fetchSemanticsNodes().also { nodes ->
+            assertTrue(nodes.size >= 2)
+        }
     }
 }

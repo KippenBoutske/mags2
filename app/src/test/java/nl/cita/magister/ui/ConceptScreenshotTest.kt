@@ -41,6 +41,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
 import java.time.LocalDate
+import java.time.LocalTime
 
 /**
  * Eén setContent per test — ComposeTestRule weigert een tweede.
@@ -64,6 +65,7 @@ class ConceptScreenshotTest {
     @Test fun rooster360() = snap("rooster", 360) { rooster() }
     @Test fun cijfers412() = snap("cijfers", 412) { grades() }
     @Test fun cijfers360() = snap("cijfers", 360) { grades() }
+    @Test fun cijfersVak412() = snap("cijfers-vak", 412) { grades(subjectId = 3) }
     @Test fun huiswerk412() = snap("huiswerk", 412) { homework() }
     @Test fun berichten412() = snap("berichten", 412) { messages() }
     @Test fun berichten403() = snap("berichten-403", 412) { messagesForbidden() }
@@ -117,8 +119,10 @@ class ConceptScreenshotTest {
     private fun outDirs(): List<File> = listOf(
         File("app/build/outputs/self-test/screenshots"),
         File("build/outputs/self-test/screenshots"),
-        File("/cursor/stores/self/artifacts/screens-0.1.10"),
-        File("/opt/cursor/artifacts/0.1.10"),
+        File("artifacts/screens-0.1.11"),
+        File("/workspace/artifacts/screens-0.1.11"),
+        File("/cursor/stores/self/artifacts/screens-0.1.11"),
+        File("/opt/cursor/artifacts/0.1.11"),
     )
 
     @Composable
@@ -169,12 +173,14 @@ class ConceptScreenshotTest {
         ScheduleScreen(
             appointments = MockFixtures.appointments(),
             contentPadding = PaddingValues(0.dp),
-            initialDate = LocalDate.of(2026, 10, 21),
+            initialDate = LocalDate.of(2026, 10, 22),
+            clockDate = LocalDate.of(2026, 10, 22),
+            clockTime = LocalTime.of(11, 0),
         )
     }
 
     @Composable
-    private fun grades() {
+    private fun grades(subjectId: Int? = null) {
         val grades = MockFixtures.grades()
         GradesScreen(
             profile = MockFixtures.profile(),
@@ -185,6 +191,7 @@ class ConceptScreenshotTest {
             contentPadding = PaddingValues(0.dp),
             onExport = {},
             onShareJson = {},
+            initialSubjectId = subjectId,
         )
     }
 

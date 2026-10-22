@@ -122,7 +122,7 @@ fun TodayScreen(
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("VOLGENDE LES", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (next == null) {
-                            Text("Geen lessen meer vandaag.", style = MaterialTheme.typography.headlineSmall)
+                            Text("Klaar.", style = MaterialTheme.typography.headlineSmall)
                         } else {
                             Text(next.title, style = MaterialTheme.typography.headlineSmall)
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -167,7 +167,7 @@ fun TodayScreen(
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Laatste cijfers", style = MaterialTheme.typography.titleLarge)
-                TextButton(onClick = { onOpenPage(MagsPage.Cijfers) }) { Text("Alle cijfers →") }
+                TextButton(onClick = { onOpenPage(MagsPage.Cijfers) }) { Text("Alles") }
             }
         }
         gradesError?.let { item { SectionError(it) } }
@@ -190,7 +190,7 @@ fun TodayScreen(
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Huiswerk", style = MaterialTheme.typography.titleLarge)
-                TextButton(onClick = { onOpenPage(MagsPage.Huiswerk) }) { Text("Alles →") }
+                TextButton(onClick = { onOpenPage(MagsPage.Huiswerk) }) { Text("Alles") }
             }
         }
         item {
@@ -203,7 +203,7 @@ fun TodayScreen(
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (openHw.isEmpty()) {
-                        Text("Niets open. Lekker bezig.")
+                        Text("Niets open.")
                     } else {
                         openHw.take(3).forEach { hw ->
                             HomeworkRow(

@@ -192,7 +192,7 @@ class CitaViewModel(
             repo.enterDemo()
             _signedIn.value = true
             _lastError.value = null
-            _snackbar.emit("Voorbeelddata geladen.")
+            _snackbar.emit("Voorbeeld.")
         }
     }
 
@@ -257,19 +257,21 @@ class CitaViewModel(
     fun saveWebhook(url: String, key: String) {
         viewModelScope.launch {
             repo.saveWebhook(url, key.ifBlank { null })
-            _snackbar.emit("Webhook opgeslagen.")
+            _snackbar.emit("Opgeslagen.")
         }
     }
 
     fun exportToPlanGoon() {
         viewModelScope.launch {
             _exporting.value = true
-            repo.exportToPlanGoon()
-                .onSuccess { _snackbar.emit("Cijfers verstuurd.") }
-                .onFailure { error ->
-                    rememberFailure(error)
-                    _snackbar.emit(friendlyOf(error))
-                }
+            val url = webhookUrl.value
+            if (url.isBlank()) {
+                shareExportJson()
+            } else {
+                repo.exportToPlanGoon()
+                    .onSuccess { _snackbar.emit("Verstuurd.") }
+                    .onFailure { shareExportJson() }
+            }
             _exporting.value = false
         }
     }
@@ -279,7 +281,7 @@ class CitaViewModel(
             runCatching { repo.exportJson(pretty = true) }
                 .onSuccess {
                     _shareJson.emit(it)
-                    _snackbar.emit("JSON gekopieerd.")
+                    _snackbar.emit("Gekopieerd.")
                 }
                 .onFailure { error ->
                     rememberFailure(error)

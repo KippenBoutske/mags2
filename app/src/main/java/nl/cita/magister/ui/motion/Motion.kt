@@ -1,5 +1,8 @@
 package nl.cita.magister.ui.motion
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -33,6 +36,23 @@ fun dockIndicatorSpring() = spring<Float>(
     dampingRatio = 0.72f,
     stiffness = 380f,
 )
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+fun magsSharedBounds(
+    key: String,
+    scope: SharedTransitionScope?,
+    visibility: AnimatedVisibilityScope?,
+): Modifier {
+    if (scope == null || visibility == null) return Modifier
+    with(scope) {
+        return Modifier.sharedBounds(
+            sharedContentState = rememberSharedContentState(key = key),
+            animatedVisibilityScope = visibility,
+            boundsTransform = { _, _ -> magsSpring() },
+        )
+    }
+}
 
 @Composable
 fun Modifier.staggerEnter(index: Int, enabled: Boolean = true): Modifier {

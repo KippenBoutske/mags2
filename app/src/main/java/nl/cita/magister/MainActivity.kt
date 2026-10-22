@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
                         putExtra(Intent.EXTRA_TEXT, json)
                         putExtra(Intent.EXTRA_SUBJECT, "Mags cijfers")
                     }
-                    startActivity(Intent.createChooser(share, "Cijfers delen als JSON"))
+                    startActivity(Intent.createChooser(share, "Cijfers delen"))
                 }
             }
             val safeMode = CrashGuard.isSafeMode(this)

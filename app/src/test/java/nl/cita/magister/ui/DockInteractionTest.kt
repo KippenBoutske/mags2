@@ -98,7 +98,7 @@ class DockInteractionTest {
 
         compose.onNodeWithTag("dock-tab-Cijfers").performClick()
         compose.waitForIdle()
-        compose.onNodeWithText("Tik een vak voor de calculator.").assertExists()
+        compose.onNodeWithTag("cijfers-lijst").assertExists()
         compose.onNodeWithTag("dock-tab-Cijfers").assertIsSelected()
         compose.onAllNodesWithTag("dock-indicator").assertCountEquals(1)
 

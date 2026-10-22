@@ -29,7 +29,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -66,18 +66,23 @@ fun LoginScreen(
     onStartLogin: () -> String,
     onWebViewLogin: () -> Unit,
     onDemo: () -> Unit,
-    dynamicColor: Boolean = false,
-    onDynamicColor: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
+    val focus = LocalFocusManager.current
     var menuOpen by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) { focus.clearFocus() }
 
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag("login-screen"),
+    ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 20.dp)
-            .testTag("login-screen"),
+            .padding(bottom = 64.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopEnd) {
@@ -119,27 +124,17 @@ fun LoginScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 CookieFlower(Modifier.size(92.dp))
-                Column(
-                    Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        "Mags",
-                        style = MaterialTheme.typography.displayLarge.copy(
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = (-1.5).sp,
-                            fontSize = 48.sp,
-                            lineHeight = 52.sp,
-                        ),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        maxLines = 1,
-                    )
-                    Text(
-                        "Magister, maar sneller.",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
+                Text(
+                    "Mags",
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = (-1.5).sp,
+                        fontSize = 48.sp,
+                        lineHeight = 52.sp,
+                    ),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    maxLines = 1,
+                )
             }
         }
 
@@ -170,42 +165,25 @@ fun LoginScreen(
         ) {
             Text("Inloggen", style = MaterialTheme.typography.titleMedium)
         }
+
+        lastError?.let { ErrorDetails(it) }
+        Spacer(Modifier.height(24.dp))
+    }
         TextButton(
             onClick = onDemo,
             modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 24.dp, vertical = 16.dp)
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 48.dp)
                 .testTag("login-demo")
                 .semantics { contentDescription = "Voorbeeld zonder account" },
         ) {
-            Text("Voorbeeld")
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .defaultMinSize(minHeight = 48.dp)
-                .testTag("login-material-you"),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f).padding(end = 12.dp)) {
-                Text("Material You", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "Uit = Donker warm. Aan = kleuren van je telefoon.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(
-                checked = dynamicColor,
-                onCheckedChange = onDynamicColor,
-                modifier = Modifier.semantics { contentDescription = "Material You" },
+            Text(
+                "Voorbeeld",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-
-        lastError?.let { ErrorDetails(it) }
-        Spacer(Modifier.height(12.dp))
     }
 }
 
@@ -219,7 +197,7 @@ fun ErrorDetails(error: ApiFailure) {
             onClick = { open = !open },
             modifier = Modifier.defaultMinSize(minHeight = 48.dp),
         ) {
-            Text(if (open) "Verberg details" else "Details")
+            Text(if (open) "Verberg" else "Details")
         }
         AnimatedVisibility(open) {
             Text(

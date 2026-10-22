@@ -128,15 +128,12 @@ fun SearchSheet(
                     .fillMaxWidth()
                     .focusRequester(focus)
                     .semantics { contentDescription = "Zoek in Mags" },
-                label = { Text("Vak, les, huiswerk, bericht, afwezigheid") },
+                placeholder = { Text("Zoeken") },
                 singleLine = true,
             )
             when {
-                query.trim().length < 2 -> Text(
-                    "Typ minstens twee letters.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                hits.isEmpty() -> Text("Niets gevonden voor “${query.trim()}”.")
+                query.trim().length < 2 -> { }
+                hits.isEmpty() -> Text("Niets gevonden.")
                 else -> hits.forEach { hit ->
                     Column(
                         Modifier

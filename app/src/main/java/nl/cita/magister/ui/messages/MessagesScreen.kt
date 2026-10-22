@@ -49,16 +49,16 @@ fun MessagesScreen(
         ),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        item { PageTitle("Berichten", "Alleen lezen") }
+        item { PageTitle("Berichten", null) }
         messagesError?.let { item { SectionError(it) } }
         if (loading && messages.isEmpty() && messagesError == null) {
             item { ListSkeleton(rows = 4, contentDescription = "Berichten laden") }
         }
         if (messages.isEmpty() && messagesError == null && !loading) {
-            item { Text("Geen berichten in Postvak IN.") }
+            item { Text("Geen berichten.") }
         }
         if (messages.isEmpty() && messagesError != null) {
-            item { Text("De inbox blijft leeg tot Magister dit weer toestaat.") }
+            item { Text("Geen berichten.") }
         }
         itemsIndexed(messages, key = { _, it -> it.id }) { index, message ->
             val colors = if (message.isRead) {

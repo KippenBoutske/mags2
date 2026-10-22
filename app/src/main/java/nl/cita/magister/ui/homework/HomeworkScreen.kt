@@ -79,13 +79,7 @@ fun HomeworkScreen(
         }
         if (visible.isEmpty() && !loading) {
             item {
-                Text(
-                    if (agendaError != null) {
-                        "De lijst blijft leeg tot Magister dit weer toestaat."
-                    } else {
-                        "Niets in deze lijst. Lekker bezig, of trek naar beneden om te vernieuwen."
-                    },
-                )
+                Text(if (agendaError != null) "Geen huiswerk." else "Niets open.")
             }
         }
         itemsIndexed(visible, key = { _, it -> it.id }) { index, item ->

@@ -1,9 +1,11 @@
 package nl.cita.magister.ui.settings
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.defaultMinSize
@@ -18,12 +20,15 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -72,6 +77,7 @@ fun SettingsScreen(
 ) {
     var url by remember(webhookUrl) { mutableStateOf(webhookUrl) }
     var key by remember { mutableStateOf("") }
+    var advanced by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -93,10 +99,7 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(listOfNotNull(profile?.className, profile?.study, schoolName).joinToString(" · "))
-                if (tenantHost.isNotBlank()) {
-                    Text(tenantHost, style = MaterialTheme.typography.labelMedium)
-                }
-                if (demoMode) Text("Voorbeeld — geen live data.")
+                if (demoMode) Text("Voorbeeld")
             }
         }
         Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
@@ -115,7 +118,7 @@ fun SettingsScreen(
         lastError?.let { SectionError(it) }
         ExtraCard("Afwezigheid", absencesError) {
             if (absences.isEmpty() && absencesError == null) {
-                Text("Geen afwezigheid in de laatste maanden.")
+                Text("Geen afwezigheid.")
             }
             absences.take(8).forEach { item ->
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -135,7 +138,7 @@ fun SettingsScreen(
         }
         ExtraCard("Studiewijzers", studyGuidesError) {
             if (studyGuides.isEmpty() && studyGuidesError == null) {
-                Text("Geen studiewijzers voor deze peildatum.")
+                Text("Geen studiewijzers.")
             }
             studyGuides.forEach { guide ->
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -156,7 +159,7 @@ fun SettingsScreen(
         }
         ExtraCard("Opdrachten", assignmentsError) {
             if (assignments.isEmpty() && assignmentsError == null) {
-                Text("Geen open opdrachten.")
+                Text("Geen opdrachten.")
             }
             assignments.forEach { item ->
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -173,42 +176,28 @@ fun SettingsScreen(
         Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Weergave", style = MaterialTheme.typography.titleMedium)
-                androidx.compose.foundation.layout.Row(
+                Row(
                     Modifier
                         .fillMaxWidth()
                         .defaultMinSize(minHeight = 48.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column(Modifier.weight(1f).padding(end = 12.dp)) {
-                        Text("Material You")
-                        Text(
-                            "Uit = Donker warm. Aan = kleuren van je telefoon.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    Text("Material You", modifier = Modifier.weight(1f))
                     Switch(
                         checked = dynamicColor,
                         onCheckedChange = onDynamicColor,
                         modifier = Modifier.semantics { contentDescription = "Material You" },
                     )
                 }
-                androidx.compose.foundation.layout.Row(
+                Row(
                     Modifier
                         .fillMaxWidth()
                         .defaultMinSize(minHeight = 48.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column(Modifier.weight(1f).padding(end = 12.dp)) {
-                        Text("Meldingen")
-                        Text(
-                            "Nieuwe cijfers en roosterwijzigingen. Widget ‘Volgende les’ op het startscherm.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    Text("Meldingen", modifier = Modifier.weight(1f))
                     Switch(
                         checked = notifications,
                         onCheckedChange = onNotifications,
@@ -217,48 +206,49 @@ fun SettingsScreen(
                 }
             }
         }
-        Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Plan Goon", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "Stuur cijfers naar je planningsassistent.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                OutlinedTextField(
-                    value = url,
-                    onValueChange = { url = it },
-                    label = { Text("Webhook-URL") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
-                OutlinedTextField(
-                    value = key,
-                    onValueChange = { key = it },
-                    label = { Text(if (hasWebhookKey) "Nieuwe key (leeg = behouden)" else "Bearer-key") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                )
-                Button(onClick = { onSaveWebhook(url, key) }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Opslaan")
+        TextButton(
+            onClick = { advanced = !advanced },
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("meer-geavanceerd"),
+        ) {
+            Text(if (advanced) "Geavanceerd ▾" else "Geavanceerd")
+        }
+        AnimatedVisibility(advanced) {
+            Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Plan Goon", style = MaterialTheme.typography.titleMedium)
+                    OutlinedTextField(
+                        value = url,
+                        onValueChange = { url = it },
+                        label = { Text("Adres") },
+                        modifier = Modifier.fillMaxWidth().testTag("meer-adres"),
+                        singleLine = true,
+                    )
+                    OutlinedTextField(
+                        value = key,
+                        onValueChange = { key = it },
+                        label = { Text(if (hasWebhookKey) "Nieuwe sleutel" else "Sleutel") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                    )
+                    Button(onClick = { onSaveWebhook(url, key) }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Opslaan")
+                    }
+                    CitaActionRow(
+                        actions = listOf(
+                            CitaAction("Exporteer", onClick = onExport),
+                            CitaAction("Deel", onClick = onShareJson),
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
-                CitaActionRow(
-                    actions = listOf(
-                        CitaAction("Exporteren", onClick = onExport),
-                        CitaAction("Deel JSON", onClick = onShareJson),
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                )
             }
         }
         OutlinedButton(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
             Text("Uitloggen")
         }
-        Text(
-            "Mags is geen officiële Magister-app. Alleen jouw eigen data.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 

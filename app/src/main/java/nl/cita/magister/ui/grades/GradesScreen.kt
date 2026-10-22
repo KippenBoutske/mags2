@@ -1,5 +1,15 @@
 package nl.cita.magister.ui.grades
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,26 +19,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Calculate
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.IosShare
-import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -36,26 +45,34 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.grades.GradeCalculator
+import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.Grade
 import nl.cita.magister.model.GradeColumnType
 import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.SubjectAverage
-import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.ui.components.ListSkeleton
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatGrade
+import nl.cita.magister.ui.formatWhen
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.magsFloatSpring
+import nl.cita.magister.ui.motion.magsSharedBounds
+import nl.cita.magister.ui.motion.magsSpring
 import nl.cita.magister.ui.motion.staggerEnter
 import nl.cita.magister.ui.theme.CitaAction
 import nl.cita.magister.ui.theme.CitaActionRow
 
 private enum class GradeFilter { All, Weak, Pta }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun GradesScreen(
     profile: StudentProfile?,
@@ -65,11 +82,15 @@ fun GradesScreen(
     exporting: Boolean,
     contentPadding: PaddingValues,
     onExport: () -> Unit,
-    onShareJson: () -> Unit,
+    onShareJson: () -> Unit = {},
     gradesError: ApiFailure? = null,
+    initialSubjectId: Int? = null,
 ) {
     var filter by remember { mutableStateOf(GradeFilter.All) }
-    var calculatorFor by remember { mutableStateOf<SubjectAverage?>(null) }
+    var openSubject by remember {
+        mutableStateOf(averages.firstOrNull { it.subjectId == initialSubjectId })
+    }
+    var openGrade by remember { mutableStateOf<Grade?>(null) }
     val visible = when (filter) {
         GradeFilter.All -> averages
         GradeFilter.Weak -> averages.filter { (it.average ?: 10.0) < 6.0 }
@@ -78,84 +99,96 @@ fun GradesScreen(
         }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = contentPadding.calculateTopPadding() + 8.dp,
-            bottom = contentPadding.calculateBottomPadding() + 8.dp,
-        ),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item {
-            PageTitle(
-                "Cijfers",
-                profile?.let { "${it.firstName} · ${it.className ?: it.study ?: "leerling"}" },
-            )
-        }
-        gradesError?.let { item { SectionError(it) } }
-        item {
-            Text(
-                "Tik een vak voor de calculator.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        item {
-            CitaActionRow(
-                actions = listOf(
-                    CitaAction("Alle vakken") { filter = GradeFilter.All },
-                    CitaAction("Aandacht") { filter = GradeFilter.Weak },
-                    CitaAction("PTA") { filter = GradeFilter.Pta },
-                ),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilledTonalButton(onClick = onExport, enabled = !exporting) {
-                    Icon(Icons.Outlined.Send, contentDescription = null)
-                    Spacer(Modifier.padding(4.dp))
-                    Text(if (exporting) "Versturen…" else "Cijfers exporteren")
+    BackHandler(openSubject != null) { openSubject = null }
+
+    SharedTransitionLayout {
+        AnimatedContent(
+            targetState = openSubject,
+            transitionSpec = { fadeIn(magsSpring()) togetherWith fadeOut() },
+            label = "cijfers-vak",
+        ) { subject ->
+            if (subject == null) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().testTag("cijfers-lijst"),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = contentPadding.calculateTopPadding() + 8.dp,
+                        bottom = contentPadding.calculateBottomPadding() + 8.dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    item {
+                        PageTitle(
+                            "Cijfers",
+                            profile?.let { "${it.firstName} · ${it.className ?: it.study ?: ""}".trimEnd(' ', '·') },
+                        )
+                    }
+                    gradesError?.let { item { SectionError(it) } }
+                    item {
+                        CitaActionRow(
+                            actions = listOf(
+                                CitaAction("Alle vakken") { filter = GradeFilter.All },
+                                CitaAction("Aandacht") { filter = GradeFilter.Weak },
+                                CitaAction("PTA") { filter = GradeFilter.Pta },
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    item {
+                        FilledTonalButton(
+                            onClick = onExport,
+                            enabled = !exporting,
+                            modifier = Modifier.testTag("cijfers-deel"),
+                        ) {
+                            Icon(Icons.Outlined.IosShare, contentDescription = null)
+                            Spacer(Modifier.padding(4.dp))
+                            Text(if (exporting) "…" else "Deel")
+                        }
+                    }
+                    if (refreshing && averages.isEmpty()) {
+                        item { ListSkeleton(rows = 3, contentDescription = "Cijfers laden") }
+                    }
+                    if (!refreshing && visible.isEmpty()) {
+                        item { Text("Geen cijfers.") }
+                    }
+                    itemsIndexed(visible, key = { _, it -> it.subjectId }) { index, item ->
+                        SubjectCard(
+                            subject = item,
+                            grades = grades.filter { it.subjectId == item.subjectId && it.columnType == GradeColumnType.Grade },
+                            onOpen = { openSubject = item },
+                            modifier = Modifier
+                                .staggerEnter(index)
+                                .animateItem()
+                                .then(
+                                    magsSharedBounds(
+                                        key = "vak-${item.subjectId}",
+                                        scope = this@SharedTransitionLayout,
+                                        visibility = this@AnimatedContent,
+                                    ),
+                                ),
+                        )
+                    }
                 }
-                OutlinedButton(onClick = onShareJson) {
-                    Icon(Icons.Outlined.IosShare, contentDescription = null)
-                    Spacer(Modifier.padding(4.dp))
-                    Text("Deel JSON")
-                }
-            }
-        }
-        if (refreshing && averages.isEmpty()) {
-            item { ListSkeleton(rows = 3, contentDescription = "Cijfers laden") }
-        }
-        if (!refreshing && visible.isEmpty()) {
-            item {
-                Text(
-                    if (gradesError != null) {
-                        "De lijst blijft leeg tot Magister dit weer toestaat."
-                    } else {
-                        "Nog geen cijfers in de cache. Trek naar beneden om te vernieuwen."
-                    },
+            } else {
+                SubjectPage(
+                    subject = subject,
+                    grades = grades.filter { it.subjectId == subject.subjectId },
+                    contentPadding = contentPadding,
+                    onBack = { openSubject = null },
+                    onGrade = { openGrade = it },
+                    sharedModifier = magsSharedBounds(
+                        key = "vak-${subject.subjectId}",
+                        scope = this@SharedTransitionLayout,
+                        visibility = this@AnimatedContent,
+                    ),
                 )
             }
         }
-        itemsIndexed(visible, key = { _, it -> it.subjectId }) { index, subject ->
-            SubjectCard(
-                subject = subject,
-                grades = grades.filter { it.subjectId == subject.subjectId && it.columnType == GradeColumnType.Grade },
-                onCalculate = { calculatorFor = subject },
-                modifier = Modifier.staggerEnter(index).animateItem(),
-            )
-        }
     }
 
-    calculatorFor?.let { subject ->
-        CalculatorSheet(
-            subject = subject,
-            grades = grades.filter { it.subjectId == subject.subjectId },
-            onDismiss = { calculatorFor = null },
-        )
+    openGrade?.let { grade ->
+        GradeDetailSheet(grade = grade, onDismiss = { openGrade = null })
     }
 }
 
@@ -163,7 +196,7 @@ fun GradesScreen(
 private fun SubjectCard(
     subject: SubjectAverage,
     grades: List<Grade>,
-    onCalculate: () -> Unit,
+    onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val avg = subject.average
@@ -179,16 +212,16 @@ private fun SubjectCard(
         else -> MaterialTheme.colorScheme.secondaryContainer
     }
     PressScaleCard(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().testTag("cijfers-vak"),
         colors = CardDefaults.cardColors(containerColor = color),
-        onClick = onCalculate,
+        onClick = onOpen,
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(subject.subjectName, style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "${subject.subjectCode.uppercase()} · ${subject.gradesCounted} cijfers",
+                        subject.subjectCode.uppercase(),
                         style = MaterialTheme.typography.labelMedium,
                     )
                 }
@@ -205,57 +238,226 @@ private fun SubjectCard(
             }
             grades.sortedByDescending { it.enteredAt }.take(4).forEach { grade ->
                 Text(
-                    "${grade.columnHeading ?: "Cijfer"}  ${grade.value ?: "–"}  ·  ×${grade.weight ?: 1}",
+                    "${grade.columnHeading ?: "Cijfer"}  ${grade.value ?: "–"}  ·  ×${(grade.weight ?: 1.0).toInt()}",
                     style = MaterialTheme.typography.bodySmall,
                 )
-            }
-            OutlinedButton(onClick = onCalculate) {
-                Icon(Icons.Outlined.Calculate, contentDescription = null)
-                Spacer(Modifier.padding(4.dp))
-                Text("Wat moet ik halen?")
             }
         }
     }
 }
 
 @Composable
-private fun CalculatorSheet(
+private fun SubjectPage(
     subject: SubjectAverage,
     grades: List<Grade>,
+    contentPadding: PaddingValues,
+    onBack: () -> Unit,
+    onGrade: (Grade) -> Unit,
+    sharedModifier: Modifier,
+) {
+    val counted = remember(grades) {
+        grades.filter { it.counts && it.columnType == GradeColumnType.Grade }
+            .sortedBy { it.enteredAt.orEmpty() }
+    }
+    val values = counted.mapNotNull { it.numericValue ?: GradeCalculator.parseDutchNumber(it.value) }
+    val trend = averageTrend(values)
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(sharedModifier)
+            .testTag("cijfers-vak-pagina"),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = contentPadding.calculateTopPadding() + 4.dp,
+            bottom = contentPadding.calculateBottomPadding() + 8.dp,
+        ),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack, modifier = Modifier.testTag("cijfers-terug")) {
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Terug")
+                }
+                PageTitle(subject.subjectName, formatGrade(subject.average))
+            }
+        }
+        if (values.size >= 2) {
+            item {
+                GradeSparkline(
+                    values = values,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(132.dp)
+                        .testTag("cijfers-grafiek"),
+                )
+            }
+        }
+        if (trend != 0) {
+            item {
+                Text(
+                    if (trend > 0) "stijgt" else "daalt",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (trend > 0) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+        itemsIndexed(counted.reversed(), key = { _, it -> it.id }) { index, grade ->
+            PressScaleCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .staggerEnter(index)
+                    .testTag("cijfers-cijfer"),
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
+                onClick = { onGrade(grade) },
+            ) {
+                Row(
+                    Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(grade.columnHeading ?: "Cijfer", style = MaterialTheme.typography.titleMedium)
+                        grade.columnDescription?.takeIf { it.isNotBlank() }?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    Text(grade.value ?: "–", style = MaterialTheme.typography.headlineSmall)
+                }
+            }
+        }
+        item {
+            CalculatorBlock(subject = subject, grades = grades)
+        }
+    }
+}
+
+@Composable
+private fun GradeSparkline(
+    values: List<Double>,
+    modifier: Modifier = Modifier,
+) {
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(values) {
+        progress.snapTo(0f)
+        progress.animateTo(1f, magsFloatSpring(dampingRatio = 0.82f, stiffness = 180f))
+    }
+    val line = MaterialTheme.colorScheme.primary
+    val trend = MaterialTheme.colorScheme.tertiary
+    val grid = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
+    Canvas(modifier) {
+        if (values.isEmpty()) return@Canvas
+        val min = (values.min() - 0.4).coerceAtLeast(1.0)
+        val max = (values.max() + 0.4).coerceAtMost(10.0)
+        val range = (max - min).takeIf { it > 0 } ?: 1.0
+        fun yOf(value: Double) = size.height - ((value - min) / range * size.height).toFloat()
+        fun xOf(index: Int): Float {
+            if (values.size == 1) return size.width / 2f
+            return index / (values.lastIndex).toFloat() * size.width
+        }
+        drawLine(grid, Offset(0f, yOf(6.0)), Offset(size.width, yOf(6.0)), strokeWidth = 2f)
+        val shown = (1 + (values.size - 1) * progress.value).toInt().coerceIn(1, values.size)
+        val running = mutableListOf<Double>()
+        val avgPath = Path()
+        val gradePath = Path()
+        values.take(shown).forEachIndexed { index, value ->
+            running += value
+            val x = xOf(index)
+            val y = yOf(value)
+            val ay = yOf(running.average())
+            if (index == 0) {
+                gradePath.moveTo(x, y)
+                avgPath.moveTo(x, ay)
+            } else {
+                gradePath.lineTo(x, y)
+                avgPath.lineTo(x, ay)
+            }
+            drawCircle(line, radius = 6f, center = Offset(x, y))
+        }
+        drawPath(avgPath, trend, style = Stroke(width = 4f, cap = StrokeCap.Round))
+        drawPath(gradePath, line, style = Stroke(width = 7f, cap = StrokeCap.Round))
+    }
+}
+
+internal fun averageTrend(values: List<Double>): Int {
+    if (values.size < 2) return 0
+    val last = values.last()
+    val previous = values.dropLast(1).average()
+    return when {
+        last > previous + 0.15 -> 1
+        last < previous - 0.15 -> -1
+        else -> 0
+    }
+}
+
+@Composable
+private fun GradeDetailSheet(
+    grade: Grade,
     onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        modifier = Modifier.testTag("cijfer-blad"),
+    ) {
+        Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(grade.subjectName, style = MaterialTheme.typography.headlineSmall)
+            Text(grade.value ?: "–", style = MaterialTheme.typography.displaySmall)
+            Text("×${(grade.weight ?: 1.0).toInt()}", style = MaterialTheme.typography.titleMedium)
+            formatWhen(grade.enteredAt).takeIf { it.isNotBlank() }?.let {
+                Text(it, style = MaterialTheme.typography.bodyLarge)
+            }
+            grade.columnHeading?.let { Text(it, style = MaterialTheme.typography.titleSmall) }
+            grade.columnDescription?.takeIf { it.isNotBlank() }?.let {
+                Text(it, style = MaterialTheme.typography.bodyMedium)
+            }
+            grade.teacher?.takeIf { it.isNotBlank() }?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun CalculatorBlock(
+    subject: SubjectAverage,
+    grades: List<Grade>,
 ) {
     var target by remember { mutableFloatStateOf(7f) }
     var weight by remember { mutableFloatStateOf(2f) }
     val result = remember(target, weight, grades) {
         runCatching { GradeCalculator.scoreNeeded(grades, target.toDouble(), weight.toDouble()) }.getOrNull()
     }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
-        Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Wat moet ik halen?", style = MaterialTheme.typography.headlineSmall)
-            Text(subject.subjectName, style = MaterialTheme.typography.titleMedium)
-            Text("Huidig gemiddelde: ${formatGrade(result?.currentAverage ?: subject.average)}")
-            Text("Doel: ${formatGrade(target.toDouble())}")
-            Slider(value = target, onValueChange = { target = it }, valueRange = 5.5f..9f, steps = 6)
-            Text("Weging volgende toets: ${weight.toInt()}×")
-            Slider(value = weight, onValueChange = { weight = it }, valueRange = 1f..6f, steps = 4)
-            OutlinedTextField(
-                value = formatGrade(target.toDouble()),
-                onValueChange = { raw ->
-                    GradeCalculator.parseDutchNumber(raw)?.toFloat()?.let { target = it }
-                },
-                label = { Text("Doelcijfer") },
-                modifier = Modifier.fillMaxWidth(),
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .testTag("cijfers-reken"),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text("Wat moet ik halen?", style = MaterialTheme.typography.headlineSmall)
+        Text("Nu ${formatGrade(result?.currentAverage ?: subject.average)}")
+        Text(formatGrade(target.toDouble()))
+        Slider(value = target, onValueChange = { target = it }, valueRange = 5.5f..9f, steps = 6)
+        Text("×${weight.toInt()}")
+        Slider(value = weight, onValueChange = { weight = it }, valueRange = 1f..6f, steps = 4)
+        OutlinedTextField(
+            value = formatGrade(target.toDouble()),
+            onValueChange = { raw ->
+                GradeCalculator.parseDutchNumber(raw)?.toFloat()?.let { target = it }
+            },
+            label = { Text("Doel") },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        when {
+            result == null -> Text("Te weinig cijfers.")
+            result.alreadyReached -> Text("Al gehaald.")
+            !result.reachable -> Text("Niet haalbaar.")
+            else -> Text(
+                formatGrade(GradeCalculator.round1(result.needed)),
+                style = MaterialTheme.typography.headlineSmall,
             )
-            when {
-                result == null -> Text("Nog te weinig cijfers om te rekenen.")
-                result.alreadyReached -> Text("Je zit er al boven, ook met een 1,0.")
-                !result.reachable -> Text("Niet haalbaar met deze weging — je zou een ${formatGrade(result.needed)} nodig hebben.")
-                else -> Text(
-                    "Haal een ${formatGrade(GradeCalculator.round1(result.needed))} of hoger.",
-                    style = MaterialTheme.typography.headlineSmall,
-                )
-            }
-            Spacer(Modifier.height(24.dp))
         }
+        Spacer(Modifier.height(12.dp))
     }
 }

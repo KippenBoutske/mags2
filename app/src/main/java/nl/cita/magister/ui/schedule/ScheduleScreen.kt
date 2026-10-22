@@ -1,5 +1,13 @@
 package nl.cita.magister.ui.schedule
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -7,28 +15,35 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -36,6 +51,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -48,13 +64,20 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.Appointment
+import nl.cita.magister.model.HomeworkItem
+import nl.cita.magister.model.InfoType
+import nl.cita.magister.ui.components.CookieFlower
 import nl.cita.magister.ui.components.ListSkeleton
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatTime
 import nl.cita.magister.ui.localDateOf
 import nl.cita.magister.ui.motion.PressScaleCard
+import nl.cita.magister.ui.motion.magsSharedBounds
+import nl.cita.magister.ui.motion.magsSpring
+import nl.cita.magister.ui.motion.staggerEnter
 import java.time.DayOfWeek
+import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
@@ -62,15 +85,44 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 private val zone = ZoneId.of("Europe/Amsterdam")
 private val nl = Locale("nl", "NL")
 private val titleDay = DateTimeFormatter.ofPattern("EEEE d MMMM", nl)
-
-/** Weeks on each side of today. Pager pages are lazy; adjacent weeks prefetch on settle. */
 private const val WeekRadius = 40
+private const val MinGapMinutes = 10L
 
+internal sealed class DaySlot {
+    data class Lesson(val item: Appointment) : DaySlot()
+    data class Gap(val fromIso: String, val toIso: String) : DaySlot()
+}
+
+internal fun buildDaySlots(lessons: List<Appointment>, minGapMinutes: Long = MinGapMinutes): List<DaySlot> {
+    val sorted = lessons.sortedBy { it.startIso }
+    if (sorted.isEmpty()) return emptyList()
+    val slots = mutableListOf<DaySlot>()
+    sorted.forEachIndexed { index, item ->
+        if (index > 0) {
+            val previous = sorted[index - 1]
+            val minutes = minutesBetween(previous.endIso, item.startIso)
+            if (minutes != null && minutes >= minGapMinutes) {
+                slots += DaySlot.Gap(previous.endIso, item.startIso)
+            }
+        }
+        slots += DaySlot.Lesson(item)
+    }
+    return slots
+}
+
+internal fun minutesBetween(fromIso: String, toIso: String): Long? {
+    val from = lessonDateTime(fromIso) ?: return null
+    val to = lessonDateTime(toIso) ?: return null
+    return Duration.between(from, to).toMinutes()
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ScheduleScreen(
     appointments: List<Appointment>,
@@ -79,8 +131,13 @@ fun ScheduleScreen(
     initialDate: LocalDate? = null,
     onVisibleWeek: (LocalDate) -> Unit = {},
     loading: Boolean = false,
+    homework: List<HomeworkItem> = emptyList(),
+    clockDate: LocalDate = LocalDate.now(zone),
+    clockTime: LocalTime = LocalTime.now(zone),
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
 ) {
-    val today = remember { LocalDate.now(zone) }
+    val today = clockDate
     val startMonday = remember(today) { today.minusWeeks(WeekRadius.toLong()).with(DayOfWeek.MONDAY) }
     val days = remember(startMonday) {
         List(WeekRadius * 2 * 7) { startMonday.plusDays(it.toLong()) }
@@ -96,6 +153,7 @@ fun ScheduleScreen(
     val scope = rememberCoroutineScope()
     val selected = days.getOrElse(pager.currentPage) { today }
     val byDate = remember(appointments) { appointments.groupBy { localDateOf(it.startIso) } }
+    var openLesson by remember { mutableStateOf<Appointment?>(null) }
 
     LaunchedEffect(pager) {
         snapshotFlow { days.getOrNull(pager.settledPage)?.with(DayOfWeek.MONDAY) }
@@ -143,7 +201,13 @@ fun ScheduleScreen(
             Modifier.padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            PageTitle("Rooster", selected.format(titleDay).replaceFirstChar { it.titlecase(nl) })
+            AnimatedContent(
+                targetState = selected,
+                transitionSpec = { fadeIn(magsSpring()) togetherWith fadeOut() },
+                label = "rooster-titel",
+            ) { date ->
+                PageTitle("Rooster", date.format(titleDay).replaceFirstChar { it.titlecase(nl) })
+            }
             SectionError(agendaError)
             WeekStrip(
                 weekPager = weekPager,
@@ -152,6 +216,8 @@ fun ScheduleScreen(
                 days = days,
                 today = today,
                 onPick = ::jumpTo,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
             )
             if (selected != today) {
                 FilledTonalButton(
@@ -171,8 +237,10 @@ fun ScheduleScreen(
         ) { page ->
             val date = days[page]
             val ofDay = (byDate[date] ?: emptyList()).sortedBy { it.startIso }
+            val pageOffset = (pager.currentPage - page) + pager.currentPageOffsetFraction
+            val scale = 1f - 0.035f * abs(pageOffset).coerceAtMost(1f)
             if (loading && appointments.isEmpty()) {
-                androidx.compose.foundation.layout.Box(
+                Box(
                     Modifier
                         .fillMaxSize()
                         .padding(horizontal = 20.dp, vertical = 12.dp),
@@ -184,12 +252,28 @@ fun ScheduleScreen(
                     date = date,
                     lessons = ofDay,
                     contentBottom = contentPadding.calculateBottomPadding(),
+                    today = today,
+                    now = clockTime,
+                    onOpen = { openLesson = it },
+                    modifier = Modifier.graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    },
                 )
             }
         }
     }
+
+    openLesson?.let { lesson ->
+        LessonSheet(
+            lesson = lesson,
+            homework = homework.filter { matchesHomework(it, lesson) },
+            onDismiss = { openLesson = null },
+        )
+    }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun WeekStrip(
     weekPager: PagerState,
@@ -198,6 +282,8 @@ private fun WeekStrip(
     days: List<LocalDate>,
     today: LocalDate,
     onPick: (LocalDate) -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedVisibilityScope: AnimatedVisibilityScope?,
 ) {
     HorizontalPager(
         state = weekPager,
@@ -216,10 +302,13 @@ private fun WeekStrip(
             days = days,
             today = today,
             onPick = onPick,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
         )
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun WeekChips(
     weekDays: List<LocalDate>,
@@ -227,14 +316,17 @@ private fun WeekChips(
     days: List<LocalDate>,
     today: LocalDate,
     onPick: (LocalDate) -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedVisibilityScope: AnimatedVisibilityScope?,
 ) {
     val density = LocalDensity.current
     var stripWidth by remember { mutableIntStateOf(0) }
     val slot = if (weekDays.isEmpty() || stripWidth == 0) 0f else stripWidth / weekDays.size.toFloat()
     val pillIndex = weekdayOffset(dayPager, days)
     val onWeekend = weekDays.none { it == days.getOrNull(dayPager.currentPage) } &&
-        kotlin.math.abs(dayPager.currentPageOffsetFraction) < 0.02f
+        abs(dayPager.currentPageOffsetFraction) < 0.02f
     val pillAlpha = if (onWeekend) 0f else 1f
+    val selectedDate = days.getOrNull(dayPager.currentPage)
 
     Box(
         Modifier
@@ -249,6 +341,13 @@ private fun WeekChips(
                     .width(with(density) { slot.toDp() })
                     .fillMaxHeight()
                     .padding(horizontal = 2.dp)
+                    .then(
+                        magsSharedBounds(
+                            key = "week-day-${selectedDate ?: today}",
+                            scope = sharedTransitionScope,
+                            visibility = animatedVisibilityScope,
+                        ),
+                    )
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = pillAlpha))
                     .testTag("week-pill"),
@@ -314,90 +413,184 @@ private fun DayTimeline(
     date: LocalDate,
     lessons: List<Appointment>,
     contentBottom: androidx.compose.ui.unit.Dp,
+    today: LocalDate,
+    now: LocalTime,
+    onOpen: (Appointment) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val now = LocalTime.now(zone)
     val weekend = date.dayOfWeek == DayOfWeek.SATURDAY || date.dayOfWeek == DayOfWeek.SUNDAY
+    val slots = remember(lessons) { buildDaySlots(lessons) }
+    val isToday = date == today
     LazyColumn(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .testTag("rooster-dag-$date"),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = contentBottom + 8.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (weekend) {
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 24.dp)) {
-                    Text("Weekend", style = MaterialTheme.typography.headlineSmall)
-                    Text("Niks op school. Swipe naar maandag.", style = MaterialTheme.typography.bodyLarge)
-                }
+                Text("Weekend", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 24.dp))
             }
         } else if (lessons.isEmpty()) {
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 24.dp)) {
-                    Text("Vrij", style = MaterialTheme.typography.headlineSmall)
-                    Text("Geen lessen op deze dag.", style = MaterialTheme.typography.bodyLarge)
+                Text("Vrij", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 24.dp))
+            }
+        }
+        if (isToday && nowLineBefore(slots, now)) {
+            item { NowLine() }
+        }
+        itemsIndexed(slots, key = { _, slot -> slotKey(slot) }) { index, slot ->
+            when (slot) {
+                is DaySlot.Gap -> {
+                    Column(Modifier.staggerEnter(index)) {
+                        if (isToday && nowInsideGap(slot, now)) NowLine()
+                        GapRow(slot)
+                    }
+                }
+                is DaySlot.Lesson -> {
+                    val current = isCurrent(slot.item, isToday, now)
+                    Column(Modifier.staggerEnter(index)) {
+                        if (isToday && current) NowLine()
+                        LessonCard(
+                            item = slot.item,
+                            current = current,
+                            onClick = { onOpen(slot.item) },
+                        )
+                    }
                 }
             }
         }
-        itemsIndexed(lessons, key = { _, it -> it.id }) { _, item ->
-            val current = isCurrent(item, date, now)
-            PressScaleCard(
-                colors = CardDefaults.cardColors(
-                    when {
-                        item.isCancelled -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f)
-                        current -> MaterialTheme.colorScheme.primaryContainer
-                        else -> MaterialTheme.colorScheme.surfaceContainerHigh
-                    },
-                ),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column {
-                    if (current) {
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(2.dp)
-                                .background(MaterialTheme.colorScheme.primary)
-                                .testTag("rooster-now-line"),
-                        )
+        if (isToday && nowLineAfter(slots, now)) {
+            item { NowLine() }
+        }
+    }
+}
+
+@Composable
+private fun NowLine() {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp)
+            .testTag("rooster-now-line"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
+            Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary),
+        )
+        Box(
+            Modifier
+                .weight(1f)
+                .height(2.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary),
+        )
+        Text("nu", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+    }
+}
+
+@Composable
+private fun GapRow(slot: DaySlot.Gap) {
+    val from = formatTime(slot.fromIso)
+    val to = formatTime(slot.toIso)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(36.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .padding(horizontal = 14.dp)
+            .testTag("tussenuur"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text("Tussenuur", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.weight(1f))
+        Text("$from–$to", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun LessonCard(
+    item: Appointment,
+    current: Boolean,
+    onClick: () -> Unit,
+) {
+    PressScaleCard(
+        colors = CardDefaults.cardColors(
+            when {
+                item.isCancelled -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f)
+                current -> MaterialTheme.colorScheme.primaryContainer
+                else -> MaterialTheme.colorScheme.surfaceContainerHigh
+            },
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("les-kaart"),
+        onClick = onClick,
+    ) {
+        Box {
+            if (current) {
+                CookieFlower(
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 4.dp, end = 4.dp)
+                        .size(72.dp)
+                        .testTag("les-nu-vorm"),
+                )
+            }
+            Column(Modifier.padding(if (current) 18.dp else 14.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(
+                        Modifier
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                    ) {
+                        Text(item.periodFrom?.toString() ?: "–", style = MaterialTheme.typography.titleMedium)
                     }
-                    Row(Modifier.padding(14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Box(
-                            Modifier
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                                .padding(horizontal = 10.dp, vertical = 8.dp),
-                        ) {
-                            Text(item.periodFrom?.toString() ?: "–", style = MaterialTheme.typography.titleMedium)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            item.title,
+                            style = if (current) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
+                            textDecoration = if (item.isCancelled) TextDecoration.LineThrough else null,
+                            color = if (item.isCancelled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            else MaterialTheme.colorScheme.onSurface,
+                        )
+                        if (item.isCancelled) {
+                            Text("Uitval", style = MaterialTheme.typography.labelMedium)
                         }
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(
-                                item.title,
-                                style = MaterialTheme.typography.titleMedium,
-                                textDecoration = if (item.isCancelled) TextDecoration.LineThrough else null,
-                                color = if (item.isCancelled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                else MaterialTheme.colorScheme.onSurface,
-                            )
-                            if (item.isCancelled) {
-                                Text("Uitval", style = MaterialTheme.typography.labelMedium)
+                        Text(
+                            item.teachers.firstOrNull() ?: "–",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        val room = item.classroom ?: item.location ?: "–"
+                        Text(
+                            if (item.isChanged) "$room · gewijzigd" else room,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (item.isChanged) MaterialTheme.colorScheme.tertiary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (item.isChanged) FontWeight.SemiBold else FontWeight.Normal,
+                        )
+                        Text(
+                            listOfNotNull(formatTime(item.startIso), formatTime(item.endIso)).joinToString("–"),
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                        if (current) {
+                            item.content?.takeIf { it.isNotBlank() }?.let { body ->
+                                Text(
+                                    body,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 2,
+                                    modifier = Modifier.padding(top = 6.dp),
+                                )
                             }
-                            Text(
-                                item.teachers.firstOrNull() ?: "–",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            val room = item.classroom ?: item.location ?: "–"
-                            Text(
-                                if (item.isChanged) "$room · gewijzigd" else room,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (item.isChanged) MaterialTheme.colorScheme.tertiary
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = if (item.isChanged) FontWeight.SemiBold else FontWeight.Normal,
-                            )
-                            Text(
-                                listOfNotNull(formatTime(item.startIso), formatTime(item.endIso)).joinToString("–"),
-                                style = MaterialTheme.typography.labelMedium,
-                            )
                         }
                     }
                 }
@@ -406,13 +599,118 @@ private fun DayTimeline(
     }
 }
 
-private fun isCurrent(item: Appointment, date: LocalDate, now: LocalTime): Boolean {
-    if (date != LocalDate.now(zone) || item.isCancelled) return false
+@Composable
+private fun LessonSheet(
+    lesson: Appointment,
+    homework: List<HomeworkItem>,
+    onDismiss: () -> Unit,
+) {
+    BackHandler(onBack = onDismiss)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        modifier = Modifier.testTag("les-blad"),
+    ) {
+        Column(
+            Modifier
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(lesson.title, style = MaterialTheme.typography.headlineSmall)
+            Text(
+                listOfNotNull(formatTime(lesson.startIso), formatTime(lesson.endIso)).joinToString("–"),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            lesson.teachers.firstOrNull()?.let { Text(it, style = MaterialTheme.typography.bodyLarge) }
+            (lesson.classroom ?: lesson.location)?.let {
+                Text(it, style = MaterialTheme.typography.bodyLarge)
+            }
+            when {
+                lesson.isCancelled -> Text("Uitval", color = MaterialTheme.colorScheme.error)
+                lesson.isChanged -> Text("Gewijzigd", color = MaterialTheme.colorScheme.tertiary)
+            }
+            infoLabel(lesson.infoType)?.let {
+                Text(it, style = MaterialTheme.typography.labelLarge)
+            }
+            val hw = lesson.content?.trim().orEmpty()
+            if (hw.isNotBlank()) {
+                Text("Huiswerk", style = MaterialTheme.typography.titleSmall)
+                Text(hw, style = MaterialTheme.typography.bodyMedium)
+            }
+            homework.forEach { item ->
+                val extra = item.description?.trim().orEmpty()
+                if (extra.isNotBlank() && extra != hw) {
+                    Text(extra, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            Spacer(Modifier.height(28.dp))
+        }
+    }
+}
+
+private fun infoLabel(type: InfoType): String? = when (type) {
+    InfoType.Homework -> "Huiswerk"
+    InfoType.Test -> "Proefwerk"
+    InfoType.Written -> "SO / PO"
+    InfoType.Oral -> "Mondeling"
+    else -> null
+}
+
+private fun matchesHomework(item: HomeworkItem, lesson: Appointment): Boolean {
+    if (item.appointmentId == lesson.id) return true
+    val sameSubject = item.subject.equals(lesson.title, ignoreCase = true) ||
+        lesson.subjects.any { it.equals(item.subject, ignoreCase = true) }
+    return sameSubject && localDateOf(item.dueIso) == localDateOf(lesson.startIso)
+}
+
+private fun slotKey(slot: DaySlot): String = when (slot) {
+    is DaySlot.Lesson -> "les-${slot.item.id}"
+    is DaySlot.Gap -> "gap-${slot.fromIso}-${slot.toIso}"
+}
+
+private fun isCurrent(item: Appointment, isToday: Boolean, now: LocalTime): Boolean {
+    if (!isToday || item.isCancelled) return false
     val start = lessonTime(item.startIso) ?: return false
     val end = lessonTime(item.endIso) ?: return false
     return !now.isBefore(start) && now.isBefore(end)
 }
 
+private fun nowLineBefore(slots: List<DaySlot>, now: LocalTime): Boolean {
+    val first = slots.firstOrNull() ?: return true
+    val start = slotStart(first) ?: return false
+    return now.isBefore(start)
+}
+
+private fun nowLineAfter(slots: List<DaySlot>, now: LocalTime): Boolean {
+    val last = slots.lastOrNull() ?: return true
+    val end = slotEnd(last) ?: return false
+    return !now.isBefore(end)
+}
+
+private fun nowInsideGap(slot: DaySlot.Gap, now: LocalTime): Boolean {
+    val start = lessonTime(slot.fromIso) ?: return false
+    val end = lessonTime(slot.toIso) ?: return false
+    return !now.isBefore(start) && now.isBefore(end)
+}
+
+private fun slotStart(slot: DaySlot): LocalTime? = when (slot) {
+    is DaySlot.Lesson -> lessonTime(slot.item.startIso)
+    is DaySlot.Gap -> lessonTime(slot.fromIso)
+}
+
+private fun slotEnd(slot: DaySlot): LocalTime? = when (slot) {
+    is DaySlot.Lesson -> lessonTime(slot.item.endIso)
+    is DaySlot.Gap -> lessonTime(slot.toIso)
+}
+
 private fun lessonTime(iso: String?): LocalTime? =
-    runCatching { java.time.OffsetDateTime.parse(iso).toLocalTime() }.getOrNull()
-        ?: runCatching { java.time.Instant.parse(iso!!).atZone(zone).toLocalTime() }.getOrNull()
+    lessonDateTime(iso)?.toLocalTime()
+
+private fun lessonDateTime(iso: String?): java.time.ZonedDateTime? {
+    if (iso.isNullOrBlank()) return null
+    val instant = runCatching { java.time.Instant.parse(iso) }.getOrNull()
+        ?: runCatching { java.time.OffsetDateTime.parse(iso).toInstant() }.getOrNull()
+        ?: return null
+    return instant.atZone(zone)
+}

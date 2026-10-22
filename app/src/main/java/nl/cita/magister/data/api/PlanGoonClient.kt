@@ -24,21 +24,23 @@ class PlanGoonClient {
     suspend fun post(url: String, bearerKey: String, jsonBody: String): Result<Int> =
         withContext(Dispatchers.IO) {
             runCatching {
-                require(url.startsWith("https://")) { "Webhook moet HTTPS zijn." }
-                val request = Request.Builder()
+                require(url.startsWith("https://")) { "Alleen https." }
+                val builder = Request.Builder()
                     .url(url)
-                    .header("Authorization", CitaHttp.bearer(bearerKey))
                     .header("Content-Type", CitaHttp.CONTENT_TYPE_JSON)
                     .header("Accept", CitaHttp.ACCEPT_JSON)
                     .header("User-Agent", CitaHttp.USER_AGENT)
                     .post(jsonBody.toRequestBody(jsonMedia))
-                    .build()
+                if (bearerKey.isNotBlank()) {
+                    builder.header("Authorization", CitaHttp.bearer(bearerKey))
+                }
+                val request = builder.build()
                 client.newCall(request).execute().use { response ->
                     val code = response.code
                     if (code == 200) {
                         code
                     } else {
-                        throw MagisterApiException(code, url, "Plan Goon gaf HTTP $code")
+                        throw MagisterApiException(code, url, "Niet verstuurd.")
                     }
                 }
             }

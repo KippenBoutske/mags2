@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,6 +31,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import nl.cita.magister.ui.theme.LocalSafeMode
 
 /** Concept-1 skeleton: warme, ronde balken met een zachte pulse. */
 @Composable
@@ -78,6 +81,7 @@ fun MagsSkeletonCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TodaySkeleton(modifier: Modifier = Modifier) {
     Column(
@@ -86,7 +90,9 @@ fun TodaySkeleton(modifier: Modifier = Modifier) {
             .testTag("today-skeleton")
             .semantics { contentDescription = "Vandaag laden" },
         verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        MorphLoader()
         MagsSkeletonCard(lines = 4)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             repeat(2) {
@@ -114,6 +120,7 @@ fun TodaySkeleton(modifier: Modifier = Modifier) {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ListSkeleton(
     rows: Int = 3,
@@ -126,8 +133,20 @@ fun ListSkeleton(
             .testTag("list-skeleton")
             .semantics { this.contentDescription = contentDescription },
         verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        MorphLoader()
         repeat(rows) { MagsSkeletonCard(lines = 2) }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun MorphLoader(modifier: Modifier = Modifier) {
+    if (LocalSafeMode.current) {
+        androidx.compose.material3.CircularProgressIndicator(modifier.size(48.dp))
+    } else {
+        LoadingIndicator(modifier.size(56.dp).testTag("morph-loader"))
     }
 }
 

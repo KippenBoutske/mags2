@@ -54,31 +54,17 @@ fun SchoolPicker(
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("school-search")
-                .semantics { contentDescription = "Zoek je Magister-school" },
-            label = { Text("School") },
-            placeholder = { Text("Zoek elke Magister-school") },
-            supportingText = {
-                val label = when {
-                    selectedName.isNotBlank() && selectedHost.isNotBlank() -> "$selectedName · $selectedHost"
-                    selectedName.isNotBlank() -> selectedName
-                    selectedHost.isNotBlank() -> selectedHost
-                    else -> "Zoek op naam, of typ school.magister.net"
-                }
-                Text(label)
-            },
+                .semantics { contentDescription = "Zoek je school" },
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                imeAction = androidx.compose.ui.text.input.ImeAction.Search,
+            ),
+            placeholder = { Text("Zoek je school") },
             singleLine = true,
         )
         if (searching && hits.isEmpty()) {
             SchoolSearchSkeleton()
         }
         hits.forEach { school ->
-            val subtitle = buildString {
-                if (school.city.isNotBlank()) append(school.city)
-                if (school.host.isNotBlank()) {
-                    if (isNotEmpty()) append(" · ")
-                    append(school.host.removeSuffix(".magister.net"))
-                }
-            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -96,9 +82,9 @@ fun SchoolPicker(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(school.name, style = MaterialTheme.typography.titleMedium)
-                    if (subtitle.isNotBlank()) {
+                    if (school.city.isNotBlank()) {
                         Text(
-                            subtitle,
+                            school.city,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -108,7 +94,7 @@ fun SchoolPicker(
         }
         if (!searching && query.trim().length >= 2 && hits.isEmpty()) {
             Text(
-                "Geen school gevonden. Typ de hostname, zoals school.magister.net.",
+                "Geen school.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -105,6 +105,9 @@ class ScreenMeasureTest {
     fun grades_320() = measure(320) { grades() }
 
     @Test
+    fun gradesSubject_412() = measure(412) { grades(subjectId = 3) }
+
+    @Test
     fun schedule_412() = measure(412) { schedule() }
 
     @Test
@@ -126,7 +129,7 @@ class ScreenMeasureTest {
     fun messages403HidesRawHttpUntilDetails() {
         measure(412) { messagesForbidden() }
         compose.onNodeWithText("Berichten zijn voor dit account niet beschikbaar.").assertIsDisplayed()
-        compose.onNodeWithText("De inbox blijft leeg tot Magister dit weer toestaat.").assertIsDisplayed()
+        compose.onNodeWithText("Geen berichten.").assertIsDisplayed()
         compose.onNodeWithText("/api/berichten/mappen/alle", substring = true).assertDoesNotExist()
         compose.onNodeWithText("HTTP 403", substring = true).assertDoesNotExist()
         compose.onNodeWithTag("section-error-details").performClick()
@@ -138,7 +141,7 @@ class ScreenMeasureTest {
     fun grades403StaysOnSection() {
         measure(412) { gradesForbidden() }
         compose.onNodeWithText("Cijfers zijn nu niet beschikbaar.").assertExists()
-        compose.onNodeWithText("De lijst blijft leeg tot Magister dit weer toestaat.").assertExists()
+        compose.onNodeWithText("Geen cijfers.").assertExists()
         compose.onNodeWithText("/api/personen", substring = true).assertDoesNotExist()
         compose.onNodeWithText("HTTP 403", substring = true).assertDoesNotExist()
     }
@@ -264,7 +267,7 @@ class ScreenMeasureTest {
     }
 
     @Composable
-    private fun grades() {
+    private fun grades(subjectId: Int? = null) {
         val grades = MockFixtures.grades()
         GradesScreen(
             profile = MockFixtures.profile(),
@@ -275,6 +278,7 @@ class ScreenMeasureTest {
             contentPadding = PaddingValues(0.dp),
             onExport = {},
             onShareJson = {},
+            initialSubjectId = subjectId,
         )
     }
 
