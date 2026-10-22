@@ -36,6 +36,9 @@ class UserPrefs(context: Context) {
     private val _notifications = MutableStateFlow(prefs.getBoolean(KEY_NOTIFY, true))
     val notifications: Flow<Boolean> = _notifications.asStateFlow()
 
+    private val _liveUpdate = MutableStateFlow(prefs.getBoolean(KEY_LIVE, true))
+    val liveUpdate: Flow<Boolean> = _liveUpdate.asStateFlow()
+
     private val _haptics = MutableStateFlow(prefs.getBoolean(KEY_HAPTICS, true))
     val haptics: Flow<Boolean> = _haptics.asStateFlow()
 
@@ -51,6 +54,9 @@ class UserPrefs(context: Context) {
     suspend fun webhookUrlNow(): String = _webhookUrl.value
     suspend fun dynamicColorNow(): Boolean = _dynamicColor.value
     suspend fun notificationsNow(): Boolean = _notifications.value
+    suspend fun liveUpdateNow(): Boolean = _liveUpdate.value
+    fun liveHiddenDateNow(): String = prefs.getString(KEY_LIVE_HIDDEN, null).orEmpty()
+    fun liveRefreshDateNow(): String = prefs.getString(KEY_LIVE_REFRESH, null).orEmpty()
     suspend fun hapticsNow(): Boolean = _haptics.value
     suspend fun hapticStrengthNow(): HapticStrength = _hapticStrength.value
 
@@ -80,6 +86,19 @@ class UserPrefs(context: Context) {
     suspend fun setNotifications(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_NOTIFY, enabled).apply()
         _notifications.value = enabled
+    }
+
+    suspend fun setLiveUpdate(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_LIVE, enabled).apply()
+        _liveUpdate.value = enabled
+    }
+
+    suspend fun setLiveHiddenDate(date: String) {
+        prefs.edit().putString(KEY_LIVE_HIDDEN, date).apply()
+    }
+
+    suspend fun setLiveRefreshDate(date: String) {
+        prefs.edit().putString(KEY_LIVE_REFRESH, date).apply()
     }
 
     suspend fun setHaptics(enabled: Boolean) {
@@ -131,6 +150,9 @@ class UserPrefs(context: Context) {
         const val KEY_WEBHOOK_URL = "plan_goon_webhook_url"
         const val KEY_DYNAMIC = "material_you"
         const val KEY_NOTIFY = "notify_updates"
+        const val KEY_LIVE = "live_update"
+        const val KEY_LIVE_HIDDEN = "live_hidden_date"
+        const val KEY_LIVE_REFRESH = "live_refresh_date"
         const val KEY_HAPTICS = "haptics"
         const val KEY_HAPTIC_STRENGTH = "haptic_strength"
         const val KEY_SEEN_GRADES = "seen_grade_ids"

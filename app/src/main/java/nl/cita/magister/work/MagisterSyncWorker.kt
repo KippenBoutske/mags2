@@ -38,6 +38,7 @@ class MagisterSyncWorker(
         prefs.rememberSnapshot(gradeIds, lessonKeys)
         NextLessonStore.write(applicationContext, NextLesson.pick(lessons))
         NextLessonWidgetReceiver.updateAll(applicationContext)
+        nl.cita.magister.live.LiveLessonScheduler.sync(applicationContext)
         return Result.success()
     }
 

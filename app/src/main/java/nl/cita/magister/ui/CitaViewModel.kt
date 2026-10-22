@@ -54,6 +54,7 @@ class CitaViewModel(
     val demoMode = container.prefs.demoMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     val dynamicColor = container.prefs.dynamicColor.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     val notifications = container.prefs.notifications.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+    val liveUpdate = container.prefs.liveUpdate.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     val haptics = container.prefs.haptics.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     val hapticStrength = container.prefs.hapticStrength.stateIn(
         viewModelScope,
@@ -122,18 +123,23 @@ class CitaViewModel(
             val demo = repo.isDemo()
             if (demo && !clockPinned) _clock.value = AppClock.Demo
             _signedIn.value = repo.isLoggedIn() || demo
-            if (_signedIn.value && profile.value == null) {
-                runCatching { repo.refreshAll() }
-                    .onSuccess {
-                        reportWarnings(it.warnings)
-                        _offline.value = false
-                    }
-                    .onFailure {
-                        rememberFailure(it)
-                        _offline.value = true
-                    }
-            }
+            runCatching { repo.cachedAppointments() }
             _booting.value = false
+            if (_signedIn.value) {
+                nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
+                if (!demo) {
+                    runCatching { repo.refreshAll() }
+                        .onSuccess {
+                            reportWarnings(it.warnings)
+                            _offline.value = false
+                        }
+                        .onFailure {
+                            rememberFailure(it)
+                            _offline.value = true
+                        }
+                    nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
+                }
+            }
         }
     }
 
@@ -215,6 +221,7 @@ class CitaViewModel(
                         _snackbar.emit("Ingelogd.")
                     }
                     reportWarnings(result.warnings)
+                    nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
                 }
                 .onFailure { error ->
                     rememberFailure(error)
@@ -236,6 +243,7 @@ class CitaViewModel(
             _booting.value = false
             _hapticPulse.tryEmit(HapticEvent.LoginSuccess)
             _snackbar.emit(if (offline) "Offline · cache." else "Voorbeeld.")
+            nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
         }
     }
 
@@ -264,6 +272,7 @@ class CitaViewModel(
                     reportWarnings(it.warnings)
                     _offline.value = false
                     _hapticPulse.tryEmit(HapticEvent.RefreshDone)
+                    nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
                 }
                 .onFailure { error ->
                     rememberFailure(error)
@@ -277,6 +286,7 @@ class CitaViewModel(
 
     fun logout() {
         viewModelScope.launch {
+            nl.cita.magister.live.LiveLessonScheduler.cancel(getApplication())
             repo.logout()
             _signedIn.value = false
             _lastError.value = null
@@ -312,6 +322,17 @@ class CitaViewModel(
 
     fun setNotifications(enabled: Boolean) {
         viewModelScope.launch { container.prefs.setNotifications(enabled) }
+    }
+
+    fun setLiveUpdate(enabled: Boolean) {
+        viewModelScope.launch {
+            container.prefs.setLiveUpdate(enabled)
+            if (enabled) {
+                nl.cita.magister.live.LiveLessonScheduler.tick(getApplication())
+            } else {
+                nl.cita.magister.live.LiveLessonScheduler.cancel(getApplication())
+            }
+        }
     }
 
     fun setHaptics(enabled: Boolean) {

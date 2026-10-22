@@ -193,7 +193,6 @@ fun GradesScreen(
                         item {
                             EmptyState(
                                 title = "Nog geen cijfers",
-                                body = "Zodra Magister iets binnen heeft, staat het hier.",
                                 tag = "cijfers-leeg",
                             )
                         }

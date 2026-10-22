@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Warm light fallback; values-v31 overlays Material You system_* colors. -->
+    <color name="splash_background">#FFF4EDE3</color>
+    <color name="splash_icon">#FF5C4A24</color>
+    <color name="launcher_background">#FF16130F</color>
+    <color name="launcher_foreground">#FFE8D3A0</color>
+</resources>

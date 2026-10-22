@@ -1,6 +1,12 @@
 package nl.cita.magister.ui.settings
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -41,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -89,6 +96,8 @@ fun SettingsScreen(
     onDynamicColor: (Boolean) -> Unit = {},
     notifications: Boolean = true,
     onNotifications: (Boolean) -> Unit = {},
+    liveUpdate: Boolean = true,
+    onLiveUpdate: (Boolean) -> Unit = {},
     hapticsEnabled: Boolean = true,
     onHaptics: (Boolean) -> Unit = {},
     hapticStrength: HapticStrength = HapticStrength.Strong,
@@ -215,6 +224,8 @@ fun SettingsScreen(
                     onDynamicColor = onDynamicColor,
                     notifications = notifications,
                     onNotifications = onNotifications,
+                    liveUpdate = liveUpdate,
+                    onLiveUpdate = onLiveUpdate,
                     hapticsEnabled = hapticsEnabled,
                     onHaptics = onHaptics,
                     hapticStrength = hapticStrength,
@@ -427,6 +438,8 @@ private fun SettingsPane(
     onDynamicColor: (Boolean) -> Unit,
     notifications: Boolean,
     onNotifications: (Boolean) -> Unit,
+    liveUpdate: Boolean,
+    onLiveUpdate: (Boolean) -> Unit,
     hapticsEnabled: Boolean,
     onHaptics: (Boolean) -> Unit,
     hapticStrength: HapticStrength,
@@ -472,6 +485,45 @@ private fun SettingsPane(
             checked = notifications,
             onCheckedChange = onNotifications,
             modifier = Modifier.semantics { contentDescription = "Meldingen" },
+        )
+    }
+    val context = LocalContext.current
+    val notifyPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) onLiveUpdate(true)
+    }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 48.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("Live Update")
+            Text(
+                "Huidige of volgende les op het slot van de Pixel.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = liveUpdate,
+            onCheckedChange = { on ->
+                if (on && Build.VERSION.SDK_INT >= 33) {
+                    val granted = ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.POST_NOTIFICATIONS,
+                    ) == PackageManager.PERMISSION_GRANTED
+                    if (!granted) {
+                        notifyPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        return@Switch
+                    }
+                }
+                onLiveUpdate(on)
+            },
+            modifier = Modifier.semantics { contentDescription = "Live Update" },
         )
     }
     val haptics = LocalMagsHaptics.current

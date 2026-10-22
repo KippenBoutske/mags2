@@ -43,6 +43,7 @@
 # Glance / WorkManager / AndroidX Startup (InitializationProvider <init>)
 -keep class nl.cita.magister.widget.** { *; }
 -keep class nl.cita.magister.work.** { *; }
+-keep class nl.cita.magister.live.** { *; }
 -keep class androidx.startup.** { *; }
 -keep class * extends androidx.startup.Initializer { *; }
 -keepclassmembers class * extends androidx.startup.Initializer {

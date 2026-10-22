@@ -58,19 +58,14 @@ import nl.cita.magister.ui.components.ListSkeleton
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatWhen
-import nl.cita.magister.ui.latestGradeHint
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.pageFadeSpring
 import nl.cita.magister.ui.motion.staggerEnter
 import nl.cita.magister.ui.nav.MagsChrome
 import nl.cita.magister.ui.nav.MagsPage
-import nl.cita.magister.ui.nextLessonHint
 import nl.cita.magister.ui.theme.CitaAction
 import nl.cita.magister.ui.theme.CitaActionRow
-import nl.cita.magister.ui.theme.ToetsAmber
-import nl.cita.magister.ui.theme.ToetsOnAmber
 import nl.cita.magister.ui.today.homeworkBody
-import nl.cita.magister.ui.upcomingTaskHint
 import java.time.LocalDate
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -154,18 +149,8 @@ fun HomeworkScreen(
         }
         if (buckets.isEmpty() && !loading) {
             item {
-                val tests = upcomingTaskHint(items, clockDate, testsOnly = true)
-                val nextLesson = nextLessonHint(appointments, clockDate)
-                val lastGrade = latestGradeHint(latestGrade)
                 EmptyState(
                     title = if (filter == HwFilter.Done) "Niets afgevinkt" else "Alles af",
-                    body = if (agendaError != null) "Geen huiswerk uit Magister." else "Niets open.",
-                    hint = listOfNotNull(tests, nextLesson, lastGrade).joinToString("\n").ifBlank { null },
-                    actions = listOf(
-                        CitaAction("Rooster morgen") { onOpenPage(MagsPage.Rooster) },
-                        CitaAction("Cijfers") { onOpenPage(MagsPage.Cijfers) },
-                        CitaAction("Studiewijzer") { onOpenPage(MagsPage.Meer) },
-                    ),
                 )
             }
         }
@@ -215,36 +200,6 @@ fun HomeworkScreen(
                 }
             }
         }
-        if (buckets.isNotEmpty() && openCount <= 2 && filter == HwFilter.Open) {
-            item {
-                val extra = listOfNotNull(
-                    upcomingTaskHint(items, clockDate, testsOnly = true),
-                    nextLessonHint(appointments, clockDate),
-                    latestGradeHint(latestGrade),
-                )
-                if (extra.isNotEmpty()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Straks", style = MaterialTheme.typography.titleMedium)
-                        extra.forEach { line ->
-                            Text(
-                                line,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-            }
-            item {
-                CitaActionRow(
-                    actions = listOf(
-                        CitaAction("Rooster morgen") { onOpenPage(MagsPage.Rooster) },
-                        CitaAction("Cijfers") { onOpenPage(MagsPage.Cijfers) },
-                        CitaAction("Studiewijzer") { onOpenPage(MagsPage.Meer) },
-                    ),
-                )
-            }
-        }
     }
     }
     }
@@ -282,7 +237,7 @@ private fun HomeworkCard(
     val tone = when {
         toets && !item.isDone -> androidx.compose.ui.graphics.lerp(
             MaterialTheme.colorScheme.surfaceContainerHigh,
-            ToetsAmber,
+            MaterialTheme.colorScheme.tertiary,
             0.42f,
         )
         else -> MaterialTheme.colorScheme.surfaceContainerHigh
@@ -322,7 +277,7 @@ private fun HomeworkCard(
                     Modifier
                         .fillMaxSize()
                         .clip(MaterialTheme.shapes.large)
-                        .background(ToetsAmber.copy(alpha = 0.45f * reveal + 0.25f * peek))
+                        .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.45f * reveal + 0.25f * peek))
                         .padding(end = 22.dp)
                         .graphicsLayer { alpha = reveal },
                     contentAlignment = Alignment.CenterEnd,
@@ -330,7 +285,7 @@ private fun HomeworkCard(
                     Text(
                         "✓",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = ToetsOnAmber,
+                        color = MaterialTheme.colorScheme.onTertiary,
                         modifier = Modifier.graphicsLayer {
                             scaleX = 0.7f + 0.4f * reveal
                             scaleY = 0.7f + 0.4f * reveal
@@ -368,7 +323,7 @@ private fun HomeworkCard(
                         Text(
                             homeworkMeta(item),
                             style = MaterialTheme.typography.labelMedium,
-                            color = if (toets) ToetsAmber else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (toets) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.testTag(if (toets) "hw-toets" else "hw-meta"),
                         )
                     }

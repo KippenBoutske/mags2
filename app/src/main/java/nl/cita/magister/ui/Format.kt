@@ -15,7 +15,7 @@ private val dayFmt = DateTimeFormatter.ofPattern("EEEE d MMMM", nl)
 private val shortDay = DateTimeFormatter.ofPattern("EEE d MMM", nl)
 
 fun formatGrade(value: Double?, label: String? = null): String =
-    GradeCalculator.formatAverage(value, label)
+    GradeCalculator.formatGradeValue(value, label)
 
 /** Join class, study, school — skip blanks so the line never ends in `·`. */
 fun profileLine(vararg parts: String?): String =

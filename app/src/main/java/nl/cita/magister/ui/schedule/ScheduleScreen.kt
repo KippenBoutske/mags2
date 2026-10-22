@@ -79,14 +79,10 @@ import nl.cita.magister.subject.teacherCode
 import nl.cita.magister.ui.components.CookieFlower
 import nl.cita.magister.ui.components.EmptyState
 import nl.cita.magister.ui.components.ListSkeleton
-import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatTime
 import nl.cita.magister.ui.localDateOf
 import nl.cita.magister.ui.nav.MagsPage
-import nl.cita.magister.ui.nextLessonHint
-import nl.cita.magister.ui.theme.CitaAction
-import nl.cita.magister.ui.upcomingTaskHint
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.StaggerScope
 import nl.cita.magister.ui.motion.pageFadeSpring
@@ -203,6 +199,7 @@ fun ScheduleScreen(
             Modifier.padding(horizontal = MagsChrome.PageGutter),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            Text("Rooster", style = MaterialTheme.typography.displayMedium)
             AnimatedContent(
                 targetState = selected,
                 modifier = Modifier.testTag("rooster-titel-$selected"),
@@ -216,9 +213,13 @@ fun ScheduleScreen(
                         fadeOut(pageFadeSpring()) + slideOutVertically { -dir * 12 }
                     )
                 },
-                label = "rooster-titel",
+                label = "rooster-datum",
             ) { date ->
-                PageTitle("Rooster", date.format(titleDay).replaceFirstChar { it.titlecase(nl) })
+                Text(
+                    date.format(titleDay).replaceFirstChar { it.titlecase(nl) },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             SectionError(agendaError)
             WeekStrip(
@@ -272,14 +273,10 @@ fun ScheduleScreen(
                         DayTimeline(
                             date = date,
                             lessons = ofDay,
-                            allAppointments = appointments,
-                            homework = homework,
                             contentBottom = contentPadding.calculateBottomPadding(),
                             today = today,
                             now = clockTime,
                             onOpen = { openLesson = it },
-                            onOpenPage = onOpenPage,
-                            onTomorrow = { jumpTo(date.plusDays(1)) },
                             modifier = Modifier.graphicsLayer {
                                 scaleX = scale
                                 scaleY = scale
@@ -448,23 +445,15 @@ internal fun weekdayOffset(pager: PagerState, days: List<LocalDate>, weekDays: L
 private fun DayTimeline(
     date: LocalDate,
     lessons: List<Appointment>,
-    allAppointments: List<Appointment>,
-    homework: List<HomeworkItem>,
     contentBottom: androidx.compose.ui.unit.Dp,
     today: LocalDate,
     now: LocalTime,
     onOpen: (Appointment) -> Unit,
-    onOpenPage: (MagsPage) -> Unit,
-    onTomorrow: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val weekend = isWeekend(date)
     val slots = remember(lessons) { buildDaySlots(lessons) }
     val isToday = date == today
-    val nextHint = remember(allAppointments, date) { nextLessonHint(allAppointments, date) }
-    val taskHint = remember(homework, date) {
-        upcomingTaskHint(homework, date, testsOnly = true) ?: upcomingTaskHint(homework, date)
-    }
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -482,13 +471,6 @@ private fun DayTimeline(
             item {
                 EmptyState(
                     title = if (weekend) "Weekend" else "Vrij",
-                    body = if (weekend) "Geen lessen dit weekend." else "Geen lessen.",
-                    hint = listOfNotNull(nextHint, taskHint).joinToString("\n").ifBlank { null },
-                    actions = listOf(
-                        CitaAction("Rooster morgen", onClick = onTomorrow),
-                        CitaAction("Cijfers") { onOpenPage(MagsPage.Cijfers) },
-                        CitaAction("Studiewijzer") { onOpenPage(MagsPage.Meer) },
-                    ),
                     tag = "rooster-leeg",
                 )
             }
@@ -634,6 +616,7 @@ private fun LessonCard(
                         .padding(top = 4.dp, end = 4.dp)
                         .testTag("les-nu-vorm"),
                     size = 72.dp,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
             Column(Modifier.padding(if (current) 18.dp else 14.dp)) {

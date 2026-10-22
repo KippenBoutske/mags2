@@ -7,13 +7,13 @@ Mags is **geen** product van Iddink/Magister. Werkt met elke Magister-school. Al
 ## Wat zit erin
 
 - **Cijfers** met Magister’s eigen GEM/SE als kopcijfer, weging uit kolom-info, zonder gemiddelde-kolommen of V/G/O; balk t.o.v. 10 met 5,5-streep, grafiek, *Wat moet ik halen?* en cijferblad. **Laatste cijfers** is een compacte lijst (gededupliceerd); **Per vak** zijn de gemiddelde-kaarten
-- **Laatste cijfers** (Vandaag + Cijfers): losse behaalde cijfers via `/cijfers/laatste`, nieuwste eerst — vak, cijfer, kolomnaam, weging en datum; geen GEM/SE/eind, geen dubbele kolommen
-- **Rooster** ma–vr (weekend alleen bij een les), volledige vaknamen i.p.v. Zermelo-codes, Uitval/Gewijzigd-chips, tussenuren alleen bij een ontbrekend lesuur, pauzes als dunne scheiding, nu-lijn en lesblad
-- **Huiswerk** gegroepeerd per dag, *Verlopen* ingeklapt, Toets in de meta-regel, swipe-naar-klaar met herstel; lege dagen tonen volgende les/toets en snelkoppelingen
+- **Laatste cijfers** (Vandaag + Cijfers): top ~5 behaalde cijfers op invoerdatum, tekstcijfers (V/G/Vol) als tekst, lege resultaten overgeslagen
+- **Rooster** ma–vr (weekend alleen bij een les), volledige vaknamen i.p.v. Zermelo-codes, Uitval/Gewijzigd-chips, tussenuren alleen bij een ontbrekend lesuur, pauzes als dunne scheiding, nu-lijn en lesblad. Vrije dag: icoon + *Vrij*
+- **Huiswerk** gegroepeerd per dag, *Verlopen* ingeklapt, Toets in de meta-regel, swipe-naar-klaar met herstel; leeg: icoon + *Alles af*
 - **Berichten** (alleen lezen), **afwezigheid**, **studiewijzers** en **opdrachten**
 - Startscherm-snelkoppelingen naar Vandaag, Rooster, Cijfers en Huiswerk
 - **Deel**-icoon rechtsboven op Cijfers: JSON naar Meer → Geavanceerd, anders het Android-deelblad
-- Adaptive icoon + Android 13-monochroom + SplashScreen-animatie
+- Adaptive icoon + monochrome themed icon (Pixel) + Android 12+ SplashScreen (AVD, themakleuren / Material You `system_accent1_*`)
 - Live schoolzoeken
 - Offline cache, pull-to-refresh, Material 3 Expressive (shared elements, spring-lijst)
 - Tabwissels als fade-through (fade + scale), navbar-pill op spring, rooster-dagindicator volgt de pager
@@ -24,6 +24,7 @@ Mags is **geen** product van Iddink/Magister. Werkt met elke Magister-school. Al
 - 48 dp-targets, font-schaal 1.3×
 - Baseline profile + ProfileInstaller
 - Meldingen bij nieuwe cijfers en roosterwijzigingen (WorkManager)
+- **Live Update** (Android 16+): lopende melding voor huidige/volgende les op het Pixel-slot, schakelaar onder Meer
 - Startscherm-widget **Volgende les** (Glance)
 - Crash-scherm met kopieerbare stacktrace
 - Nederlandse UI
@@ -40,7 +41,7 @@ cat mags-debug.apk.part-aa mags-debug.apk.part-ab > mags-debug.apk
 sha256sum -c mags-debug.apk.sha256
 ```
 
-3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.19** (`targetSdk` 37).
+3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.20** (`targetSdk` 37).
 4. Er is ook een **release-APK** (`mags-release.apk`, applicationId `app.mags`) met R8. Die is getekend met de lokale dev-keystore in `app/keystore/` — **niet** voor Play.
 5. Bij een crash: scherm **Mags is gestopt** → *Kopieer stacktrace*.
 

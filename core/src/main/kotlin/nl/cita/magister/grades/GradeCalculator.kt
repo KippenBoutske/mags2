@@ -42,12 +42,12 @@ object GradeCalculator {
         }
     }
 
-    /** Losse behaalde cijfers, nieuwste eerst — geen GEM/SE/eind, geen dubbele CKV. */
-    fun latestEarnedGrades(grades: List<Grade>, limit: Int = 3): List<Grade> {
+    /** Losse behaalde cijfers, nieuwste eerst — geen GEM/SE/eind, sla leeg/streepje over. */
+    fun latestEarnedGrades(grades: List<Grade>, limit: Int = 5): List<Grade> {
         return grades
             .filter { it.columnType == GradeColumnType.Grade }
             .filter { !isHeadlineColumn(it) }
-            .filter { !it.value.isNullOrBlank() }
+            .filter { hasEarnedResult(it) }
             .sortedWith(
                 compareByDescending<Grade> { it.enteredAt.orEmpty() }
                     .thenByDescending { it.id },
@@ -55,6 +55,25 @@ object GradeCalculator {
             .distinctBy { it.columnId?.takeIf { id -> id != 0 } ?: it.id }
             .distinctBy { contentKey(it) }
             .take(limit.coerceAtLeast(0))
+    }
+
+    fun hasEarnedResult(grade: Grade): Boolean {
+        val raw = grade.value?.trim().orEmpty()
+        return raw.isNotEmpty() && !isEmptyResult(raw)
+    }
+
+    fun isEmptyResult(raw: String): Boolean {
+        val value = raw.trim().lowercase(nl)
+        return value.isEmpty() || value in setOf("-", "–", "—", "?", ".", "n.v.t.", "n.v.t", "nvt")
+    }
+
+    /** Getal of tekstcijfer (V, G, Vol). Leeg/streepje wordt '–'. */
+    fun formatGradeValue(value: Double?, label: String?): String {
+        val raw = label?.trim().orEmpty()
+        if (raw.isNotEmpty() && parseDutchNumber(raw) == null && !isEmptyResult(raw)) {
+            return raw
+        }
+        return formatAverage(value, label)
     }
 
     private fun contentKey(grade: Grade): String {

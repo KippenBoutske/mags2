@@ -174,6 +174,7 @@ fun CitaRoot(viewModel: CitaViewModel) {
     val sectionErrors by viewModel.sectionErrors.collectAsStateWithLifecycle()
     val dynamic by viewModel.dynamicColor.collectAsStateWithLifecycle()
     val notifications by viewModel.notifications.collectAsStateWithLifecycle()
+    val liveUpdate by viewModel.liveUpdate.collectAsStateWithLifecycle()
     val hapticsOn by viewModel.haptics.collectAsStateWithLifecycle()
     val hapticStrength by viewModel.hapticStrength.collectAsStateWithLifecycle()
     val clock by viewModel.clock.collectAsStateWithLifecycle()
@@ -218,6 +219,8 @@ fun CitaRoot(viewModel: CitaViewModel) {
         onDynamicColor = viewModel::setDynamicColor,
         notifications = notifications,
         onNotifications = viewModel::setNotifications,
+        liveUpdate = liveUpdate,
+        onLiveUpdate = viewModel::setLiveUpdate,
         hapticsEnabled = hapticsOn,
         onHaptics = viewModel::setHaptics,
         hapticStrength = hapticStrength,
@@ -272,6 +275,8 @@ fun MagsSignedInScaffold(
     onDynamicColor: (Boolean) -> Unit = {},
     notifications: Boolean = true,
     onNotifications: (Boolean) -> Unit = {},
+    liveUpdate: Boolean = true,
+    onLiveUpdate: (Boolean) -> Unit = {},
     hapticsEnabled: Boolean = true,
     onHaptics: (Boolean) -> Unit = {},
     hapticStrength: HapticStrength = HapticStrength.Strong,
@@ -524,6 +529,8 @@ fun MagsSignedInScaffold(
                                     onDynamicColor = onDynamicColor,
                                     notifications = notifications,
                                     onNotifications = onNotifications,
+                                    liveUpdate = liveUpdate,
+                                    onLiveUpdate = onLiveUpdate,
                                     hapticsEnabled = hapticsEnabled,
                                     onHaptics = onHaptics,
                                     hapticStrength = hapticStrength,

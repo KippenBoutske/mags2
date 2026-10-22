@@ -38,6 +38,7 @@ import nl.cita.magister.model.SubjectAverage
 import nl.cita.magister.subject.displaySubject
 import nl.cita.magister.ui.components.CircleCheck
 import nl.cita.magister.ui.components.CookieFlower
+import nl.cita.magister.ui.components.EmptyState
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.components.TodaySkeleton
@@ -46,12 +47,10 @@ import nl.cita.magister.ui.localDateOf
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.pageFadeSpring
 import nl.cita.magister.ui.motion.staggerEnter
-import nl.cita.magister.ui.nextLessonHint
 import nl.cita.magister.ui.AppClock
 import nl.cita.magister.ui.nav.MagsChrome
 import nl.cita.magister.ui.nav.MagsPage
 import nl.cita.magister.ui.parseInstant
-import nl.cita.magister.ui.upcomingTaskHint
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -88,7 +87,7 @@ fun TodayScreen(
     val next = ofDay.firstOrNull { !it.isCancelled && lessonStart(it) > now }
     val hero = current ?: next
     val openHw = remember(homework) { homework.filter { !it.isDone }.sortedBy { it.dueIso } }
-    val latest = remember(grades) { GradeCalculator.latestEarnedGrades(grades) }
+    val latest = remember(grades) { GradeCalculator.latestEarnedGrades(grades, 5) }
     val unread = remember(messages) { messages.filter { !it.isRead } }
     val showSkeleton = loading && ofDay.isEmpty() && openHw.isEmpty() && latest.isEmpty()
     val listPadding = PaddingValues(
@@ -110,7 +109,7 @@ fun TodayScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             PageTitle(
-                title = "Vandaag",
+                title = profile?.firstName?.takeIf { it.isNotBlank() }?.let { "Hoi $it" } ?: "Vandaag",
                 subtitle = today.format(longDay).replaceFirstChar { it.titlecase(nl) },
             )
             TodaySkeleton()
@@ -123,7 +122,7 @@ fun TodayScreen(
     ) {
         item {
             PageTitle(
-                title = "Vandaag",
+                title = profile?.firstName?.takeIf { it.isNotBlank() }?.let { "Hoi $it" } ?: "Vandaag",
                 subtitle = today.format(longDay).replaceFirstChar { it.titlecase(nl) },
             )
         }
@@ -138,41 +137,38 @@ fun TodayScreen(
             }
         }
         agendaError?.let { item { SectionError(it) } }
-        item {
-            PressScaleCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .staggerEnter(0, key = "hero"),
-                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
-                onClick = { onOpenPage(MagsPage.Rooster) },
-            ) {
-                Row(
-                    Modifier.padding(20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+        if (hero == null) {
+            item {
+                EmptyState(
+                    title = if (ofDay.isEmpty()) "Vrij" else "Klaar",
+                    tag = if (ofDay.isEmpty()) "today-vrij" else "today-klaar",
+                    modifier = Modifier.staggerEnter(0, key = "hero"),
+                )
+            }
+        } else {
+            item {
+                PressScaleCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .staggerEnter(0, key = "hero"),
+                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    onClick = { onOpenPage(MagsPage.Rooster) },
                 ) {
-                    CookieFlower(size = 88.dp)
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            if (current != null) "NU" else "VOLGENDE LES",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    Row(
+                        Modifier.padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        CookieFlower(
+                            size = 88.dp,
+                            color = MaterialTheme.colorScheme.primary,
                         )
-                        if (hero == null) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
-                                if (ofDay.isEmpty()) "Vrij." else "Klaar.",
-                                style = MaterialTheme.typography.headlineSmall,
+                                if (current != null) "NU" else "VOLGENDE LES",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            if (ofDay.isEmpty()) {
-                                nextLessonHint(appointments, today, now)?.let { line ->
-                                    Text(
-                                        line,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        } else {
                             Text(
                                 hero.displaySubject(),
                                 style = MaterialTheme.typography.headlineSmall,
@@ -237,26 +233,22 @@ fun TodayScreen(
             }
         }
         item {
-            PressScaleCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .staggerEnter(1, key = "hw")
-                    .testTag("today-homework"),
-                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
-                onClick = { onOpenPage(MagsPage.Huiswerk) },
-            ) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    if (openHw.isEmpty()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("Alles af", style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                upcomingTaskHint(homework, today, testsOnly = true)
-                                    ?: "Geen open taken.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    } else {
+            if (openHw.isEmpty()) {
+                EmptyState(
+                    title = "Alles af",
+                    tag = "today-homework",
+                    modifier = Modifier.staggerEnter(1, key = "hw"),
+                )
+            } else {
+                PressScaleCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .staggerEnter(1, key = "hw")
+                        .testTag("today-homework"),
+                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    onClick = { onOpenPage(MagsPage.Huiswerk) },
+                ) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         openHw.take(3).forEach { hw ->
                             HomeworkRow(
                                 item = hw,
@@ -285,11 +277,6 @@ fun TodayScreen(
                         }
                     }
                 }
-            }
-        }
-        profile?.firstName?.let {
-            item {
-                Text("Hoi $it", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

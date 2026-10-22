@@ -6,24 +6,24 @@
         <aapt:attr name="android:animation">
             <set android:ordering="together">
                 <objectAnimator
-                    android:duration="700"
-                    android:interpolator="@android:interpolator/fast_out_slow_in"
+                    android:duration="820"
+                    android:interpolator="@interpolator/mags_splash_spring"
                     android:propertyName="rotation"
-                    android:valueFrom="-12"
+                    android:valueFrom="-16"
                     android:valueTo="0"
                     android:valueType="floatType" />
                 <objectAnimator
-                    android:duration="700"
-                    android:interpolator="@android:interpolator/fast_out_slow_in"
+                    android:duration="820"
+                    android:interpolator="@interpolator/mags_splash_spring"
                     android:propertyName="scaleX"
-                    android:valueFrom="0.72"
+                    android:valueFrom="0.52"
                     android:valueTo="1"
                     android:valueType="floatType" />
                 <objectAnimator
-                    android:duration="700"
-                    android:interpolator="@android:interpolator/fast_out_slow_in"
+                    android:duration="820"
+                    android:interpolator="@interpolator/mags_splash_spring"
                     android:propertyName="scaleY"
-                    android:valueFrom="0.72"
+                    android:valueFrom="0.52"
                     android:valueTo="1"
                     android:valueType="floatType" />
             </set>

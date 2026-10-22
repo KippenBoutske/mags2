@@ -20,7 +20,9 @@ class CitaApp : Application() {
         super.onCreate()
         if (CrashGuard.isCrashProcess(this)) return
         runCatching { MagsNotifier.ensureChannel(this) }
+        runCatching { nl.cita.magister.live.LiveLessonNotifier.ensureChannel(this) }
         // Robolectric heeft geen WorkManager-initializer; op het toestel staat die via androidx.startup.
         runCatching { MagisterSyncWorker.enqueue(this) }
+        runCatching { nl.cita.magister.live.LiveLessonScheduler.sync(this) }
     }
 }

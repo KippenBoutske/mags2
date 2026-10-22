@@ -7,12 +7,16 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
+import android.view.View
+import android.view.animation.PathInterpolator
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.splashscreen.SplashScreenViewProvider
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,7 +37,12 @@ class MainActivity : ComponentActivity() {
         val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
         handleLaunchExtras(intent)
-        splash.setKeepOnScreenCondition { viewModel.booting.value }
+        val shownAt = SystemClock.elapsedRealtime()
+        splash.setKeepOnScreenCondition {
+            val elapsed = SystemClock.elapsedRealtime() - shownAt
+            if (elapsed >= 1_000L) return@setKeepOnScreenCondition false
+            viewModel.booting.value || elapsed < 820L
+        }
         try {
             runCatching { enableEdgeToEdge() }
             handleAuthIntent(intent)
@@ -62,10 +71,44 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+            if (!safeMode) {
+                val content = findViewById<View>(android.R.id.content)
+                content.alpha = 0f
+                content.scaleX = 0.96f
+                content.scaleY = 0.96f
+                splash.setOnExitAnimationListener { provider ->
+                    playSplashExit(provider, content)
+                }
+            }
         } catch (error: Throwable) {
             CrashGuard.show(this, error)
             finish()
         }
+    }
+
+    private fun playSplashExit(provider: SplashScreenViewProvider, content: View) {
+        val spring = PathInterpolator(0.22f, 1f, 0.36f, 1f)
+        provider.iconView.animate()
+            .scaleX(0.72f)
+            .scaleY(0.72f)
+            .alpha(0f)
+            .setDuration(240)
+            .setInterpolator(spring)
+            .start()
+        provider.view.animate()
+            .alpha(0f)
+            .setDuration(280)
+            .setInterpolator(spring)
+            .withEndAction { provider.remove() }
+            .start()
+        content.animate()
+            .alpha(1f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .setStartDelay(40)
+            .setDuration(360)
+            .setInterpolator(spring)
+            .start()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -93,7 +136,6 @@ class MainActivity : ComponentActivity() {
         val uri = intent?.data ?: return
         val raw = uri.toString()
         if (raw.startsWith(MagisterEndpoints.REDIRECT_URI.trimEnd('/'))) {
-            // Custom Tabs kunnen code in query of fragment zetten; beide doorgeven.
             viewModel.handleRedirect(raw)
         }
     }

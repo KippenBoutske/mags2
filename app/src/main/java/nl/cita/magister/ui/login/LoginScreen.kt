@@ -126,7 +126,10 @@ fun LoginScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                CookieFlower(size = 92.dp)
+                CookieFlower(
+                    size = 92.dp,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
                 Text(
                     "Mags",
                     style = MaterialTheme.typography.displayLarge.copy(

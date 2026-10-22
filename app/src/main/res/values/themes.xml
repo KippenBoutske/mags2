@@ -3,14 +3,15 @@
     <style name="Theme.Cita" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowBackground">#FFF4EDE3</item>
+        <item name="android:windowBackground">@color/splash_background</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>
 
     <style name="Theme.Cita.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#FFF4EDE3</item>
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_anim</item>
-        <item name="windowSplashScreenAnimationDuration">700</item>
+        <item name="windowSplashScreenAnimationDuration">820</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/splash_background</item>
         <item name="postSplashScreenTheme">@style/Theme.Cita</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>

@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,8 +48,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import nl.cita.magister.model.ApiFailure
-import nl.cita.magister.ui.theme.WarmOnTile
-import nl.cita.magister.ui.theme.WarmSand
 import nl.cita.magister.ui.today.subjectChipLabel
 import kotlin.math.PI
 import kotlin.math.cos
@@ -122,9 +121,10 @@ fun GradeTile(
         verticalArrangement = Arrangement.spacedBy(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        val onTile = MaterialTheme.colorScheme.contentColorFor(color)
         Text(
             value,
-            color = WarmOnTile,
+            color = onTile,
             fontSize = 32.sp,
             fontWeight = FontWeight.SemiBold,
             fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
@@ -132,12 +132,12 @@ fun GradeTile(
         Box(
             Modifier
                 .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.28f))
+                .background(onTile.copy(alpha = 0.16f))
                 .padding(horizontal = 10.dp, vertical = 4.dp),
         ) {
             Text(
                 label,
-                color = WarmOnTile,
+                color = onTile,
                 style = MaterialTheme.typography.labelSmall,
                 maxLines = 1,
                 overflow = TextOverflow.Clip,
@@ -198,11 +198,11 @@ fun CircleCheck(
     }
 }
 
-/** Sand-colored cookie/flower — no holes. Slow rotation. */
+/** Cookie/flower — follows the active scheme (Material You primary). */
 @Composable
 fun CookieFlower(
     modifier: Modifier = Modifier,
-    color: Color = WarmSand,
+    color: Color = MaterialTheme.colorScheme.primary,
     size: Dp = 148.dp,
 ) {
     val spin by rememberInfiniteTransition(label = "cookie").animateFloat(

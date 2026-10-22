@@ -18,8 +18,8 @@ import nl.cita.magister.ui.theme.CitaActionRow
 @Composable
 fun EmptyState(
     title: String,
-    body: String,
     modifier: Modifier = Modifier,
+    body: String? = null,
     hint: String? = null,
     actions: List<CitaAction> = emptyList(),
     tag: String = "empty-state",
@@ -32,18 +32,23 @@ fun EmptyState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        CookieFlower(size = 88.dp)
+        CookieFlower(
+            size = 88.dp,
+            color = MaterialTheme.colorScheme.primary,
+        )
         Text(
             title,
             style = MaterialTheme.typography.headlineSmall,
             textAlign = TextAlign.Center,
         )
-        Text(
-            body,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
+        if (!body.isNullOrBlank()) {
+            Text(
+                body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
         if (!hint.isNullOrBlank()) {
             Text(
                 hint,
