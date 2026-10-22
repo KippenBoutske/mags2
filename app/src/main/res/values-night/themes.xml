@@ -6,4 +6,12 @@
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowBackground">#FF16130F</item>
     </style>
+
+    <style name="Theme.Cita.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#FF16130F</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_anim</item>
+        <item name="windowSplashScreenAnimationDuration">700</item>
+        <item name="postSplashScreenTheme">@style/Theme.Cita</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 </resources>

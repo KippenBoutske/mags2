@@ -20,7 +20,11 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.api.School
+import nl.cita.magister.fixtures.DemoFixture
 import nl.cita.magister.fixtures.MockFixtures
+import nl.cita.magister.fixtures.appointments
+import nl.cita.magister.fixtures.grades
+import nl.cita.magister.fixtures.manyHomeworkItems
 import nl.cita.magister.grades.GradeCalculator
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.ui.grades.GradesScreen
@@ -68,6 +72,12 @@ class ConceptScreenshotTest {
     @Test fun cijfers360() = snap("cijfers", 360) { grades() }
     @Test fun cijfersVak412() = snap("cijfers-vak", 412) { grades(subjectId = 3) }
     @Test fun huiswerk412() = snap("huiswerk", 412) { homework() }
+    @Test fun huiswerkMany412() = snap("huiswerk-veel", 412) { homeworkMany() }
+    @Test fun cijfersLeeg412() = snap("cijfers-leeg", 412) { gradesEmpty() }
+    @Test fun roosterVrij412() = snap("rooster-vrij", 412) { roosterEmpty() }
+    @Test fun lesLang412() = snap("les-lang", 412) { roosterLong() }
+    @Test fun cijfersLang412() = snap("cijfers-lang", 412) { gradesLong() }
+    @Test fun offline412() = snap("offline", 412) { todayOffline() }
     @Test fun berichten412() = snap("berichten", 412) { messages() }
     @Test fun berichten403() = snap("berichten-403", 412) { messagesForbidden() }
     @Test fun meer412() = snap("meer", 412) { settings() }
@@ -122,10 +132,10 @@ class ConceptScreenshotTest {
     private fun outDirs(): List<File> = listOf(
         File("app/build/outputs/self-test/screenshots"),
         File("build/outputs/self-test/screenshots"),
-        File("artifacts/screens-0.1.12"),
-        File("/workspace/artifacts/screens-0.1.12"),
-        File("/cursor/stores/self/artifacts/screens-0.1.12"),
-        File("/opt/cursor/artifacts/0.1.12"),
+        File("artifacts/screens-0.1.13"),
+        File("/workspace/artifacts/screens-0.1.13"),
+        File("/cursor/stores/self/artifacts/screens-0.1.13"),
+        File("/opt/cursor/artifacts/0.1.13"),
     )
 
     @Composable
@@ -206,6 +216,82 @@ class ConceptScreenshotTest {
             items = MockFixtures.homework(),
             contentPadding = PaddingValues(bottom = 80.dp),
             onToggle = { _, _ -> },
+            clockDate = LocalDate.of(2026, 10, 22),
+        )
+    }
+
+    @Composable
+    private fun homeworkMany() {
+        HomeworkScreen(
+            items = MockFixtures.manyHomeworkItems(LocalDate.of(2026, 10, 22)),
+            contentPadding = PaddingValues(bottom = 80.dp),
+            onToggle = { _, _ -> },
+            clockDate = LocalDate.of(2026, 10, 22),
+        )
+    }
+
+    @Composable
+    private fun gradesEmpty() {
+        GradesScreen(
+            profile = MockFixtures.profile(),
+            averages = emptyList(),
+            grades = emptyList(),
+            refreshing = false,
+            exporting = false,
+            contentPadding = PaddingValues(0.dp),
+            onExport = {},
+        )
+    }
+
+    @Composable
+    private fun gradesLong() {
+        val grades = MockFixtures.grades(DemoFixture.LongNames)
+        GradesScreen(
+            profile = MockFixtures.profile(),
+            averages = GradeCalculator.averagesBySubject(grades),
+            grades = grades,
+            refreshing = false,
+            exporting = false,
+            contentPadding = PaddingValues(0.dp),
+            onExport = {},
+        )
+    }
+
+    @Composable
+    private fun roosterEmpty() {
+        ScheduleScreen(
+            appointments = emptyList(),
+            contentPadding = PaddingValues(0.dp),
+            initialDate = LocalDate.of(2026, 10, 22),
+            clockDate = LocalDate.of(2026, 10, 22),
+            clockTime = LocalTime.of(11, 0),
+        )
+    }
+
+    @Composable
+    private fun roosterLong() {
+        ScheduleScreen(
+            appointments = MockFixtures.appointments(DemoFixture.LongNames),
+            contentPadding = PaddingValues(0.dp),
+            initialDate = LocalDate.of(2026, 10, 21),
+            clockDate = LocalDate.of(2026, 10, 21),
+            clockTime = LocalTime.of(11, 0),
+        )
+    }
+
+    @Composable
+    private fun todayOffline() {
+        TodayScreen(
+            profile = MockFixtures.profile(),
+            appointments = MockFixtures.appointments(),
+            homework = MockFixtures.homework(),
+            averages = GradeCalculator.averagesBySubject(MockFixtures.grades()),
+            messages = MockFixtures.messages(),
+            contentPadding = PaddingValues(0.dp),
+            onOpenPage = {},
+            clockDate = LocalDate.of(2026, 10, 22),
+            clockTime = LocalTime.of(11, 0),
+            offline = true,
         )
     }
 

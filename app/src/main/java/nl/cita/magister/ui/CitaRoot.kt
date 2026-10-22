@@ -24,6 +24,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.IosShare
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -161,6 +165,7 @@ fun CitaRoot(viewModel: CitaViewModel) {
     val notifications by viewModel.notifications.collectAsStateWithLifecycle()
     val clock by viewModel.clock.collectAsStateWithLifecycle()
     val pendingPage by viewModel.pendingPage.collectAsStateWithLifecycle()
+    val offline by viewModel.offline.collectAsStateWithLifecycle()
 
     MagsSignedInScaffold(
         profile = profile,
@@ -204,6 +209,7 @@ fun CitaRoot(viewModel: CitaViewModel) {
         clockTime = clock.time,
         pendingPage = pendingPage,
         onPendingPageConsumed = viewModel::consumePendingPage,
+        offline = offline,
     )
 }
 
@@ -252,6 +258,7 @@ fun MagsSignedInScaffold(
     clockTime: LocalTime = LocalTime.now(),
     pendingPage: MagsPage? = null,
     onPendingPageConsumed: () -> Unit = {},
+    offline: Boolean = false,
 ) {
     var page by remember { mutableStateOf(initialPage) }
     var lastDock by remember { mutableStateOf(if (initialPage.isDockTab) initialPage else MagsPage.Vandaag) }
@@ -412,6 +419,7 @@ fun MagsSignedInScaffold(
                                     loading = refreshing,
                                     clockDate = clockDate,
                                     clockTime = clockTime,
+                                    offline = offline,
                                 )
                                 MagsPage.Rooster -> ScheduleScreen(
                                     appointments,
@@ -442,6 +450,8 @@ fun MagsSignedInScaffold(
                                     onToggleHomework,
                                     agendaError = sectionErrors.agenda,
                                     loading = refreshing,
+                                    clockDate = clockDate,
+                                    snackbarHost = snackbarHost,
                                 )
                                 MagsPage.Berichten -> MessagesScreen(
                                     messages,
@@ -498,6 +508,17 @@ fun MagsSignedInScaffold(
                         .align(Alignment.TopCenter)
                         .statusBarsPadding()
                         .zIndex(1f),
+                    actions = {
+                        if (page == MagsPage.Cijfers) {
+                            IconButton(
+                                onClick = onExport,
+                                enabled = !exporting,
+                                modifier = Modifier.testTag("cijfers-deel"),
+                            ) {
+                                Icon(Icons.Outlined.IosShare, contentDescription = "Deel")
+                            }
+                        }
+                    },
                 )
             }
 

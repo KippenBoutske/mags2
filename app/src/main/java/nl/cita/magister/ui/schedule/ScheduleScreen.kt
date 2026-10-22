@@ -58,6 +58,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -441,7 +442,19 @@ private fun DayTimeline(
             }
         } else if (lessons.isEmpty()) {
             item {
-                Text("Vrij", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 24.dp))
+                Column(
+                    Modifier
+                        .padding(top = 24.dp)
+                        .testTag("rooster-leeg"),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text("Vrij", style = MaterialTheme.typography.headlineSmall)
+                    Text(
+                        "Geen lessen gepland.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
         if (isToday && nowLineBefore(slots, now)) {
@@ -565,13 +578,20 @@ private fun LessonCard(
                     ) {
                         Text(item.periodFrom?.toString() ?: "–", style = MaterialTheme.typography.titleMedium)
                     }
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Column(
+                        Modifier
+                            .weight(1f)
+                            .padding(end = if (current) 68.dp else 0.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
                         Text(
                             item.title,
                             style = if (current) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
                             textDecoration = if (item.isCancelled) TextDecoration.LineThrough else null,
                             color = if (item.isCancelled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                             else MaterialTheme.colorScheme.onSurface,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
                         )
                         if (item.isCancelled) {
                             Text("Uitval", style = MaterialTheme.typography.labelMedium)
@@ -710,13 +730,13 @@ internal fun lessonProgress(item: Appointment, now: LocalTime): Float {
 }
 
 private fun nowLineBefore(slots: List<DaySlot>, now: LocalTime): Boolean {
-    val first = slots.firstOrNull() ?: return true
+    val first = slots.firstOrNull() ?: return false
     val start = slotStart(first) ?: return false
     return now.isBefore(start)
 }
 
 private fun nowLineAfter(slots: List<DaySlot>, now: LocalTime): Boolean {
-    val last = slots.lastOrNull() ?: return true
+    val last = slots.lastOrNull() ?: return false
     val end = slotEnd(last) ?: return false
     return !now.isBefore(end)
 }

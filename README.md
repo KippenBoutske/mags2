@@ -6,11 +6,13 @@ Mags is **geen** product van Iddink/Magister. Werkt met elke Magister-school. Al
 
 ## Wat zit erin
 
-- **Cijfers** met gewogen gemiddelde per vak, grafiek, *Wat moet ik halen?* (doel-stepper, weging-chips) en cijferblad
+- **Cijfers** met gewogen gemiddelde per vak (onvoldoendes in foutkleur), balk t.o.v. 10 met 5,5-streep, grafiek, *Wat moet ik halen?* en cijferblad
 - **Rooster** met tussenuren, nu-lijn in de huidige les, en lesblad
-- **Huiswerk** met lokaal *klaar*-vinkje, **berichten** (alleen lezen), **afwezigheid**, **studiewijzers** en **opdrachten**
+- **Huiswerk** gegroepeerd per dag, *Verlopen* ingeklapt, Toets-chip, swipe-naar-klaar met herstel
+- **Berichten** (alleen lezen), **afwezigheid**, **studiewijzers** en **opdrachten**
 - Startscherm-snelkoppelingen naar Vandaag, Rooster, Cijfers en Huiswerk
-- **Deel** vanuit Cijfers: JSON naar een adres onder Meer → Geavanceerd, anders het Android-deelblad
+- **Deel**-icoon rechtsboven op Cijfers: JSON naar Meer → Geavanceerd, anders het Android-deelblad
+- Adaptive icoon + Android 13-monochroom + SplashScreen-animatie
 - Live schoolzoeken
 - Offline cache, pull-to-refresh, Material 3 Expressive (shared elements, spring-lijst, morphing `LoadingIndicator`)
 - Donker-warm thema (concept 1), Photos-stijl zwevende navbar
@@ -34,14 +36,15 @@ cat mags-debug.apk.part-aa mags-debug.apk.part-ab > mags-debug.apk
 sha256sum -c mags-debug.apk.sha256
 ```
 
-3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.12** (`targetSdk` 37).
-4. Bij een crash: scherm **Mags is gestopt** → *Kopieer stacktrace*.
+3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.13** (`targetSdk` 37).
+4. Er is ook een **release-APK** (`mags-release.apk`, applicationId `app.mags`) met R8. Die is getekend met de lokale dev-keystore in `app/keystore/` — **niet** voor Play.
+5. Bij een crash: scherm **Mags is gestopt** → *Kopieer stacktrace*.
 
 Zelf bouwen:
 
 ```bash
 export ANDROID_HOME=/pad/naar/android-sdk
-./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug
+./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease
 # of de hele zelftest (unit + screenshots + optionele emulator-smoke):
 ./scripts/self-test.sh
 ```
@@ -67,7 +70,7 @@ Mags probeert eerst `postvakin`, daarna `mappen/1/berichten`, de collectie, en p
 
 ## Cijfers exporteren (Plan Goon)
 
-Onder **Cijfers**: **Deel**. Stuurt JSON naar het adres onder **Meer → Geavanceerd** als dat gezet is; anders het Android-deelblad. Geen adres is hardgecodeerd.
+Op **Cijfers**: deel-icoon naast de avatar. Stuurt JSON naar het adres onder **Meer → Geavanceerd** als dat gezet is; anders het Android-deelblad. Geen adres is hardgecodeerd.
 
 `Content-Type: application/json`  
 `Authorization: Bearer <sleutel>` (alleen als er een sleutel is)

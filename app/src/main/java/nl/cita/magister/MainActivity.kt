@@ -11,6 +11,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.content.ContextCompat
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,14 +27,13 @@ class MainActivity : ComponentActivity() {
     private val viewModel: CitaViewModel by viewModels { CitaViewModel.factory(application) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
+        handleLaunchExtras(intent)
+        splash.setKeepOnScreenCondition { viewModel.booting.value }
         try {
             runCatching { enableEdgeToEdge() }
             handleAuthIntent(intent)
-            handleLaunchExtras(intent)
-            if (BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_DEMO, false)) {
-                viewModel.enterDemo()
-            }
             requestNotifyPermission()
             lifecycleScope.launch {
                 viewModel.shareJson.collect { json ->
@@ -72,6 +72,13 @@ class MainActivity : ComponentActivity() {
         if (page != null) viewModel.openPage(page)
         val clock = nl.cita.magister.ui.AppClock.parse(intent?.getStringExtra(EXTRA_CLOCK))
         if (clock != null) viewModel.setClock(clock)
+        val offline = intent?.getBooleanExtra(EXTRA_OFFLINE, false) == true
+        val fixture = nl.cita.magister.fixtures.DemoFixture.parse(intent?.getStringExtra(EXTRA_FIXTURE))
+        if (intent?.getBooleanExtra(EXTRA_DEMO, false) == true) {
+            viewModel.enterDemo(fixture, offline)
+        } else if (offline) {
+            viewModel.setOffline(true)
+        }
     }
 
     private fun handleAuthIntent(intent: Intent?) {
@@ -97,5 +104,7 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_DEMO = "demo"
         const val EXTRA_PAGE = "page"
         const val EXTRA_CLOCK = "clock"
+        const val EXTRA_FIXTURE = "fixture"
+        const val EXTRA_OFFLINE = "offline"
     }
 }

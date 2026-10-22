@@ -77,6 +77,7 @@ fun TodayScreen(
     loading: Boolean = false,
     clockDate: LocalDate = LocalDate.now(AppClock.zone),
     clockTime: LocalTime = LocalTime.now(AppClock.zone),
+    offline: Boolean = false,
 ) {
     val today = clockDate
     val now = clockTime
@@ -106,6 +107,16 @@ fun TodayScreen(
                 subtitle = today.format(longDay).replaceFirstChar { it.titlecase(nl) },
             )
         }
+        if (offline) {
+            item {
+                Text(
+                    "Offline · toont cache",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.testTag("offline-banner"),
+                )
+            }
+        }
         agendaError?.let { item { SectionError(it) } }
         if (loading && ofDay.isEmpty() && openHw.isEmpty() && latest.isEmpty()) {
             item { TodaySkeleton() }
@@ -130,9 +141,17 @@ fun TodayScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         if (hero == null) {
-                            Text("Klaar.", style = MaterialTheme.typography.headlineSmall)
+                            Text(
+                                if (ofDay.isEmpty()) "Geen les." else "Klaar.",
+                                style = MaterialTheme.typography.headlineSmall,
+                            )
                         } else {
-                            Text(hero.title, style = MaterialTheme.typography.headlineSmall)
+                            Text(
+                                hero.title,
+                                style = MaterialTheme.typography.headlineSmall,
+                                maxLines = 2,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            )
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Outlined.Place, null, Modifier, MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(hero.classroom ?: hero.location ?: "–", style = MaterialTheme.typography.bodyMedium)
@@ -264,11 +283,18 @@ private fun HomeworkRow(
     ) {
         CircleCheck(checked = item.isDone, onCheckedChange = onToggle)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(item.subject, style = MaterialTheme.typography.titleMedium)
+            Text(
+                item.subject,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
             Text(
                 homeworkBody(item),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
             SuggestionChip(
                 onClick = {},

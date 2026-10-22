@@ -18,6 +18,10 @@ enum class FakeScenario {
     AbsencesForbidden,
     GuidesForbidden,
     AssignmentsForbidden,
+    Vacation,
+    NoGrades,
+    LongNames,
+    ManyHomework,
 }
 
 /**
@@ -91,17 +95,26 @@ class FakeMagister(
     }
 
     private fun grades(): MockResponse =
-        if (scenario == FakeScenario.GradesForbidden) {
-            json(403, """{"fouttype":"OnvoldoendePrivileges"}""")
-        } else {
-            json(200, MockFixtures.gradesJson)
+        when (scenario) {
+            FakeScenario.GradesForbidden -> json(403, """{"fouttype":"OnvoldoendePrivileges"}""")
+            FakeScenario.NoGrades -> json(200, """{"Items":[]}""")
+            FakeScenario.LongNames -> json(
+                200,
+                MockFixtures.gradesJson.replace("Nederlands", "Maatschappijwetenschappen en levensbeschouwing"),
+            )
+            else -> json(200, MockFixtures.gradesJson)
         }
 
     private fun agenda(): MockResponse =
-        if (scenario == FakeScenario.AgendaForbidden) {
-            json(403, """{"fouttype":"OnvoldoendePrivileges"}""")
-        } else {
-            json(200, MockFixtures.appointmentsJson)
+        when (scenario) {
+            FakeScenario.AgendaForbidden -> json(403, """{"fouttype":"OnvoldoendePrivileges"}""")
+            FakeScenario.Vacation -> json(200, """{"Items":[]}""")
+            FakeScenario.LongNames -> json(
+                200,
+                MockFixtures.appointmentsJson.replace("Wiskunde B", "Maatschappijwetenschappen en levensbeschouwing"),
+            )
+            FakeScenario.ManyHomework -> json(200, MockFixtures.appointmentsJson)
+            else -> json(200, MockFixtures.appointmentsJson)
         }
 
     private fun folders(): MockResponse =

@@ -37,6 +37,8 @@ val GradeGold = Color(0xFFC4A36A)
 val GradeSage = Color(0xFF7E8B6A)
 val GradeSlate = Color(0xFF6B7C96)
 val WarmOnTile = Color(0xFF1A1712)
+val ToetsAmber = Color(0xFFC47A4A)
+val ToetsOnAmber = Color(0xFF1A1712)
 
 private val WarmDarkScheme = darkColorScheme(
     primary = WarmSand,

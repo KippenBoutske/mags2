@@ -35,7 +35,7 @@ class MagisterParsersTest {
     @Test
     fun parseGradesKeepsWeightAndType() {
         val grades = MagisterParsers.parseGrades(MockFixtures.gradesJson)
-        assertEquals(11, grades.size)
+        assertEquals(12, grades.size)
         val pw2 = grades.first { it.id == 302 }
         assertEquals(5.3, pw2.numericValue!!, 0.0001)
         assertFalse(pw2.isSufficient)

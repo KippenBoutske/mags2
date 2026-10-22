@@ -25,6 +25,7 @@ import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.MessageDetail
 import nl.cita.magister.model.SectionErrors
+import nl.cita.magister.fixtures.DemoFixture
 import nl.cita.magister.ui.nav.MagsPage
 import java.time.LocalDate
 
@@ -94,19 +95,31 @@ class CitaViewModel(
     private val _pendingPage = MutableStateFlow<MagsPage?>(null)
     val pendingPage = _pendingPage.asStateFlow()
 
+    private val _offline = MutableStateFlow(false)
+    val offline = _offline.asStateFlow()
+
     val hasWebhookKey: Boolean get() = repo.webhookConfigured()
 
     private var searchJob: Job? = null
+    @Volatile private var skipBootRefresh = false
 
     init {
         viewModelScope.launch {
+            kotlinx.coroutines.yield()
+            if (skipBootRefresh) return@launch
             val demo = repo.isDemo()
             if (demo && !clockPinned) _clock.value = AppClock.Demo
             _signedIn.value = repo.isLoggedIn() || demo
             if (_signedIn.value && profile.value == null) {
                 runCatching { repo.refreshAll() }
-                    .onSuccess { reportWarnings(it.warnings) }
-                    .onFailure { rememberFailure(it) }
+                    .onSuccess {
+                        reportWarnings(it.warnings)
+                        _offline.value = false
+                    }
+                    .onFailure {
+                        rememberFailure(it)
+                        _offline.value = true
+                    }
             }
             _booting.value = false
         }
@@ -196,14 +209,21 @@ class CitaViewModel(
         }
     }
 
-    fun enterDemo() {
+    fun enterDemo(fixture: DemoFixture = DemoFixture.Default, offline: Boolean = false) {
+        skipBootRefresh = true
         viewModelScope.launch {
-            repo.enterDemo()
+            repo.enterDemo(fixture)
             if (!clockPinned) _clock.value = AppClock.Demo
             _signedIn.value = true
             _lastError.value = null
-            _snackbar.emit("Voorbeeld.")
+            _offline.value = offline
+            _booting.value = false
+            _snackbar.emit(if (offline) "Offline · cache." else "Voorbeeld.")
         }
+    }
+
+    fun setOffline(value: Boolean) {
+        _offline.value = value
     }
 
     fun setClock(clock: AppClock) {
@@ -223,9 +243,13 @@ class CitaViewModel(
         viewModelScope.launch {
             _refreshing.value = true
             runCatching { repo.refreshAll() }
-                .onSuccess { reportWarnings(it.warnings) }
+                .onSuccess {
+                    reportWarnings(it.warnings)
+                    _offline.value = false
+                }
                 .onFailure { error ->
                     rememberFailure(error)
+                    _offline.value = true
                     _snackbar.emit(friendlyOf(error))
                 }
             _refreshing.value = false

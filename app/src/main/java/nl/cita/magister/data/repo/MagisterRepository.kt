@@ -23,7 +23,11 @@ import nl.cita.magister.export.GradeExport
 import nl.cita.magister.export.GradeExportPayload
 import nl.cita.magister.dto.SendMessageRequest
 import nl.cita.magister.dto.ReceiverDto
+import nl.cita.magister.fixtures.DemoFixture
 import nl.cita.magister.fixtures.MockFixtures
+import nl.cita.magister.fixtures.appointments
+import nl.cita.magister.fixtures.grades
+import nl.cita.magister.fixtures.homework
 import nl.cita.magister.grades.GradeCalculator
 import nl.cita.magister.model.Absence
 import nl.cita.magister.model.ApiFailure
@@ -163,14 +167,17 @@ class MagisterRepository(
         }?.host
     }
 
-    suspend fun enterDemo() {
+    private var demoFixture: DemoFixture = DemoFixture.Default
+
+    suspend fun enterDemo(fixture: DemoFixture = DemoFixture.Default) {
+        demoFixture = fixture
         prefs.setDemo(true)
         prefs.setTenant(nl.cita.magister.api.Tenant.CITADEL_HOST, nl.cita.magister.api.Tenant.CITADEL_DISPLAY, null)
         tokenStore.clear()
         writeCache(KEY_PROFILE, MagisterJson.instance.encodeToString(MockFixtures.profile()))
-        writeCache(KEY_GRADES, MagisterJson.instance.encodeToString(MockFixtures.grades()))
-        writeCache(KEY_APPOINTMENTS, MagisterJson.instance.encodeToString(MockFixtures.appointments()))
-        writeCache(KEY_HOMEWORK, MagisterJson.instance.encodeToString(MockFixtures.homework()))
+        writeCache(KEY_GRADES, MagisterJson.instance.encodeToString(MockFixtures.grades(fixture)))
+        writeCache(KEY_APPOINTMENTS, MagisterJson.instance.encodeToString(MockFixtures.appointments(fixture)))
+        writeCache(KEY_HOMEWORK, MagisterJson.instance.encodeToString(MockFixtures.homework(fixture)))
         writeCache(KEY_MESSAGES, MagisterJson.instance.encodeToString(MockFixtures.messages()))
         writeCache(KEY_ABSENCES, MagisterJson.instance.encodeToString(MockFixtures.absences()))
         writeCache(KEY_GUIDES, MagisterJson.instance.encodeToString(MockFixtures.studyGuides()))
@@ -185,7 +192,7 @@ class MagisterRepository(
 
     suspend fun refreshAll(): SessionHydration {
         if (prefs.isDemo() || tokenStore.read() == null) {
-            enterDemo()
+            enterDemo(demoFixture)
             return SessionHydration(MockFixtures.profile())
         }
         val session = tokenStore.read()!!

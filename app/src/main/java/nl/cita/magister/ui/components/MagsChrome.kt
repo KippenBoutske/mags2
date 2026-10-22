@@ -36,6 +36,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -150,8 +151,16 @@ fun CircleCheck(
     modifier: Modifier = Modifier,
     contentDescription: String = if (checked) "Klaar" else "Open",
 ) {
-    val ring = if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-    val fill = if (checked) MaterialTheme.colorScheme.primary else Color.Transparent
+    val progress by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (checked) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.7f, stiffness = 380f),
+        label = "hw-check",
+    )
+    val ring = androidx.compose.ui.graphics.lerp(
+        MaterialTheme.colorScheme.outline,
+        MaterialTheme.colorScheme.primary,
+        progress,
+    )
     Box(
         modifier
             .size(48.dp)
@@ -165,11 +174,20 @@ fun CircleCheck(
                 .size(24.dp)
                 .clip(CircleShape)
                 .border(2.dp, ring, CircleShape)
-                .background(fill, CircleShape),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = progress), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            if (checked) {
-                Text("✓", color = MaterialTheme.colorScheme.onPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            if (progress > 0.15f) {
+                Text(
+                    "✓",
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = progress),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.graphicsLayer {
+                        scaleX = 0.6f + 0.4f * progress
+                        scaleY = 0.6f + 0.4f * progress
+                    },
+                )
             }
         }
     }

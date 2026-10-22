@@ -26,16 +26,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.IosShare
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -49,11 +46,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.grades.GradeCalculator
 import nl.cita.magister.model.ApiFailure
@@ -142,22 +142,26 @@ fun GradesScreen(
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
-                    item {
-                        FilledTonalButton(
-                            onClick = onExport,
-                            enabled = !exporting,
-                            modifier = Modifier.testTag("cijfers-deel"),
-                        ) {
-                            Icon(Icons.Outlined.IosShare, contentDescription = null)
-                            Spacer(Modifier.padding(4.dp))
-                            Text(if (exporting) "…" else "Deel")
-                        }
-                    }
                     if (refreshing && averages.isEmpty()) {
                         item { ListSkeleton(rows = 3, contentDescription = "Cijfers laden") }
                     }
                     if (!refreshing && visible.isEmpty()) {
-                        item { Text("Geen cijfers.") }
+                        item {
+                            Column(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 24.dp)
+                                    .testTag("cijfers-leeg"),
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Text("Nog geen cijfers.", style = MaterialTheme.typography.headlineSmall)
+                                Text(
+                                    "Zodra Magister iets binnen heeft, staat het hier.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                     }
                     itemsIndexed(visible, key = { _, it -> it.subjectId }) { index, item ->
                         SubjectCard(
@@ -212,44 +216,62 @@ private fun SubjectCard(
         animationSpec = magsFloatSpring(stiffness = 220f),
         label = "grade",
     )
-    val color = when {
-        avg == null -> MaterialTheme.colorScheme.surfaceContainerHigh
-        avg < 5.5 -> MaterialTheme.colorScheme.errorContainer
-        avg < 6.0 -> MaterialTheme.colorScheme.tertiaryContainer
-        else -> MaterialTheme.colorScheme.secondaryContainer
-    }
+    val fail = isFailing(avg)
+    val numberColor = if (fail) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     PressScaleCard(
         modifier = modifier.fillMaxWidth().testTag("cijfers-vak"),
-        colors = CardDefaults.cardColors(containerColor = color),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         onClick = onOpen,
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(subject.subjectName, style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        subject.subjectCode.uppercase(),
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                }
+                Text(
+                    subject.subjectName,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
                 Text(
                     if (avg == null) "–" else formatGrade(animated.toDouble()),
                     style = MaterialTheme.typography.displaySmall,
+                    color = numberColor,
+                    modifier = Modifier.testTag("cijfers-gemiddelde"),
                 )
             }
             if (avg != null) {
-                LinearProgressIndicator(
-                    progress = { (avg / 10f).toFloat().coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                AverageBar(average = avg.toFloat(), modifier = Modifier.fillMaxWidth().testTag("cijfers-balk"))
             }
             grades.sortedByDescending { it.enteredAt }.take(4).forEach { grade ->
+                val gradeFail = isFailing(grade.numericValue ?: GradeCalculator.parseDutchNumber(grade.value))
                 Text(
                     "${grade.columnHeading ?: "Cijfer"}  ${grade.value ?: "–"}  ·  ×${(grade.weight ?: 1.0).toInt()}",
                     style = MaterialTheme.typography.bodySmall,
+                    color = if (gradeFail) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
+    }
+}
+
+@Composable
+internal fun AverageBar(average: Float, modifier: Modifier = Modifier) {
+    val fill = if (average < 5.5f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    val track = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+    val marker = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+    Canvas(modifier.height(10.dp)) {
+        val h = size.height
+        val radius = CornerRadius(h / 2f, h / 2f)
+        drawRoundRect(track, size = size, cornerRadius = radius)
+        val width = size.width * (average / 10f).coerceIn(0f, 1f)
+        if (width > 0f) {
+            drawRoundRect(fill, size = Size(width, h), cornerRadius = radius)
+        }
+        val x = size.width * 0.55f
+        drawLine(marker, Offset(x, -2f), Offset(x, h + 2f), strokeWidth = 2.5f, cap = StrokeCap.Round)
     }
 }
 
@@ -286,7 +308,15 @@ private fun SubjectPage(
                 IconButton(onClick = onBack, modifier = Modifier.testTag("cijfers-terug")) {
                     Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Terug")
                 }
-                PageTitle(subject.subjectName, formatGrade(subject.average))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(subject.subjectName, style = MaterialTheme.typography.displayMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        formatGrade(subject.average),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isFailing(subject.average)) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
         if (values.size >= 2) {
@@ -329,7 +359,13 @@ private fun SubjectPage(
                             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                    Text(grade.value ?: "–", style = MaterialTheme.typography.headlineSmall)
+                    val gradeFail = isFailing(grade.numericValue ?: GradeCalculator.parseDutchNumber(grade.value))
+                    Text(
+                        grade.value ?: "–",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = if (gradeFail) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurface,
+                    )
                 }
             }
         }
@@ -523,3 +559,5 @@ private fun CalculatorBlock(
         Spacer(Modifier.height(12.dp))
     }
 }
+
+private fun isFailing(value: Double?): Boolean = value != null && value < 5.5

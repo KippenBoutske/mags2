@@ -65,6 +65,20 @@ class FakeMagisterFlowTest {
     }
 
     @Test
+    fun vacationAgendaIsEmpty() {
+        fake.scenario = FakeScenario.Vacation
+        val agenda = get("/api/personen/424242/afspraken?van=2026-10-21&tot=2026-10-22", "live-access")
+        assertTrue(MagisterParsers.parseAppointments(agenda).isEmpty())
+    }
+
+    @Test
+    fun noGradesYetIsEmptyList() {
+        fake.scenario = FakeScenario.NoGrades
+        val grades = get("/api/personen/424242/aanmeldingen/1/cijfers/cijferoverzichtvooraanmelding", "live-access")
+        assertTrue(MagisterParsers.parseGrades(grades).isEmpty())
+    }
+
+    @Test
     fun expiredAccessRefreshesThenRetries() {
         fake.scenario = FakeScenario.AccessExpired
         val first = raw("/api/account", FakeMagister.TOKEN_EXPIRED)
