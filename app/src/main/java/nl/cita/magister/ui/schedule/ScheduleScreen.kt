@@ -48,6 +48,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.Appointment
+import nl.cita.magister.ui.components.ListSkeleton
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatTime
@@ -77,6 +78,7 @@ fun ScheduleScreen(
     agendaError: ApiFailure? = null,
     initialDate: LocalDate? = null,
     onVisibleWeek: (LocalDate) -> Unit = {},
+    loading: Boolean = false,
 ) {
     val today = remember { LocalDate.now(zone) }
     val startMonday = remember(today) { today.minusWeeks(WeekRadius.toLong()).with(DayOfWeek.MONDAY) }
@@ -169,11 +171,21 @@ fun ScheduleScreen(
         ) { page ->
             val date = days[page]
             val ofDay = (byDate[date] ?: emptyList()).sortedBy { it.startIso }
-            DayTimeline(
-                date = date,
-                lessons = ofDay,
-                contentBottom = contentPadding.calculateBottomPadding(),
-            )
+            if (loading && appointments.isEmpty()) {
+                androidx.compose.foundation.layout.Box(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                ) {
+                    ListSkeleton(rows = 3, contentDescription = "Rooster laden")
+                }
+            } else {
+                DayTimeline(
+                    date = date,
+                    lessons = ofDay,
+                    contentBottom = contentPadding.calculateBottomPadding(),
+                )
+            }
         }
     }
 }

@@ -22,6 +22,7 @@ import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.MessageDetail
 import nl.cita.magister.model.MessagePreview
 import nl.cita.magister.parse.stripHtml
+import nl.cita.magister.ui.components.ListSkeleton
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatWhen
@@ -36,6 +37,7 @@ fun MessagesScreen(
     onOpen: (Int) -> Unit,
     onClose: () -> Unit,
     messagesError: ApiFailure? = null,
+    loading: Boolean = false,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -49,7 +51,10 @@ fun MessagesScreen(
     ) {
         item { PageTitle("Berichten", "Alleen lezen") }
         messagesError?.let { item { SectionError(it) } }
-        if (messages.isEmpty() && messagesError == null) {
+        if (loading && messages.isEmpty() && messagesError == null) {
+            item { ListSkeleton(rows = 4, contentDescription = "Berichten laden") }
+        }
+        if (messages.isEmpty() && messagesError == null && !loading) {
             item { Text("Geen berichten in Postvak IN.") }
         }
         if (messages.isEmpty() && messagesError != null) {

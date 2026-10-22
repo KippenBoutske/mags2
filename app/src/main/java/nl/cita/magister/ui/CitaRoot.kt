@@ -12,17 +12,20 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
@@ -42,7 +45,10 @@ import kotlin.math.abs
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -113,6 +119,7 @@ fun CitaRoot(viewModel: CitaViewModel) {
         val hits by viewModel.schoolHits.collectAsStateWithLifecycle()
         val searching by viewModel.schoolSearching.collectAsStateWithLifecycle()
         val error by viewModel.lastError.collectAsStateWithLifecycle()
+        val dynamic by viewModel.dynamicColor.collectAsStateWithLifecycle()
         Scaffold(snackbarHost = { SnackbarHost(snackbarHost) }) {
             LoginScreen(
                 schoolName = school,
@@ -125,6 +132,8 @@ fun CitaRoot(viewModel: CitaViewModel) {
                 onStartLogin = { viewModel.startLogin().authorizeUrl },
                 onWebViewLogin = viewModel::openWebViewLogin,
                 onDemo = viewModel::enterDemo,
+                dynamicColor = dynamic,
+                onDynamicColor = viewModel::setDynamicColor,
             )
         }
         return
@@ -382,12 +391,14 @@ fun MagsSignedInScaffold(
                                     agendaError = sectionErrors.agenda,
                                     gradesError = sectionErrors.grades,
                                     messagesError = sectionErrors.messages,
+                                    loading = refreshing,
                                 )
                                 MagsPage.Rooster -> ScheduleScreen(
                                     appointments,
                                     contentPadding,
                                     agendaError = sectionErrors.agenda,
                                     onVisibleWeek = onVisibleWeek,
+                                    loading = refreshing,
                                 )
                                 MagsPage.Cijfers -> GradesScreen(
                                     profile = profile,
@@ -405,6 +416,7 @@ fun MagsSignedInScaffold(
                                     contentPadding,
                                     onToggleHomework,
                                     agendaError = sectionErrors.agenda,
+                                    loading = refreshing,
                                 )
                                 MagsPage.Berichten -> MessagesScreen(
                                     messages,
@@ -413,6 +425,7 @@ fun MagsSignedInScaffold(
                                     onOpenMessage,
                                     onCloseMessage,
                                     messagesError = sectionErrors.messages,
+                                    loading = refreshing,
                                 )
                                 MagsPage.Meer -> SettingsScreen(
                                     profile = profile,
@@ -457,6 +470,25 @@ fun MagsSignedInScaffold(
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
                     .zIndex(1f),
+            )
+
+            val scrimBg = MaterialTheme.colorScheme.background
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(MagsChrome.ScrimHeight + with(density) { bottomInset.toDp() })
+                    .background(
+                        Brush.verticalGradient(
+                            0f to Color.Transparent,
+                            0.22f to scrimBg.copy(alpha = 0.72f),
+                            0.48f to scrimBg.copy(alpha = 0.96f),
+                            0.62f to scrimBg,
+                            1f to scrimBg,
+                        ),
+                    )
+                    .zIndex(1.5f)
+                    .testTag("dock-scrim"),
             )
 
             PhotosDock(

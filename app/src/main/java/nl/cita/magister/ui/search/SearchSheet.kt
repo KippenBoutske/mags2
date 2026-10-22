@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -21,6 +22,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.model.Absence
 import nl.cita.magister.model.Appointment
@@ -123,7 +126,8 @@ fun SearchSheet(
                 onValueChange = onQuery,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .focusRequester(focus),
+                    .focusRequester(focus)
+                    .semantics { contentDescription = "Zoek in Mags" },
                 label = { Text("Vak, les, huiswerk, bericht, afwezigheid") },
                 singleLine = true,
             )
@@ -137,8 +141,10 @@ fun SearchSheet(
                     Column(
                         Modifier
                             .fillMaxWidth()
+                            .defaultMinSize(minHeight = 48.dp)
                             .clickable { onOpen(hit) }
-                            .padding(vertical = 8.dp),
+                            .padding(vertical = 8.dp)
+                            .semantics { contentDescription = hit.title },
                     ) {
                         Text(hit.title, style = MaterialTheme.typography.titleMedium)
                         Text(

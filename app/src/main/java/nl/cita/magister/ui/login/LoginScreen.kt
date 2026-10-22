@@ -8,7 +8,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,7 +22,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material3.Button
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -28,7 +29,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,11 +42,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import nl.cita.magister.api.School
 import nl.cita.magister.model.ApiFailure
+import nl.cita.magister.ui.components.CookieFlower
 import nl.cita.magister.ui.school.SchoolPicker
 import nl.cita.magister.ui.theme.LocalSafeMode
 
@@ -60,6 +66,8 @@ fun LoginScreen(
     onStartLogin: () -> String,
     onWebViewLogin: () -> Unit,
     onDemo: () -> Unit,
+    dynamicColor: Boolean = false,
+    onDynamicColor: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
     var menuOpen by remember { mutableStateOf(false) }
@@ -68,12 +76,18 @@ fun LoginScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 20.dp),
+            .padding(horizontal = 24.dp, vertical = 20.dp)
+            .testTag("login-screen"),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopEnd) {
-            IconButton(onClick = { menuOpen = true }) {
-                Icon(Icons.Outlined.MoreHoriz, contentDescription = "Meer")
+            IconButton(
+                onClick = { menuOpen = true },
+                modifier = Modifier
+                    .defaultMinSize(48.dp, 48.dp)
+                    .semantics { contentDescription = "Meer" },
+            ) {
+                Icon(Icons.Outlined.MoreHoriz, contentDescription = null)
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
@@ -98,22 +112,34 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(40.dp))
                 .background(MaterialTheme.colorScheme.primaryContainer)
-                .padding(horizontal = 28.dp, vertical = 36.dp),
+                .padding(horizontal = 24.dp, vertical = 28.dp),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    "Mags",
-                    style = MaterialTheme.typography.displayLarge.copy(
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = (-1.5).sp,
-                    ),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-                Text(
-                    "Magister, maar sneller.",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                CookieFlower(Modifier.size(92.dp))
+                Column(
+                    Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        "Mags",
+                        style = MaterialTheme.typography.displayLarge.copy(
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = (-1.5).sp,
+                            fontSize = 48.sp,
+                            lineHeight = 52.sp,
+                        ),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        maxLines = 1,
+                    )
+                    Text(
+                        "Magister, maar sneller.",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
             }
         }
 
@@ -137,8 +163,10 @@ fun LoginScreen(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
+                .defaultMinSize(minHeight = 56.dp)
+                .semantics { contentDescription = "Inloggen bij Magister" },
             shape = RoundedCornerShape(28.dp),
+            enabled = tenantHost.isNotBlank() || schoolName.isNotBlank(),
         ) {
             Text("Inloggen", style = MaterialTheme.typography.titleMedium)
         }
@@ -146,9 +174,34 @@ fun LoginScreen(
             onClick = onDemo,
             modifier = Modifier
                 .fillMaxWidth()
-                .testTag("login-demo"),
+                .defaultMinSize(minHeight = 48.dp)
+                .testTag("login-demo")
+                .semantics { contentDescription = "Voorbeeld zonder account" },
         ) {
             Text("Voorbeeld")
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = 48.dp)
+                .testTag("login-material-you"),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                Text("Material You", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Uit = Donker warm. Aan = kleuren van je telefoon.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = dynamicColor,
+                onCheckedChange = onDynamicColor,
+                modifier = Modifier.semantics { contentDescription = "Material You" },
+            )
         }
 
         lastError?.let { ErrorDetails(it) }
@@ -162,7 +215,10 @@ fun ErrorDetails(error: ApiFailure) {
     var open by remember(error) { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(error.friendly(), style = MaterialTheme.typography.bodyMedium)
-        androidx.compose.material3.TextButton(onClick = { open = !open }) {
+        TextButton(
+            onClick = { open = !open },
+            modifier = Modifier.defaultMinSize(minHeight = 48.dp),
+        ) {
             Text(if (open) "Verberg details" else "Details")
         }
         AnimatedVisibility(open) {

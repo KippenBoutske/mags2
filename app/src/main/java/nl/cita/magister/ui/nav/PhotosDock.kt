@@ -9,6 +9,7 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -16,10 +17,12 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Search
@@ -30,6 +33,7 @@ import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -40,9 +44,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -60,8 +66,15 @@ import nl.cita.magister.ui.motion.dockIndicatorSpring
 import kotlin.math.roundToInt
 
 /**
- * Photos-stijl dock: één indicator, label alleen op de geselecteerde tab.
- * 16 dp zijmarge zit op de parent; de zoekknop mag nooit van het scherm af.
+ * Photos-stijl dock: precies één indicator, geen per-item ripple/selected-laag.
+ *
+ * Ghost pill (0.1.9): `clip(CircleShape)` + `ripple(bounded)` tekende een
+ * persistente state-layer achter Vandaag, én de overlay-indicator kon op een
+ * stale offset (x=0) blijven staan. Tabs hebben `indication = null` (pressed
+ * is alleen schaal). De indicator leeft in de geselecteerde tab via
+ * `matchParentSize` — die kan niet op een andere tab hinterblijven — en een
+ * optionele overlay animeert alleen als we een geldige doel-rect hebben.
+ * De pill wrapt haar inhoud (geen `weight(1f)`).
  */
 @Composable
 fun PhotosDock(
@@ -72,7 +85,7 @@ fun PhotosDock(
     modifier: Modifier = Modifier,
     tabs: List<DockTab> = defaultDockTabs(),
 ) {
-    val pillColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.96f)
+    val pillColor = MaterialTheme.colorScheme.surfaceContainer
     val onPill = MaterialTheme.colorScheme.onSurface
     val indicatorColor = MaterialTheme.colorScheme.secondaryContainer
     val onIndicator = MaterialTheme.colorScheme.onSecondaryContainer
@@ -84,7 +97,7 @@ fun PhotosDock(
             .passHorizontalSwipes()
             .testTag("dock-row"),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(MagsChrome.DockGap),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         DockPill(
             tabs = tabs,
@@ -94,7 +107,6 @@ fun PhotosDock(
             indicatorColor = indicatorColor,
             onIndicator = onIndicator,
             onSelect = onSelect,
-            modifier = Modifier.weight(1f),
         )
         SearchFab(
             size = MagsChrome.PillHeight,
@@ -116,115 +128,143 @@ private fun DockPill(
     indicatorColor: Color,
     onIndicator: Color,
     onSelect: (MagsPage) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
-    var selectedBounds by remember { mutableStateOf(Rect.Zero) }
+    val tabBounds = remember { mutableStateMapOf<MagsPage, Rect>() }
     val indicatorX = remember { Animatable(0f) }
     val indicatorW = remember { Animatable(0f) }
     var placed by remember { mutableStateOf(false) }
+    var pillCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val target = selected?.let { tabBounds[it] }
+    val canSlide = target != null && target.width > 0f &&
+        (selected == tabs.firstOrNull()?.page || target.left > 1f)
 
-    LaunchedEffect(selected, selectedBounds) {
-        val width = selectedBounds.width
-        if (selected == null || width <= 0f) {
-            if (placed) launch { indicatorW.animateTo(0f, dockIndicatorSpring()) }
-            return@LaunchedEffect
-        }
+    LaunchedEffect(selected, target?.left, target?.width, canSlide) {
+        val dest = target ?: return@LaunchedEffect
+        if (!canSlide) return@LaunchedEffect
         if (!placed) {
-            indicatorX.snapTo(selectedBounds.left)
-            indicatorW.snapTo(width)
+            indicatorX.snapTo(dest.left)
+            indicatorW.snapTo(dest.width)
             placed = true
             return@LaunchedEffect
         }
-        launch { indicatorX.animateTo(selectedBounds.left, dockIndicatorSpring()) }
-        launch { indicatorW.animateTo(width, dockIndicatorSpring()) }
+        launch { indicatorX.animateTo(dest.left, dockIndicatorSpring()) }
+        launch { indicatorW.animateTo(dest.width, dockIndicatorSpring()) }
     }
 
     Box(
-        modifier = modifier
+        modifier = Modifier
+            .wrapContentWidth()
             .height(MagsChrome.PillHeight)
             .shadow(6.dp, CircleShape, ambientColor = Color.Black.copy(alpha = 0.28f), spotColor = Color.Black.copy(alpha = 0.34f))
             .clip(CircleShape)
             .background(pillColor)
             .padding(horizontal = 4.dp, vertical = 4.dp)
+            .onGloballyPositioned { pillCoords = it }
             .testTag("dock-pill"),
     ) {
-        if (indicatorW.value > 0.5f) {
-            Box(
-                Modifier
-                    .offset { IntOffset(indicatorX.value.roundToInt(), 0) }
-                    .width(with(density) { indicatorW.value.toDp() })
-                    .fillMaxHeight()
-                    .clip(CircleShape)
-                    .background(indicatorColor)
-                    .testTag("dock-indicator"),
-            )
+        val sliding = placed && canSlide && indicatorW.value > 0.5f
+        Box(Modifier.matchParentSize()) {
+            if (sliding) {
+                Box(
+                    Modifier
+                        .offset { IntOffset(indicatorX.value.roundToInt(), 0) }
+                        .width(with(density) { indicatorW.value.toDp() })
+                        .fillMaxHeight()
+                        .clip(CircleShape)
+                        .background(indicatorColor)
+                        .testTag("dock-indicator"),
+                )
+            }
         }
         Row(
-            modifier = Modifier.fillMaxHeight(),
+            modifier = Modifier
+                .wrapContentWidth()
+                .fillMaxHeight()
+                .heightIn(min = 48.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             tabs.forEach { tab ->
                 val isSelected = tab.page == selected
                 val interaction = remember(tab.page) { MutableInteractionSource() }
-                Row(
+                val pressed by interaction.collectIsPressedAsState()
+                Box(
                     modifier = Modifier
                         .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
                         .fillMaxHeight()
                         .onGloballyPositioned { coords ->
-                            if (!isSelected) return@onGloballyPositioned
-                            val parent = coords.parentCoordinates ?: return@onGloballyPositioned
-                            val origin = parent.localPositionOf(coords, Offset.Zero)
+                            val pill = pillCoords ?: return@onGloballyPositioned
+                            if (!pill.isAttached || !coords.isAttached) return@onGloballyPositioned
+                            val origin = pill.localPositionOf(coords, Offset.Zero)
                             val next = Rect(
                                 origin.x,
                                 origin.y,
                                 origin.x + coords.size.width.toFloat(),
                                 origin.y + coords.size.height.toFloat(),
                             )
-                            if ((next.left - selectedBounds.left).let { kotlin.math.abs(it) } > 0.5f ||
-                                kotlin.math.abs(next.width - selectedBounds.width) > 0.5f
+                            val prev = tabBounds[tab.page]
+                            if (prev == null ||
+                                kotlin.math.abs(next.left - prev.left) > 0.5f ||
+                                kotlin.math.abs(next.width - prev.width) > 0.5f
                             ) {
-                                selectedBounds = next
+                                tabBounds[tab.page] = next
                             }
                         }
-                        .clip(CircleShape)
                         .clickable(
                             interactionSource = interaction,
-                            indication = ripple(bounded = true),
+                            indication = null,
                         ) {
                             haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
                             onSelect(tab.page)
                         }
-                        .padding(horizontal = 8.dp)
+                        .graphicsLayer {
+                            val scale = if (pressed) 0.94f else 1f
+                            scaleX = scale
+                            scaleY = scale
+                        }
                         .testTag("dock-tab-${tab.page.name}")
                         .semantics {
                             contentDescription = tab.label
                             this.selected = isSelected
                         },
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        tab.icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = if (isSelected) onIndicator else onPill.copy(alpha = 0.88f),
-                    )
-                    AnimatedVisibility(
-                        visible = isSelected,
-                        enter = fadeIn() + expandHorizontally(expandFrom = Alignment.Start),
-                        exit = fadeOut() + shrinkHorizontally(shrinkTowards = Alignment.Start),
-                    ) {
-                        Text(
-                            tab.label,
-                            color = onIndicator,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Clip,
-                            softWrap = false,
+                    if (isSelected && !sliding) {
+                        Box(
+                            Modifier
+                                .matchParentSize()
+                                .clip(CircleShape)
+                                .background(indicatorColor)
+                                .testTag("dock-indicator"),
                         )
+                    }
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    ) {
+                        Icon(
+                            tab.icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = if (isSelected) onIndicator else onPill.copy(alpha = 0.88f),
+                        )
+                        AnimatedVisibility(
+                            visible = isSelected,
+                            enter = fadeIn() + expandHorizontally(expandFrom = Alignment.Start),
+                            exit = fadeOut() + shrinkHorizontally(shrinkTowards = Alignment.Start),
+                        ) {
+                            Text(
+                                tab.label,
+                                color = onIndicator,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Clip,
+                                softWrap = false,
+                            )
+                        }
                     }
                 }
             }

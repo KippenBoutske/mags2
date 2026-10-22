@@ -20,7 +20,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -44,6 +43,7 @@ import nl.cita.magister.model.GradeColumnType
 import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.SubjectAverage
 import nl.cita.magister.model.ApiFailure
+import nl.cita.magister.ui.components.ListSkeleton
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatGrade
@@ -127,12 +127,7 @@ fun GradesScreen(
             }
         }
         if (refreshing && averages.isEmpty()) {
-            item {
-                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator()
-                    Text("Cijfers ophalen…")
-                }
-            }
+            item { ListSkeleton(rows = 3, contentDescription = "Cijfers laden") }
         }
         if (!refreshing && visible.isEmpty()) {
             item {

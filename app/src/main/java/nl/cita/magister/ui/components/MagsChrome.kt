@@ -154,17 +154,23 @@ fun CircleCheck(
     val fill = if (checked) MaterialTheme.colorScheme.primary else Color.Transparent
     Box(
         modifier
-            .size(28.dp)
-            .clip(CircleShape)
-            .border(2.dp, ring, CircleShape)
-            .background(fill, CircleShape)
+            .size(48.dp)
             .clickable { onCheckedChange(!checked) }
             .testTag("hw-checkbox")
             .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center,
     ) {
-        if (checked) {
-            Text("✓", color = MaterialTheme.colorScheme.onPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Box(
+            Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .border(2.dp, ring, CircleShape)
+                .background(fill, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (checked) {
+                Text("✓", color = MaterialTheme.colorScheme.onPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

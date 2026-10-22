@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.FilterChip
@@ -40,7 +42,10 @@ fun CitaActionRow(
                 FilterChip(
                     selected = action.selected,
                     onClick = action.onClick,
-                    modifier = Modifier.widthIn(min = 48.dp),
+                    modifier = Modifier
+                        .widthIn(min = 48.dp)
+                        .heightIn(min = 48.dp)
+                        .defaultMinSize(minHeight = 48.dp),
                     label = { Text(action.label, maxLines = 1) },
                 )
             }

@@ -38,6 +38,7 @@ import nl.cita.magister.ui.components.CookieFlower
 import nl.cita.magister.ui.components.GradeTile
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
+import nl.cita.magister.ui.components.TodaySkeleton
 import nl.cita.magister.ui.components.minutesUntil
 import nl.cita.magister.ui.components.overLabel
 import nl.cita.magister.ui.formatGrade
@@ -72,6 +73,7 @@ fun TodayScreen(
     agendaError: ApiFailure? = null,
     gradesError: ApiFailure? = null,
     messagesError: ApiFailure? = null,
+    loading: Boolean = false,
 ) {
     val today = remember { LocalDate.now(zone) }
     val now = remember { LocalTime.now(zone) }
@@ -90,7 +92,7 @@ fun TodayScreen(
             start = 20.dp,
             end = 20.dp,
             top = contentPadding.calculateTopPadding() + 4.dp,
-            bottom = contentPadding.calculateBottomPadding() + 8.dp,
+            bottom = contentPadding.calculateBottomPadding() + 20.dp,
         ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -101,6 +103,10 @@ fun TodayScreen(
             )
         }
         agendaError?.let { item { SectionError(it) } }
+        if (loading && ofDay.isEmpty() && openHw.isEmpty() && latest.isEmpty()) {
+            item { TodaySkeleton() }
+            return@LazyColumn
+        }
         item {
             PressScaleCard(
                 modifier = Modifier.fillMaxWidth(),

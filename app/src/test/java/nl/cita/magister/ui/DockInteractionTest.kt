@@ -22,6 +22,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.down
+import androidx.compose.ui.test.up
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.fixtures.MockFixtures
 import nl.cita.magister.grades.GradeCalculator
@@ -174,5 +177,91 @@ class DockInteractionTest {
         assertTrue("search top ${search.top} < screen ${screen.top}", search.top >= screen.top)
         assertTrue("search bottom ${search.bottom} > screen ${screen.bottom}", search.bottom <= screen.bottom)
         compose.onNodeWithTag("dock-tab-Huiswerk").assertIsSelected()
+    }
+
+    @Test
+    fun indicatorSettlesOnSelectedTabNotOnVandaag() {
+        compose.setContent {
+            Box(Modifier.requiredSize(412.dp, 915.dp).testTag("dock-settle")) {
+                CitaTheme {
+                    PhotosDock(
+                        selected = MagsPage.Rooster,
+                        expansion = 1f,
+                        onSelect = {},
+                        onSearch = {},
+                    )
+                }
+            }
+        }
+        compose.waitForIdle()
+        compose.mainClock.advanceTimeBy(1_200)
+        compose.waitForIdle()
+        compose.onAllNodesWithTag("dock-indicator").assertCountEquals(1)
+        compose.onNodeWithTag("dock-tab-Rooster").assertIsSelected()
+        val indicator = compose.onNodeWithTag("dock-indicator").getUnclippedBoundsInRoot()
+        val rooster = compose.onNodeWithTag("dock-tab-Rooster").getUnclippedBoundsInRoot()
+        val vandaag = compose.onNodeWithTag("dock-tab-Vandaag").getUnclippedBoundsInRoot()
+        assertTrue(
+            "indicator left ${indicator.left} should sit on Rooster ${rooster.left}",
+            indicator.left >= rooster.left - 6.dp && indicator.right <= rooster.right + 6.dp,
+        )
+        val vCenter = (vandaag.left + vandaag.right) / 2
+        assertTrue(
+            "ghost pill: Vandaag center $vCenter still inside indicator $indicator",
+            vCenter < indicator.left || vCenter > indicator.right,
+        )
+    }
+
+    @Test
+    fun pillWrapsContentWithoutDeadSpace() {
+        compose.setContent {
+            Box(Modifier.requiredSize(412.dp, 915.dp).testTag("dock-wrap")) {
+                CitaTheme {
+                    PhotosDock(
+                        selected = MagsPage.Rooster,
+                        expansion = 1f,
+                        onSelect = {},
+                        onSearch = {},
+                    )
+                }
+            }
+        }
+        compose.waitForIdle()
+        val pill = compose.onNodeWithTag("dock-pill").getUnclippedBoundsInRoot()
+        val last = compose.onNodeWithTag("dock-tab-Huiswerk").getUnclippedBoundsInRoot()
+        val search = compose.onNodeWithTag("dock-search").getUnclippedBoundsInRoot()
+        val slack = 16.dp
+        assertTrue(
+            "pill has dead space after last icon: pill.right=${pill.right} last.right=${last.right}",
+            pill.right <= last.right + slack,
+        )
+        assertTrue("search should sit outside the pill", search.left >= pill.right)
+        assertTrue(pill.right - pill.left < 320.dp)
+    }
+
+    @Test
+    fun pressedTabDoesNotAddSecondIndicator() {
+        compose.setContent {
+            Box(Modifier.requiredSize(412.dp, 915.dp)) {
+                CitaTheme {
+                    PhotosDock(
+                        selected = MagsPage.Rooster,
+                        expansion = 1f,
+                        onSelect = {},
+                        onSearch = {},
+                    )
+                }
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithTag("dock-tab-Vandaag").performTouchInput {
+            down(center)
+        }
+        compose.waitForIdle()
+        compose.onAllNodesWithTag("dock-indicator").assertCountEquals(1)
+        compose.onNodeWithTag("dock-tab-Vandaag").performTouchInput { up() }
+        compose.waitForIdle()
+        compose.onAllNodesWithTag("dock-indicator").assertCountEquals(1)
+        compose.onNodeWithTag("dock-tab-Rooster").assertIsSelected()
     }
 }

@@ -36,10 +36,11 @@ fun defaultDockTabs(): List<DockTab> = listOf(
 
 object MagsChrome {
     val TopBarHeight = 56.dp
-    val DockClearance = 92.dp
+    val DockClearance = 152.dp
     val DockGap = 10.dp
     val DockSide = 16.dp
     val PillHeight = 56.dp
     val FabSize = 56.dp
     val CompactFabSize = 48.dp
+    val ScrimHeight = 176.dp
 }

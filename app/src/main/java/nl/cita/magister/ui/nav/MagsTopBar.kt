@@ -49,7 +49,7 @@ fun MagsTopBar(
         Box {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)
                     .clickable { menu = true }

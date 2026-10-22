@@ -56,6 +56,8 @@ class ConceptScreenshotTest {
     @Test fun login412() = snap("login", 412) { login() }
     @Test fun login360() = snap("login", 360) { login() }
     @Test fun loginError412() = snap("login-error", 412) { login(error = true) }
+    @Test fun loginSearch412() = snap("login-search", 412) { login(searching = true) }
+    @Test fun todaySkeleton412() = snap("today-skeleton", 412) { todayLoading() }
     @Test fun today412() = snap("today", 412) { today() }
     @Test fun today360() = snap("today", 360) { today() }
     @Test fun rooster412() = snap("rooster", 412) { rooster() }
@@ -115,23 +117,37 @@ class ConceptScreenshotTest {
     private fun outDirs(): List<File> = listOf(
         File("app/build/outputs/self-test/screenshots"),
         File("build/outputs/self-test/screenshots"),
-        File("/cursor/stores/self/artifacts/screens-0.1.9"),
-        File("/opt/cursor/artifacts/0.1.9"),
+        File("/cursor/stores/self/artifacts/screens-0.1.10"),
+        File("/opt/cursor/artifacts/0.1.10"),
     )
 
     @Composable
-    private fun login(error: Boolean = false) {
+    private fun login(error: Boolean = false, searching: Boolean = false) {
         LoginScreen(
             schoolName = "Citadel College",
             tenantHost = "citadel.magister.net",
-            schools = listOf(School("Citadel College", "citadel.magister.net")),
-            searching = false,
+            schools = if (searching) emptyList() else listOf(School("Citadel College", "citadel.magister.net", "Nijmegen / Lent")),
+            searching = searching,
             lastError = if (error) ApiFailure("/api/account", 403, """{"fouttype":"OnvoldoendePrivileges"}""") else null,
             onQuery = {},
             onSchoolChange = { _, _, _ -> },
             onStartLogin = { "https://accounts.magister.net/connect/authorize" },
             onWebViewLogin = {},
             onDemo = {},
+        )
+    }
+
+    @Composable
+    private fun todayLoading() {
+        TodayScreen(
+            profile = null,
+            appointments = emptyList(),
+            homework = emptyList(),
+            averages = emptyList(),
+            messages = emptyList(),
+            contentPadding = PaddingValues(0.dp),
+            onOpenPage = {},
+            loading = true,
         )
     }
 

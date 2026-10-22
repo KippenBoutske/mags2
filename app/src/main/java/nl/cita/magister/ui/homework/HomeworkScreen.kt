@@ -23,6 +23,7 @@ import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.InfoType
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.ui.components.CircleCheck
+import nl.cita.magister.ui.components.ListSkeleton
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.today.homeworkBody
@@ -40,6 +41,7 @@ fun HomeworkScreen(
     contentPadding: PaddingValues,
     onToggle: (HomeworkItem, Boolean) -> Unit,
     agendaError: ApiFailure? = null,
+    loading: Boolean = false,
 ) {
     var filter by remember { mutableStateOf(HwFilter.Open) }
     val visible = when (filter) {
@@ -72,7 +74,10 @@ fun HomeworkScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        if (visible.isEmpty()) {
+        if (loading && items.isEmpty()) {
+            item { ListSkeleton(rows = 3, contentDescription = "Huiswerk laden") }
+        }
+        if (visible.isEmpty() && !loading) {
             item {
                 Text(
                     if (agendaError != null) {

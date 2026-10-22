@@ -2,8 +2,8 @@
 # Zelftest-pipeline: unit + screenshots + (als /dev/kvm leeft) echte emulator-smoke.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-OUT="${SELF_TEST_OUT:-/cursor/stores/self/artifacts/screens-0.1.9}"
-mkdir -p "$OUT" /opt/cursor/artifacts/0.1.9 || true
+OUT="${SELF_TEST_OUT:-/cursor/stores/self/artifacts/screens-0.1.10}"
+mkdir -p "$OUT" /opt/cursor/artifacts/0.1.10 || true
 export ANDROID_HOME="${ANDROID_HOME:-/home/ubuntu/android-sdk}"
 export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
 export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
@@ -97,9 +97,9 @@ if [[ "$boot" != "1" ]]; then
   exit 0
 fi
 
-"$ADB" shell settings put global window_animation_scale 0 || true
-"$ADB" shell settings put global transition_animation_scale 0 || true
-"$ADB" shell settings put global animator_duration_scale 0 || true
+"$ADB" shell settings put global window_animation_scale 1 || true
+"$ADB" shell settings put global transition_animation_scale 1 || true
+"$ADB" shell settings put global animator_duration_scale 1 || true
 "$ADB" shell wm dismiss-keyguard || true
 "$ADB" shell input keyevent 82 || true
 
@@ -146,12 +146,33 @@ tap_label() {
 
 screencap login-or-today
 tap_label "Voorbeeld" && sleep 2 && screencap vandaag || true
-tap_label "Rooster" && sleep 2 && screencap rooster || true
+# Mid-animation + settle (≥1s) + pressed, for the ghost-pill check.
+if tap_label "Rooster"; then
+  sleep 0.12
+  screencap rooster-mid
+  sleep 1.2
+  screencap rooster
+  # Pressed state on Vandaag while Rooster stays selected — no second pill.
+  xml=$(dump_ui)
+  vb=$(printf '%s' "$xml" | tr '>' '\n' | grep -F 'content-desc="Vandaag"' | head -1 || true)
+  if [[ -n "$vb" ]]; then
+    read -r x1 y1 x2 y2 <<<"$(echo "$vb" | sed -E 's/.*\[([0-9]+),([0-9]+)\]\[([0-9]+),([0-9]+)\].*/\1 \2 \3 \4/')"
+    px=$(( (x1 + x2) / 2 ))
+    py=$(( (y1 + y2) / 2 ))
+    "$ADB" shell input swipe "$px" "$py" "$px" "$py" 700 || true
+    screencap rooster-pressed
+  fi
+fi
 "$ADB" shell input swipe 900 800 200 800 280 || true
 sleep 1
 screencap rooster-swipe || true
 tap_label "Cijfers" && sleep 2 && screencap cijfers || true
 tap_label "Huiswerk" && sleep 2 && screencap huiswerk || true
+tap_label "Vandaag" && sleep 1 && screencap vandaag-rest || true
+# Scroll homework through the dock area — last item must clear the opaque pill.
+"$ADB" shell input swipe 540 1400 540 400 350 || true
+sleep 0.6
+screencap vandaag-scroll || true
 tap_label "Berichten" || tap_label "●" || true
 sleep 1
 screencap berichten || true

@@ -1,0 +1,7 @@
+0.1.10 emulator inspect (mags26 API 26 TCG)
+ghost: emu-rooster.png — Rooster selected, Vandaag icon has NO tonal leftover pill. One indicator.
+wrap: pill hugs icons+label; search is a separate FAB. No empty stadium after last icon.
+bleed: emu-vandaag.png / emu-vandaag-scroll.png — homework no longer reads through the pill; scrim fades Huiswerk/due chips.
+pressed: emu-rooster-pressed.png — no second indicator on Vandaag.
+mid: TCG composes slowly; emu-rooster-mid.png is pre-switch, emu-rooster.png is >=2.5s after tap (settled).
+login: emu-login.png — school search + Material You + Voorbeeld.

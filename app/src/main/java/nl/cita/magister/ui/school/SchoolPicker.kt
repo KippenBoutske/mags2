@@ -1,23 +1,33 @@
 package nl.cita.magister.ui.school
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.api.School
 import nl.cita.magister.api.Tenant
+import nl.cita.magister.ui.components.SchoolSearchSkeleton
 
 @Composable
 fun SchoolPicker(
@@ -41,41 +51,59 @@ fun SchoolPicker(
                     onPick(Tenant.normalize(value), selectedName.ifBlank { value.trim() }, null)
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("school-search")
+                .semantics { contentDescription = "Zoek je Magister-school" },
             label = { Text("School") },
-            placeholder = { Text("Zoek je school") },
+            placeholder = { Text("Zoek elke Magister-school") },
             supportingText = {
                 val label = when {
                     selectedName.isNotBlank() && selectedHost.isNotBlank() -> "$selectedName · $selectedHost"
                     selectedName.isNotBlank() -> selectedName
                     selectedHost.isNotBlank() -> selectedHost
-                    else -> "Kies een school, of typ school.magister.net"
+                    else -> "Zoek op naam, of typ school.magister.net"
                 }
                 Text(label)
             },
             singleLine = true,
         )
-        if (searching) {
-            LinearProgressIndicator(Modifier.fillMaxWidth())
+        if (searching && hits.isEmpty()) {
+            SchoolSearchSkeleton()
         }
         hits.forEach { school ->
-            TextButton(
-                onClick = {
-                    query = school.name
-                    onPick(school.host, school.name, school.tenantId)
-                },
-                modifier = Modifier.fillMaxWidth(),
+            val subtitle = buildString {
+                if (school.city.isNotBlank()) append(school.city)
+                if (school.host.isNotBlank()) {
+                    if (isNotEmpty()) append(" · ")
+                    append(school.host.removeSuffix(".magister.net"))
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .defaultMinSize(minHeight = 48.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .clickable {
+                        query = school.name
+                        onPick(school.host, school.name, school.tenantId)
+                    }
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                    .testTag("school-hit")
+                    .semantics { contentDescription = "Kies ${school.name}" },
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    buildString {
-                        append(school.name)
-                        if (school.host.isNotBlank()) {
-                            append(" · ")
-                            append(school.host.removeSuffix(".magister.net"))
-                        }
-                    },
-                    style = MaterialTheme.typography.bodyLarge,
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(school.name, style = MaterialTheme.typography.titleMedium)
+                    if (subtitle.isNotBlank()) {
+                        Text(
+                            subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
         }
         if (!searching && query.trim().length >= 2 && hits.isEmpty()) {
