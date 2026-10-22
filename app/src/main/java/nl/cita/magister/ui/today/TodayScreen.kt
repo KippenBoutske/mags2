@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Place
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -39,10 +38,7 @@ import nl.cita.magister.ui.components.GradeTile
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.components.TodaySkeleton
-import nl.cita.magister.ui.components.minutesUntil
-import nl.cita.magister.ui.components.overLabel
 import nl.cita.magister.ui.formatGrade
-import nl.cita.magister.ui.formatTime
 import nl.cita.magister.ui.localDateOf
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.AppClock
@@ -133,7 +129,7 @@ fun TodayScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    CookieFlower()
+                    CookieFlower(size = 88.dp)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
                             if (current != null) "NU" else "VOLGENDE LES",
@@ -156,14 +152,16 @@ fun TodayScreen(
                                 Icon(Icons.Outlined.Place, null, Modifier, MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(hero.classroom ?: hero.location ?: "–", style = MaterialTheme.typography.bodyMedium)
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Outlined.Schedule, null, Modifier, MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(formatTime(hero.startIso), style = MaterialTheme.typography.bodyMedium)
-                            }
                             Text(
-                                overLabel(minutesUntil(hero.startIso, nowMillis = AppClock(today, now).millis())),
+                                heroTimingLabel(
+                                    current = current != null,
+                                    startIso = hero.startIso,
+                                    endIso = hero.endIso,
+                                    nowMillis = AppClock(today, now).millis(),
+                                ),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.testTag("today-hero-timing"),
                             )
                         }
                     }

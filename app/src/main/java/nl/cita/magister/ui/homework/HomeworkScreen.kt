@@ -201,7 +201,11 @@ private fun HomeworkCard(
 ) {
     val toets = isToets(item.infoType)
     val tone = when {
-        toets && !item.isDone -> ToetsAmber.copy(alpha = 0.28f)
+        toets && !item.isDone -> androidx.compose.ui.graphics.lerp(
+            MaterialTheme.colorScheme.surfaceContainerHigh,
+            ToetsAmber,
+            0.42f,
+        )
         else -> MaterialTheme.colorScheme.surfaceContainerHigh
     }
     val dismiss = rememberSwipeToDismissBoxState(
@@ -221,23 +225,29 @@ private fun HomeworkCard(
         enableDismissFromStartToEnd = false,
         enableDismissFromEndToStart = !item.isDone,
         backgroundContent = {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .clip(MaterialTheme.shapes.large)
-                    .background(ToetsAmber.copy(alpha = 0.35f + 0.4f * peek))
-                    .padding(end = 22.dp),
-                contentAlignment = Alignment.CenterEnd,
-            ) {
-                Text(
-                    "✓",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = ToetsOnAmber,
-                    modifier = Modifier.graphicsLayer {
-                        scaleX = 0.7f + 0.4f * peek
-                        scaleY = 0.7f + 0.4f * peek
-                    },
-                )
+            val reveal = maxOf(peek, dismiss.progress).coerceIn(0f, 1f)
+            if (reveal <= 0.04f) {
+                Box(Modifier.fillMaxSize())
+            } else {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .clip(MaterialTheme.shapes.large)
+                        .background(ToetsAmber.copy(alpha = 0.45f * reveal + 0.25f * peek))
+                        .padding(end = 22.dp)
+                        .graphicsLayer { alpha = reveal },
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    Text(
+                        "✓",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = ToetsOnAmber,
+                        modifier = Modifier.graphicsLayer {
+                            scaleX = 0.7f + 0.4f * reveal
+                            scaleY = 0.7f + 0.4f * reveal
+                        },
+                    )
+                }
             }
         },
         modifier = modifier
@@ -250,33 +260,15 @@ private fun HomeworkCard(
                 Row(verticalAlignment = Alignment.Top) {
                     CircleCheck(checked = item.isDone, onCheckedChange = { onToggle(item, it) })
                     Column(Modifier.weight(1f).padding(start = 8.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                item.subject,
-                                style = MaterialTheme.typography.titleMedium,
-                                textDecoration = if (item.isDone) TextDecoration.LineThrough else null,
-                                color = if (item.isDone) MaterialTheme.colorScheme.onSurfaceVariant
-                                else MaterialTheme.colorScheme.onSurface,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f),
-                            )
-                            if (toets) {
-                                Text(
-                                    "Toets",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = ToetsOnAmber,
-                                    modifier = Modifier
-                                        .clip(MaterialTheme.shapes.extraSmall)
-                                        .background(ToetsAmber)
-                                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                                        .testTag("hw-toets"),
-                                )
-                            }
-                        }
+                        Text(
+                            item.subject,
+                            style = MaterialTheme.typography.titleMedium,
+                            textDecoration = if (item.isDone) TextDecoration.LineThrough else null,
+                            color = if (item.isDone) MaterialTheme.colorScheme.onSurfaceVariant
+                            else MaterialTheme.colorScheme.onSurface,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                         Text(
                             homeworkBody(item),
                             style = MaterialTheme.typography.bodyMedium,
@@ -285,8 +277,10 @@ private fun HomeworkCard(
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
-                            listOfNotNull(infoLabel(item), formatWhen(item.dueIso)).joinToString(" · "),
+                            homeworkMeta(item),
                             style = MaterialTheme.typography.labelMedium,
+                            color = if (toets) ToetsAmber else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.testTag(if (toets) "hw-toets" else "hw-meta"),
                         )
                     }
                 }
@@ -295,10 +289,11 @@ private fun HomeworkCard(
     }
 }
 
+internal fun homeworkMeta(item: HomeworkItem): String =
+    listOfNotNull(infoLabel(item), formatWhen(item.dueIso)).joinToString(" · ")
+
 private fun infoLabel(item: HomeworkItem): String? = when {
-    isToets(item.infoType) -> null
-    else -> when (item.infoType) {
-        nl.cita.magister.model.InfoType.Homework -> "Huiswerk"
-        else -> "Taak"
-    }
+    isToets(item.infoType) -> "Toets"
+    item.infoType == nl.cita.magister.model.InfoType.Homework -> "Huiswerk"
+    else -> "Taak"
 }

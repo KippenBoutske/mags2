@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import nl.cita.magister.fixtures.MockFixtures
 import nl.cita.magister.fixtures.manyHomeworkItems
 import nl.cita.magister.model.InfoType
+import nl.cita.magister.ui.formatWhen
 import nl.cita.magister.ui.theme.CitaTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -70,7 +71,9 @@ class HomeworkGroupTest {
         compose.onNodeWithTag("hw-groep-verlopen").assertIsDisplayed()
         compose.onNodeWithText("Verlopen", substring = true).assertIsDisplayed()
         compose.onNodeWithTag("hw-toets").assertExists()
-        compose.onNodeWithText("Toets").assertExists()
+        compose.onNodeWithText("Toets", substring = true).assertExists()
+        val toets = MockFixtures.homework().first { isToets(it.infoType) }
+        assertEquals("Toets · ${formatWhen(toets.dueIso)}", homeworkMeta(toets))
         compose.onNodeWithTag("hw-groep-verlopen").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Wiskunde B").assertExists()

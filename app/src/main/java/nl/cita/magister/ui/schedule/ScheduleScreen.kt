@@ -564,8 +564,8 @@ private fun LessonCard(
                     Modifier
                         .align(Alignment.TopEnd)
                         .padding(top = 4.dp, end = 4.dp)
-                        .size(72.dp)
                         .testTag("les-nu-vorm"),
+                    size = 72.dp,
                 )
             }
             Column(Modifier.padding(if (current) 18.dp else 14.dp)) {

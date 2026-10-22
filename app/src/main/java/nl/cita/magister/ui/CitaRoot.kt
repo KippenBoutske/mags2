@@ -531,9 +531,9 @@ fun MagsSignedInScaffold(
                     .background(
                         Brush.verticalGradient(
                             0f to Color.Transparent,
-                            0.22f to scrimBg.copy(alpha = 0.72f),
-                            0.48f to scrimBg.copy(alpha = 0.96f),
-                            0.62f to scrimBg,
+                            0.38f to scrimBg.copy(alpha = 0.48f),
+                            0.68f to scrimBg.copy(alpha = 0.92f),
+                            0.82f to scrimBg,
                             1f to scrimBg,
                         ),
                     )

@@ -36,7 +36,7 @@ fun defaultDockTabs(): List<DockTab> = listOf(
 
 object MagsChrome {
     val TopBarHeight = 56.dp
-    val DockClearance = 152.dp
+    val DockClearance = 168.dp
     val DockGap = 10.dp
     val DockSide = 16.dp
     val PageGutter = 16.dp
@@ -44,7 +44,7 @@ object MagsChrome {
     val PillHeight = 56.dp
     val FabSize = 56.dp
     val CompactFabSize = 48.dp
-    val ScrimHeight = 176.dp
+    val ScrimHeight = 124.dp
 
     fun fromShortcut(value: String?): MagsPage? = when (value?.lowercase()) {
         "vandaag", "today" -> MagsPage.Vandaag

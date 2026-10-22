@@ -41,6 +41,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import nl.cita.magister.model.ApiFailure
@@ -195,16 +196,20 @@ fun CircleCheck(
 
 /** Sand-colored cookie/flower — no holes. Slow rotation. */
 @Composable
-fun CookieFlower(modifier: Modifier = Modifier, color: Color = WarmSand) {
+fun CookieFlower(
+    modifier: Modifier = Modifier,
+    color: Color = WarmSand,
+    size: Dp = 148.dp,
+) {
     val spin by rememberInfiniteTransition(label = "cookie").animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(tween(28_000, easing = LinearEasing), RepeatMode.Restart),
         label = "cookie-spin",
     )
-    Canvas(modifier.size(148.dp)) {
+    Canvas(modifier.size(size)) {
         rotate(spin) {
-            drawPath(cookiePath(size.minDimension / 2f, center), color)
+            drawPath(cookiePath(this.size.minDimension / 2f, center), color)
         }
     }
 }

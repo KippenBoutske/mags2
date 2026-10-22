@@ -3,6 +3,8 @@ package nl.cita.magister.ui.today
 import nl.cita.magister.model.Appointment
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.InfoType
+import nl.cita.magister.ui.components.minutesUntil
+import nl.cita.magister.ui.components.overLabel
 import nl.cita.magister.ui.formatTime
 import nl.cita.magister.ui.localDateOf
 import java.time.LocalDate
@@ -54,4 +56,24 @@ fun lessonChipLabel(lesson: Appointment): String {
     val subject = lesson.subjects.firstOrNull()?.trim().orEmpty()
         .ifBlank { lesson.title.trim() }
     return listOf(time, subject).filter { it.isNotBlank() }.joinToString(" ")
+}
+
+/** Timing under NU / VOLGENDE LES. Never repeats "nu" while a lesson is on. */
+fun heroTimingLabel(
+    current: Boolean,
+    startIso: String?,
+    endIso: String?,
+    nowMillis: Long,
+): String {
+    if (current) {
+        val end = formatTime(endIso)
+        val left = minutesUntil(endIso, nowMillis)
+        return when {
+            left == null && end.isBlank() -> ""
+            left == null || left <= 0 -> if (end.isBlank()) "" else "tot $end"
+            end.isBlank() -> "nog $left min"
+            else -> "tot $end · nog $left min"
+        }
+    }
+    return overLabel(minutesUntil(startIso, nowMillis))
 }

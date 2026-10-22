@@ -123,7 +123,7 @@ fun LoginScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                CookieFlower(Modifier.size(92.dp))
+                CookieFlower(size = 92.dp)
                 Text(
                     "Mags",
                     style = MaterialTheme.typography.displayLarge.copy(
