@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -75,7 +76,10 @@ fun SectionError(error: ApiFailure?, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(error.friendly(), style = MaterialTheme.typography.bodyMedium)
-        TextButton(onClick = { open = !open }) {
+        TextButton(
+            onClick = { open = !open },
+            modifier = Modifier.testTag("section-error-details"),
+        ) {
             Text(if (open) "Verberg details" else "Details")
         }
         AnimatedVisibility(open) {

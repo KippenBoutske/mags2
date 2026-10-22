@@ -9,6 +9,8 @@ import okhttp3.mockwebserver.RecordedRequest
 enum class FakeScenario {
     Happy,
     MessagesFolder403,
+    MessagesPostvakinOnly,
+    MessagesUnavailable,
     AccessExpired,
     RefreshExpired,
     GradesForbidden,
@@ -52,10 +54,7 @@ class FakeMagister(
             path.contains("/aanmeldingen") && !path.contains("cijfers") -> json(200, MockFixtures.enrollmentsJson)
             path.contains("/cijfers/") -> grades()
             path.contains("/afspraken") -> agenda()
-            path.endsWith("/api/berichten/mappen") || path.endsWith("/api/berichten/mappen/alle") -> folders()
-            path.contains("/berichten/mappen/1/berichten") || path.contains("mapId=1") ||
-                path.endsWith("/api/berichten/berichten") || path.contains("/personen/") && path.endsWith("/berichten") ->
-                json(200, MockFixtures.messagesJson)
+            path.contains("/berichten") -> messages(path)
             else -> json(404, """{"fouttype":"NotFound","path":"$path"}""")
         }
     }
@@ -99,11 +98,40 @@ class FakeMagister(
         }
 
     private fun folders(): MockResponse =
-        if (scenario == FakeScenario.MessagesFolder403) {
+        if (scenario == FakeScenario.MessagesFolder403 ||
+            scenario == FakeScenario.MessagesPostvakinOnly ||
+            scenario == FakeScenario.MessagesUnavailable
+        ) {
             json(403, """{"fouttype":"OnvoldoendePrivileges"}""")
         } else {
             json(200, MockFixtures.foldersJson)
         }
+
+    private fun messages(path: String): MockResponse {
+        val folderList = path.endsWith("/api/berichten/mappen") || path.endsWith("/api/berichten/mappen/alle")
+        if (folderList) return folders()
+        if (scenario == FakeScenario.MessagesUnavailable) {
+            return json(403, """{"fouttype":"OnvoldoendePrivileges"}""")
+        }
+        val postvakin = path.contains("/berichten/postvakin")
+        if (scenario == FakeScenario.MessagesPostvakinOnly) {
+            return if (postvakin) {
+                json(200, MockFixtures.messagesJson)
+            } else {
+                json(403, """{"fouttype":"OnvoldoendePrivileges"}""")
+            }
+        }
+        val inbox = postvakin ||
+            path.contains("/berichten/mappen/1/berichten") ||
+            path.contains("mapId=") ||
+            path.endsWith("/api/berichten/berichten") ||
+            (path.contains("/personen/") && path.contains("/berichten"))
+        return if (inbox) {
+            json(200, MockFixtures.messagesJson)
+        } else {
+            json(404, """{"fouttype":"NotFound","path":"$path"}""")
+        }
+    }
 
     companion object {
         const val TOKEN_LIVE = "live-access"

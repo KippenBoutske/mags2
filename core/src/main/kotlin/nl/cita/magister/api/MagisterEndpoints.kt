@@ -93,12 +93,24 @@ object MagisterEndpoints {
     /**
      * Berichten-fallbackketen. Geen nieuwe scopes.
      *
-     * 1. `berichten/mappen` — Magister-web (zonder `/alle`)
-     * 2. `berichten/mappen/alle` — Discipulus 2025/26 (`lib/api/routes/messages.dart`)
-     * 3. inbox via map-1 href `berichten/mappen/1/berichten` (Discipulus inbox-id=1 + onze fixtures)
-     * 4. `berichten/berichten?mapId=` — query-vorm
-     * 5. `berichten/berichten` — collectie zonder map
-     * 6. oud pad `personen/{id}/berichten?mapId=` — magistergo (`GetMessages(7)` / map 1)
+     * M6LOAPP blijft `openid profile offline_access magister.mobile magister.ecs`.
+     * Officiële web-OIDC (`M6-{host}` + `grades.read` e.d.) leest berichten, maar
+     * die scopes gaven eerder `invalid_scope` op M6LOAPP. WalburgApp-V2 (2026)
+     * haalt de inbox met dezelfde M6LOAPP-scopes via `postvakin`.
+     *
+     * Inbox (eerst, maplijst is op Citadel 403 met M6LOAPP):
+     * 1. `berichten/postvakin/berichten` — officiële web-inbox
+     *    (ghuron/skills `magister.mjs`: Angular-app `/magister-berichten/`,
+     *    GET `/api/berichten/postvakin/berichten`) + WalburgApp-V2
+     *    `src/services/magister.ts` + magistergo `Message.go`
+     * 2. `berichten/postvakin` — Discipulus-3DS alias
+     * 3. `berichten/mappen/1/berichten` — Discipulus-3DS stap 1, inbox-id 1
+     * 4. `berichten/berichten?mapId=` / collectie
+     * 5. `personen/{id}/berichten` — oudere magistergo-vorm
+     *
+     * Maplijst daarna (Discipulus `lib/api/routes/messages.dart` 2026,
+     * Otarium/MagisterAPIKt `MessageFlow.kt`, officiële web-folders):
+     * `berichten/mappen` en `berichten/mappen/alle`, daarna folder-href.
      */
     fun messageFolderListUrls(root: String): List<String> = listOf(
         "$root/api/berichten/mappen",
@@ -106,6 +118,8 @@ object MagisterEndpoints {
     )
 
     fun messageInboxUrls(root: String, personId: Int, top: Int = 40, skip: Int = 0): List<String> = listOf(
+        "$root/api/berichten/postvakin/berichten?top=$top&skip=$skip",
+        "$root/api/berichten/postvakin?top=$top&skip=$skip",
         "$root/api/berichten/mappen/1/berichten?top=$top&skip=$skip",
         "$root/api/berichten/berichten?mapId=1&top=$top&skip=$skip",
         "$root/api/berichten/berichten?top=$top&skip=$skip",

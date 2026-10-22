@@ -53,7 +53,13 @@ Als de officiële Magister-app ook geïnstalleerd is, kan Android vragen welke a
 OAuth (zelfde stroom als bekende open-source clients):
 
 - Client `M6LOAPP`, PKCE S256, `acr_values=tenant:<host>`
-- Scopes: `openid profile offline_access magister.mobile magister.ecs` (exacte M6LOAPP-string uit Discipulus / Friday / WalburgApp-V2)
+- Scopes: `openid profile offline_access magister.mobile magister.ecs` (exacte M6LOAPP-string uit Discipulus / Friday / WalburgApp-V2). Geen extra scopes: `grades.read` / `email` gaf `invalid_scope`.
+
+## Berichten
+
+De officiële Magister-web-inbox (Angular-app `/magister-berichten/`) en WalburgApp-V2 (2026, zelfde M6LOAPP-scopes) lezen via `GET /api/berichten/postvakin/berichten`. Discipulus/Otarium beginnen bij `berichten/mappen/alle` en volgen daarna de folder-href; op Citadel gaf die maplijst HTTP 403.
+
+Mags probeert daarom eerst `postvakin`, daarna `mappen/1/berichten`, de collectie, en pas daarna de maplijst. Als geen pad werkt, blijft Berichten leeg met een nette fout — paden en HTTP-codes zitten achter **Details**, nooit in de gewone UI. Hetzelfde per onderdeel voor cijfers en rooster: een 403 legt niet het hele scherm plat.
 
 ## Cijfers exporteren (Plan Goon)
 

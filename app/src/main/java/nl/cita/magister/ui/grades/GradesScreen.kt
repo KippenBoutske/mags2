@@ -136,7 +136,13 @@ fun GradesScreen(
         }
         if (!refreshing && visible.isEmpty()) {
             item {
-                Text("Nog geen cijfers in de cache. Trek naar beneden om te vernieuwen.")
+                Text(
+                    if (gradesError != null) {
+                        "De lijst blijft leeg tot Magister dit weer toestaat."
+                    } else {
+                        "Nog geen cijfers in de cache. Trek naar beneden om te vernieuwen."
+                    },
+                )
             }
         }
         itemsIndexed(visible, key = { _, it -> it.subjectId }) { index, subject ->

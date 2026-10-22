@@ -354,12 +354,25 @@ class MagisterRepository(
         val personId = resolved.personId
         var lastError: Throwable? = null
 
+        // Official web + Walburg inbox does not need folder listing (Citadel 403 on /alle).
+        for (url in MagisterEndpoints.messageInboxUrls(root, personId)) {
+            try {
+                val json = http.get(url)
+                val parsed = MagisterParsers.parseMessages(json)
+                writeCache(KEY_MESSAGES, MagisterJson.instance.encodeToString(parsed))
+                return
+            } catch (error: Throwable) {
+                lastError = error
+            }
+        }
         for (url in MagisterEndpoints.messageFolderListUrls(root)) {
             try {
                 val folders = MagisterParsers.parseFolders(http.get(url))
                 val inbox = folders.firstOrNull { folder ->
                     val name = folder.name.orEmpty()
-                    name.contains("in", ignoreCase = true) || folder.id == 1
+                    name.contains("in", ignoreCase = true) ||
+                        name.contains("postvak", ignoreCase = true) ||
+                        folder.id == 1
                 } ?: folders.firstOrNull()
                 val href = inbox?.links?.get("berichten")?.href
                 if (!href.isNullOrBlank()) {
@@ -367,16 +380,6 @@ class MagisterRepository(
                     writeCache(KEY_MESSAGES, MagisterJson.instance.encodeToString(MagisterParsers.parseMessages(json)))
                     return
                 }
-            } catch (error: Throwable) {
-                lastError = error
-            }
-        }
-        for (url in MagisterEndpoints.messageInboxUrls(root, personId)) {
-            try {
-                val json = http.get(url)
-                val parsed = MagisterParsers.parseMessages(json)
-                writeCache(KEY_MESSAGES, MagisterJson.instance.encodeToString(parsed))
-                return
             } catch (error: Throwable) {
                 lastError = error
             }

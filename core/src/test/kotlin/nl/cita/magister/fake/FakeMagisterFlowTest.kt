@@ -115,6 +115,29 @@ class FakeMagisterFlowTest {
     }
 
     @Test
+    fun citadelStyle403OnAlleStillServesOfficialPostvakin() {
+        fake.scenario = FakeScenario.MessagesPostvakinOnly
+        assertEquals(403, raw("/api/berichten/mappen/alle", "live-access").first)
+        assertEquals(403, raw("/api/berichten/mappen/1/berichten?top=40", "live-access").first)
+        val inbox = raw("/api/berichten/postvakin/berichten?top=40&skip=0", "live-access")
+        assertEquals(200, inbox.first)
+        assertTrue(MagisterParsers.parseMessages(inbox.second).isNotEmpty())
+    }
+
+    @Test
+    fun messagesUnavailableStays403OnEveryInboxPath() {
+        fake.scenario = FakeScenario.MessagesUnavailable
+        MagisterEndpoints.messageInboxUrls("https://citadel.magister.net", 424242).forEach { url ->
+            val path = url.substringAfter("https://citadel.magister.net")
+            assertEquals(path, 403, raw(path, "live-access").first)
+        }
+        MagisterEndpoints.messageFolderListUrls("https://citadel.magister.net").forEach { url ->
+            val path = url.substringAfter("https://citadel.magister.net")
+            assertEquals(path, 403, raw(path, "live-access").first)
+        }
+    }
+
+    @Test
     fun perSection403() {
         fake.scenario = FakeScenario.GradesForbidden
         assertEquals(403, raw("/api/personen/1/aanmeldingen/1/cijfers/overzicht", "live-access").first)

@@ -12,10 +12,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.api.School
 import nl.cita.magister.fixtures.MockFixtures
@@ -119,6 +121,27 @@ class ScreenMeasureTest {
 
     @Test
     fun messages_320() = measure(320) { messages() }
+
+    @Test
+    fun messages403HidesRawHttpUntilDetails() {
+        measure(412) { messagesForbidden() }
+        compose.onNodeWithText("Berichten zijn voor dit account niet beschikbaar.").assertIsDisplayed()
+        compose.onNodeWithText("De inbox blijft leeg tot Magister dit weer toestaat.").assertIsDisplayed()
+        compose.onNodeWithText("/api/berichten/mappen/alle", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("HTTP 403", substring = true).assertDoesNotExist()
+        compose.onNodeWithTag("section-error-details").performClick()
+        compose.onNodeWithText("/api/berichten/mappen/alle", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("HTTP 403", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun grades403StaysOnSection() {
+        measure(412) { gradesForbidden() }
+        compose.onNodeWithText("Cijfers zijn nu niet beschikbaar.").assertExists()
+        compose.onNodeWithText("De lijst blijft leeg tot Magister dit weer toestaat.").assertExists()
+        compose.onNodeWithText("/api/personen", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("HTTP 403", substring = true).assertDoesNotExist()
+    }
 
     @Test
     fun settings_412() = measure(412) { settings() }
@@ -277,6 +300,37 @@ class ScreenMeasureTest {
             contentPadding = PaddingValues(0.dp),
             onOpen = {},
             onClose = {},
+        )
+    }
+
+    @Composable
+    private fun messagesForbidden() {
+        MessagesScreen(
+            messages = emptyList(),
+            detail = null,
+            contentPadding = PaddingValues(0.dp),
+            onOpen = {},
+            onClose = {},
+            messagesError = ApiFailure(
+                "/api/berichten/mappen/alle",
+                403,
+                """{"fouttype":"OnvoldoendePrivileges"}""",
+            ),
+        )
+    }
+
+    @Composable
+    private fun gradesForbidden() {
+        GradesScreen(
+            profile = MockFixtures.profile(),
+            averages = emptyList(),
+            grades = emptyList(),
+            refreshing = false,
+            exporting = false,
+            contentPadding = PaddingValues(0.dp),
+            onExport = {},
+            onShareJson = {},
+            gradesError = ApiFailure("/api/personen/1/cijfers", 403, ""),
         )
     }
 

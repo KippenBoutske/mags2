@@ -50,10 +50,10 @@ fun MessagesScreen(
         item { PageTitle("Berichten", "Alleen lezen") }
         messagesError?.let { item { SectionError(it) } }
         if (messages.isEmpty() && messagesError == null) {
-            item { Text("Geen berichten. Als Magister dit blokkeert, zie je hier geen technische codes.") }
+            item { Text("Geen berichten in Postvak IN.") }
         }
         if (messages.isEmpty() && messagesError != null) {
-            item { Text("Berichten zijn nu niet beschikbaar.") }
+            item { Text("De inbox blijft leeg tot Magister dit weer toestaat.") }
         }
         itemsIndexed(messages, key = { _, it -> it.id }) { index, message ->
             val colors = if (message.isRead) {
