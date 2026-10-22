@@ -43,6 +43,9 @@ import nl.cita.magister.model.Grade
 import nl.cita.magister.model.GradeColumnType
 import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.SubjectAverage
+import nl.cita.magister.model.ApiFailure
+import nl.cita.magister.ui.components.PageTitle
+import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatGrade
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.magsFloatSpring
@@ -63,6 +66,7 @@ fun GradesScreen(
     contentPadding: PaddingValues,
     onExport: () -> Unit,
     onShareJson: () -> Unit,
+    gradesError: ApiFailure? = null,
 ) {
     var filter by remember { mutableStateOf(GradeFilter.All) }
     var calculatorFor by remember { mutableStateOf<SubjectAverage?>(null) }
@@ -85,10 +89,13 @@ fun GradesScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Text(
-                profile?.let { "${it.firstName} · ${it.className ?: it.study ?: "leerling"}" } ?: "Cijfers",
-                style = MaterialTheme.typography.headlineMedium,
+            PageTitle(
+                "Cijfers",
+                profile?.let { "${it.firstName} · ${it.className ?: it.study ?: "leerling"}" },
             )
+        }
+        gradesError?.let { item { SectionError(it) } }
+        item {
             Text(
                 "Tik een vak voor de calculator.",
                 style = MaterialTheme.typography.bodyMedium,

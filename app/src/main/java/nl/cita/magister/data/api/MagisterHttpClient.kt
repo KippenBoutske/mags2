@@ -13,6 +13,7 @@ import nl.cita.magister.auth.TokenStore
 import nl.cita.magister.dto.TenantSearchHit
 import nl.cita.magister.parse.MagisterJson
 import okhttp3.FormBody
+import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -22,6 +23,7 @@ import java.util.concurrent.TimeUnit
 
 class MagisterHttpClient(
     private val tokenStore: TokenStore,
+    extraInterceptors: List<Interceptor> = emptyList(),
 ) {
     private val refreshLock = Mutex()
     private val jsonMedia = "application/json; charset=utf-8".toMediaType()
@@ -52,6 +54,7 @@ class MagisterHttpClient(
             }
             chain.proceed(builder.build())
         }
+        .apply { extraInterceptors.forEach(::addInterceptor) }
         .build()
 
     suspend fun exchangeCode(code: String, verifier: String): TokenResponse =

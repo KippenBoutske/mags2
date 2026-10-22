@@ -29,11 +29,20 @@ class UserPrefs(context: Context) {
     private val _webhookUrl = MutableStateFlow(prefs.getString(KEY_WEBHOOK_URL, null).orEmpty())
     val webhookUrl: Flow<String> = _webhookUrl.asStateFlow()
 
+    private val _dynamicColor = MutableStateFlow(prefs.getBoolean(KEY_DYNAMIC, false))
+    val dynamicColor: Flow<Boolean> = _dynamicColor.asStateFlow()
+
     suspend fun tenantHostNow(): String = _tenantHost.value
     suspend fun isDemo(): Boolean = _demoMode.value
     suspend fun schoolNameNow(): String = _schoolName.value
     suspend fun tenantIdNow(): String = _tenantId.value
     suspend fun webhookUrlNow(): String = _webhookUrl.value
+    suspend fun dynamicColorNow(): Boolean = _dynamicColor.value
+
+    suspend fun setDynamicColor(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_DYNAMIC, enabled).apply()
+        _dynamicColor.value = enabled
+    }
 
     suspend fun setTenant(host: String, schoolName: String, tenantId: String? = null) {
         val normalized = Tenant.normalize(host)
@@ -66,5 +75,6 @@ class UserPrefs(context: Context) {
         const val KEY_TENANT_ID = "tenant_id"
         const val KEY_DEMO = "demo_mode"
         const val KEY_WEBHOOK_URL = "plan_goon_webhook_url"
+        const val KEY_DYNAMIC = "material_you"
     }
 }

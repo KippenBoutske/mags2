@@ -69,6 +69,7 @@ data class Appointment(
     val content: String?,
     val infoType: InfoType,
     val isCancelled: Boolean,
+    val isChanged: Boolean = false,
     val isCompleted: Boolean,
     val hasAttachments: Boolean,
 )

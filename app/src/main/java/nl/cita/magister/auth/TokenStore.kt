@@ -34,7 +34,7 @@ class TokenStore(context: Context) {
             .putInt(KEY_PERSON, session.personId ?: -1)
             .putInt(KEY_ENROLLMENT, session.enrollmentId ?: -1)
             .putString(KEY_NAME, session.displayName)
-            .apply()
+            .commit()
     }
 
     @Synchronized

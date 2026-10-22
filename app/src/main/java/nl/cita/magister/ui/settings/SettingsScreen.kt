@@ -14,6 +14,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,7 +27,8 @@ import androidx.compose.ui.unit.dp
 import nl.cita.magister.api.School
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.StudentProfile
-import nl.cita.magister.ui.login.ErrorDetails
+import nl.cita.magister.ui.components.PageTitle
+import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.school.SchoolPicker
 import nl.cita.magister.ui.theme.CitaAction
 import nl.cita.magister.ui.theme.CitaActionRow
@@ -49,6 +51,8 @@ fun SettingsScreen(
     onExport: () -> Unit,
     onShareJson: () -> Unit,
     onLogout: () -> Unit,
+    dynamicColor: Boolean = false,
+    onDynamicColor: (Boolean) -> Unit = {},
 ) {
     var url by remember(webhookUrl) { mutableStateOf(webhookUrl) }
     var key by remember { mutableStateOf("") }
@@ -65,7 +69,7 @@ fun SettingsScreen(
             ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Meer", style = MaterialTheme.typography.headlineMedium)
+        PageTitle("Meer", profile?.let { "${it.firstName} ${it.lastName}" })
         Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
@@ -92,7 +96,26 @@ fun SettingsScreen(
                 )
             }
         }
-        lastError?.let { ErrorDetails(it) }
+        lastError?.let { SectionError(it) }
+        Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Weergave", style = MaterialTheme.typography.titleMedium)
+                androidx.compose.foundation.layout.Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Material You")
+                        Text(
+                            "Uit = Donker warm. Aan = kleuren van je telefoon.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = dynamicColor, onCheckedChange = onDynamicColor)
+                }
+            }
+        }
         Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Plan Goon", style = MaterialTheme.typography.titleMedium)

@@ -36,6 +36,8 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.zIndex
+import kotlin.math.abs
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -54,6 +56,7 @@ import nl.cita.magister.model.Grade
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.MessageDetail
 import nl.cita.magister.model.MessagePreview
+import nl.cita.magister.model.SectionErrors
 import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.SubjectAverage
 import nl.cita.magister.ui.grades.GradesScreen
@@ -73,6 +76,7 @@ import nl.cita.magister.ui.search.SearchSheet
 import nl.cita.magister.ui.settings.SettingsScreen
 import nl.cita.magister.ui.theme.LocalSafeMode
 import nl.cita.magister.ui.today.TodayScreen
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -139,6 +143,8 @@ fun CitaRoot(viewModel: CitaViewModel) {
     val hits by viewModel.schoolHits.collectAsStateWithLifecycle()
     val searching by viewModel.schoolSearching.collectAsStateWithLifecycle()
     val error by viewModel.lastError.collectAsStateWithLifecycle()
+    val sectionErrors by viewModel.sectionErrors.collectAsStateWithLifecycle()
+    val dynamic by viewModel.dynamicColor.collectAsStateWithLifecycle()
 
     MagsSignedInScaffold(
         profile = profile,
@@ -169,6 +175,10 @@ fun CitaRoot(viewModel: CitaViewModel) {
         onSwitchSchool = viewModel::switchSchool,
         onSaveWebhook = viewModel::saveWebhook,
         onLogout = viewModel::logout,
+        sectionErrors = sectionErrors,
+        dynamicColor = dynamic,
+        onDynamicColor = viewModel::setDynamicColor,
+        onVisibleWeek = viewModel::prefetchAgenda,
     )
 }
 
@@ -204,6 +214,10 @@ fun MagsSignedInScaffold(
     onSaveWebhook: (url: String, key: String) -> Unit,
     onLogout: () -> Unit,
     initialPage: MagsPage = MagsPage.Vandaag,
+    sectionErrors: SectionErrors = SectionErrors(),
+    dynamicColor: Boolean = false,
+    onDynamicColor: (Boolean) -> Unit = {},
+    onVisibleWeek: (LocalDate) -> Unit = {},
 ) {
     var page by remember { mutableStateOf(initialPage) }
     var lastDock by remember { mutableStateOf(MagsPage.Vandaag) }
@@ -217,9 +231,15 @@ fun MagsSignedInScaffold(
     val scroll = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                val delta = available.y
-                if (delta == 0f) return Offset.Zero
-                expansion = (expansion + delta / 180f).coerceIn(0f, 1f)
+                // HorizontalPager days must win; the dock only reacts to vertical collapse.
+                if (abs(available.x) > abs(available.y)) return Offset.Zero
+                return Offset.Zero
+            }
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                if (abs(consumed.x) >= abs(consumed.y)) return Offset.Zero
+                if (consumed.y != 0f) {
+                    expansion = (expansion + consumed.y / 180f).coerceIn(0f, 1f)
+                }
                 return Offset.Zero
             }
         }
@@ -261,7 +281,7 @@ fun MagsSignedInScaffold(
     val topInset = WindowInsets.statusBars.getTop(density)
     val bottomInset = WindowInsets.navigationBars.getBottom(density)
     val contentPadding = PaddingValues(
-        top = with(density) { topInset.toDp() } + MagsChrome.TopBarHeight,
+        top = with(density) { topInset.toDp() } + 8.dp,
         bottom = with(density) { bottomInset.toDp() } + MagsChrome.DockClearance,
     )
 
@@ -341,8 +361,16 @@ fun MagsSignedInScaffold(
                                         page = next
                                         expansion = 1f
                                     },
+                                    agendaError = sectionErrors.agenda,
+                                    gradesError = sectionErrors.grades,
+                                    messagesError = sectionErrors.messages,
                                 )
-                                MagsPage.Rooster -> ScheduleScreen(appointments, contentPadding)
+                                MagsPage.Rooster -> ScheduleScreen(
+                                    appointments,
+                                    contentPadding,
+                                    agendaError = sectionErrors.agenda,
+                                    onVisibleWeek = onVisibleWeek,
+                                )
                                 MagsPage.Cijfers -> GradesScreen(
                                     profile = profile,
                                     averages = averages,
@@ -352,14 +380,21 @@ fun MagsSignedInScaffold(
                                     contentPadding = contentPadding,
                                     onExport = onExport,
                                     onShareJson = onShareJson,
+                                    gradesError = sectionErrors.grades,
                                 )
-                                MagsPage.Huiswerk -> HomeworkScreen(homework, contentPadding, onToggleHomework)
+                                MagsPage.Huiswerk -> HomeworkScreen(
+                                    homework,
+                                    contentPadding,
+                                    onToggleHomework,
+                                    agendaError = sectionErrors.agenda,
+                                )
                                 MagsPage.Berichten -> MessagesScreen(
                                     messages,
                                     detail,
                                     contentPadding,
                                     onOpenMessage,
                                     onCloseMessage,
+                                    messagesError = sectionErrors.messages,
                                 )
                                 MagsPage.Meer -> SettingsScreen(
                                     profile = profile,
@@ -378,6 +413,8 @@ fun MagsSignedInScaffold(
                                     onExport = onExport,
                                     onShareJson = onShareJson,
                                     onLogout = onLogout,
+                                    dynamicColor = dynamicColor,
+                                    onDynamicColor = onDynamicColor,
                                 )
                             }
                         }
@@ -392,7 +429,8 @@ fun MagsSignedInScaffold(
                 onMore = { page = MagsPage.Meer },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .statusBarsPadding(),
+                    .statusBarsPadding()
+                    .zIndex(1f),
             )
 
             PhotosDock(
@@ -408,8 +446,9 @@ fun MagsSignedInScaffold(
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
                     .padding(bottom = 12.dp)
+                    .zIndex(2f)
                     .graphicsLayer {
-                        translationY = (1f - visualExpansion) * 22f
+                        translationY = (1f - visualExpansion) * 18f
                     },
             )
         }

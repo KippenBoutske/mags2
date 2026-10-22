@@ -4,7 +4,9 @@
 .DS_Store
 /build
 /app/build
+/app/app/build
 /core/build
+**/self-test/
 /local.properties
 /captures
 *.apk

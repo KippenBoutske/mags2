@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -37,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -140,6 +142,14 @@ fun LoginScreen(
         ) {
             Text("Inloggen", style = MaterialTheme.typography.titleMedium)
         }
+        TextButton(
+            onClick = onDemo,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("login-demo"),
+        ) {
+            Text("Voorbeeld")
+        }
 
         lastError?.let { ErrorDetails(it) }
         Spacer(Modifier.height(12.dp))
@@ -152,17 +162,12 @@ fun ErrorDetails(error: ApiFailure) {
     var open by remember(error) { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(error.friendly(), style = MaterialTheme.typography.bodyMedium)
-        Text(
-            error.summary(),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         androidx.compose.material3.TextButton(onClick = { open = !open }) {
             Text(if (open) "Verberg details" else "Details")
         }
         AnimatedVisibility(open) {
             Text(
-                error.details(),
+                "${error.summary()}\n${error.details()}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

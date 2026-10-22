@@ -21,3 +21,17 @@ data class SessionHydration(
     val profile: StudentProfile?,
     val warnings: List<ApiFailure> = emptyList(),
 )
+
+data class SectionErrors(
+    val grades: ApiFailure? = null,
+    val agenda: ApiFailure? = null,
+    val messages: ApiFailure? = null,
+) {
+    companion object {
+        fun from(warnings: List<ApiFailure>): SectionErrors = SectionErrors(
+            grades = warnings.firstOrNull { it.path.contains("cijfer", ignoreCase = true) },
+            agenda = warnings.firstOrNull { it.path.contains("afspraak", ignoreCase = true) },
+            messages = warnings.firstOrNull { it.path.contains("bericht", ignoreCase = true) },
+        )
+    }
+}

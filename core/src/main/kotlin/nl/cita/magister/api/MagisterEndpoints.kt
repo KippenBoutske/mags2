@@ -90,6 +90,30 @@ object MagisterEndpoints {
 
     fun messageFolders(root: String) = "$root/api/berichten/mappen/alle"
 
+    /**
+     * Berichten-fallbackketen. Geen nieuwe scopes.
+     *
+     * 1. `berichten/mappen` — Magister-web (zonder `/alle`)
+     * 2. `berichten/mappen/alle` — Discipulus 2025/26 (`lib/api/routes/messages.dart`)
+     * 3. inbox via map-1 href `berichten/mappen/1/berichten` (Discipulus inbox-id=1 + onze fixtures)
+     * 4. `berichten/berichten?mapId=` — query-vorm
+     * 5. `berichten/berichten` — collectie zonder map
+     * 6. oud pad `personen/{id}/berichten?mapId=` — magistergo (`GetMessages(7)` / map 1)
+     */
+    fun messageFolderListUrls(root: String): List<String> = listOf(
+        "$root/api/berichten/mappen",
+        "$root/api/berichten/mappen/alle",
+    )
+
+    fun messageInboxUrls(root: String, personId: Int, top: Int = 40, skip: Int = 0): List<String> = listOf(
+        "$root/api/berichten/mappen/1/berichten?top=$top&skip=$skip",
+        "$root/api/berichten/berichten?mapId=1&top=$top&skip=$skip",
+        "$root/api/berichten/berichten?top=$top&skip=$skip",
+        "$root/api/personen/$personId/berichten?mapId=1&skip=$skip&top=$top",
+        "$root/api/berichten/berichten?mapId=7&top=$top&skip=$skip",
+        "$root/api/personen/$personId/berichten?mapId=7&skip=$skip&top=$top",
+    )
+
     fun messages(root: String, folderHref: String, top: Int, skip: Int, query: String = "") =
         "$root/${folderHref.trimStart('/')}" +
             (if (folderHref.contains('?')) "&" else "?") +

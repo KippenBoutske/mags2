@@ -118,6 +118,7 @@ object MagisterParsers {
                 content = dto.content?.takeIf { it.isNotBlank() },
                 infoType = InfoType.from(dto.infoType),
                 isCancelled = dto.status == 5,
+                isChanged = dto.status == 4,
                 isCompleted = dto.completed == true,
                 hasAttachments = dto.hasAttachments == true,
             )

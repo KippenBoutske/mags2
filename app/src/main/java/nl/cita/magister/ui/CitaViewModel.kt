@@ -24,6 +24,8 @@ import nl.cita.magister.di.AppContainer
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.MessageDetail
+import nl.cita.magister.model.SectionErrors
+import java.time.LocalDate
 
 class CitaViewModel(
     application: Application,
@@ -42,6 +44,7 @@ class CitaViewModel(
     val tenantId = container.prefs.tenantId.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     val webhookUrl = container.prefs.webhookUrl.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     val demoMode = container.prefs.demoMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    val dynamicColor = container.prefs.dynamicColor.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     private val _signedIn = MutableStateFlow(repo.isLoggedIn() || false)
     val signedIn = _signedIn.asStateFlow()
@@ -69,6 +72,9 @@ class CitaViewModel(
 
     private val _lastError = MutableStateFlow<ApiFailure?>(null)
     val lastError = _lastError.asStateFlow()
+
+    private val _sectionErrors = MutableStateFlow(SectionErrors())
+    val sectionErrors = _sectionErrors.asStateFlow()
 
     private val _snackbar = MutableSharedFlow<String>(extraBufferCapacity = 4)
     val snackbar = _snackbar.asSharedFlow()
@@ -230,6 +236,16 @@ class CitaViewModel(
         _messageDetail.value = null
     }
 
+    fun setDynamicColor(enabled: Boolean) {
+        viewModelScope.launch { container.prefs.setDynamicColor(enabled) }
+    }
+
+    fun prefetchAgenda(monday: LocalDate) {
+        viewModelScope.launch {
+            runCatching { repo.prefetchAgendaAround(monday) }
+        }
+    }
+
     fun saveWebhook(url: String, key: String) {
         viewModelScope.launch {
             repo.saveWebhook(url, key.ifBlank { null })
@@ -265,12 +281,14 @@ class CitaViewModel(
     }
 
     private fun reportWarnings(warnings: List<ApiFailure>) {
-        val first = warnings.firstOrNull() ?: run {
-            _lastError.value = null
-            return
+        _sectionErrors.value = SectionErrors.from(warnings)
+        val loginish = warnings.firstOrNull { warning ->
+            warning.path.contains("account", ignoreCase = true) ||
+                warning.path.contains("oauth", ignoreCase = true)
         }
-        _lastError.value = first
-        viewModelScope.launch { _snackbar.emit("${first.friendly()} ${first.summary()}") }
+        _lastError.value = loginish
+        val first = warnings.firstOrNull() ?: return
+        viewModelScope.launch { _snackbar.emit(first.friendly()) }
     }
 
     private fun rememberFailure(error: Throwable) {

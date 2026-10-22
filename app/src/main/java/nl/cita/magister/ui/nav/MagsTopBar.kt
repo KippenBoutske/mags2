@@ -44,15 +44,8 @@ fun MagsTopBar(
             .height(MagsChrome.TopBarHeight)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.End,
     ) {
-        Text(
-            "Mags",
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Black,
-                letterSpacing = (-0.6).sp,
-            ),
-        )
         Box {
             Box(
                 modifier = Modifier

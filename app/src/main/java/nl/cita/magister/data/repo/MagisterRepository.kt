@@ -295,8 +295,8 @@ class MagisterRepository(
         }
         val session = tokenStore.read() ?: return
         val root = MagisterEndpoints.tenantRoot(session.tenantHost)
-        val from = LocalDate.now().minusDays(1)
-        val to = LocalDate.now().plusDays(14)
+        val from = LocalDate.now().minusWeeks(8)
+        val to = LocalDate.now().plusWeeks(8)
         val fmt = DateTimeFormatter.ISO_LOCAL_DATE
         val json = http.get(
             MagisterEndpoints.appointments(root, resolved.personId, from.format(fmt), to.format(fmt)),
@@ -313,6 +313,36 @@ class MagisterRepository(
         writeCache(KEY_HOMEWORK, MagisterJson.instance.encodeToString(homework))
     }
 
+    /** Fetch a window around a visible week and merge it into the cached agenda. */
+    suspend fun prefetchAgendaAround(monday: LocalDate) {
+        val resolved = cachedProfile()
+        if (prefs.isDemo() || resolved == null) return
+        val session = tokenStore.read() ?: return
+        val root = MagisterEndpoints.tenantRoot(session.tenantHost)
+        val from = monday.minusWeeks(1)
+        val to = monday.plusWeeks(2)
+        val fmt = DateTimeFormatter.ISO_LOCAL_DATE
+        val json = http.get(
+            MagisterEndpoints.appointments(root, resolved.personId, from.format(fmt), to.format(fmt)),
+        )
+        val incoming = MagisterParsers.parseAppointments(json)
+        val existing = cache.get(KEY_APPOINTMENTS)?.json?.let {
+            MagisterJson.instance.decodeFromString(ListSerializerAppointment, it)
+        } ?: emptyList()
+        val merged = (existing.associateBy { it.id } + incoming.associateBy { it.id })
+            .values
+            .sortedBy { it.startIso }
+        writeCache(KEY_APPOINTMENTS, MagisterJson.instance.encodeToString(merged))
+        val extraHomework = MagisterParsers.homeworkFromAppointments(incoming)
+        val existingHomework = cache.get(KEY_HOMEWORK)?.json?.let {
+            MagisterJson.instance.decodeFromString(ListSerializerHomework, it)
+        } ?: emptyList()
+        val homework = (existingHomework.associateBy { it.id } + extraHomework.associateBy { it.id })
+            .values
+            .sortedBy { it.dueIso }
+        writeCache(KEY_HOMEWORK, MagisterJson.instance.encodeToString(homework))
+    }
+
     suspend fun refreshMessages(profile: StudentProfile? = null) {
         val resolved = profile ?: cachedProfile()
         if (prefs.isDemo() || resolved == null) {
@@ -321,13 +351,38 @@ class MagisterRepository(
         }
         val session = tokenStore.read() ?: return
         val root = MagisterEndpoints.tenantRoot(session.tenantHost)
-        val foldersJson = http.get(MagisterEndpoints.messageFolders(root))
-        val inbox = MagisterParsers.parseFolders(foldersJson)
-            .firstOrNull { it.name?.contains("in", ignoreCase = true) == true }
-            ?: MagisterParsers.parseFolders(foldersJson).firstOrNull()
-        val href = inbox?.links?.get("berichten")?.href ?: return
-        val messagesJson = http.get(MagisterEndpoints.messages(root, href, 40, 0))
-        writeCache(KEY_MESSAGES, MagisterJson.instance.encodeToString(MagisterParsers.parseMessages(messagesJson)))
+        val personId = resolved.personId
+        var lastError: Throwable? = null
+
+        for (url in MagisterEndpoints.messageFolderListUrls(root)) {
+            try {
+                val folders = MagisterParsers.parseFolders(http.get(url))
+                val inbox = folders.firstOrNull { folder ->
+                    val name = folder.name.orEmpty()
+                    name.contains("in", ignoreCase = true) || folder.id == 1
+                } ?: folders.firstOrNull()
+                val href = inbox?.links?.get("berichten")?.href
+                if (!href.isNullOrBlank()) {
+                    val json = http.get(MagisterEndpoints.messages(root, href, 40, 0))
+                    writeCache(KEY_MESSAGES, MagisterJson.instance.encodeToString(MagisterParsers.parseMessages(json)))
+                    return
+                }
+            } catch (error: Throwable) {
+                lastError = error
+            }
+        }
+        for (url in MagisterEndpoints.messageInboxUrls(root, personId)) {
+            try {
+                val json = http.get(url)
+                val parsed = MagisterParsers.parseMessages(json)
+                writeCache(KEY_MESSAGES, MagisterJson.instance.encodeToString(parsed))
+                return
+            } catch (error: Throwable) {
+                lastError = error
+            }
+        }
+        writeCache(KEY_MESSAGES, MagisterJson.instance.encodeToString(emptyList<MessagePreview>()))
+        throw lastError ?: MagisterApiException(403, "$root/api/berichten", "Geen toegang tot berichten.")
     }
 
     suspend fun messageDetail(id: Int): MessageDetail {

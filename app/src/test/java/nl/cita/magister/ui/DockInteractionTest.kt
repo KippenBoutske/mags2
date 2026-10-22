@@ -1,0 +1,140 @@
+package nl.cita.magister.ui
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
+import nl.cita.magister.fixtures.MockFixtures
+import nl.cita.magister.grades.GradeCalculator
+import nl.cita.magister.ui.nav.MagsPage
+import nl.cita.magister.ui.nav.PhotosDock
+import nl.cita.magister.ui.theme.CitaTheme
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [34], qualifiers = "w412dp-h915dp")
+class DockInteractionTest {
+    @get:Rule
+    val compose = createComposeRule()
+
+    @Test
+    fun tappingEachTabChangesScreenAndKeepsSingleIndicator() {
+        compose.setContent {
+            Box(Modifier.requiredSize(412.dp, 915.dp)) {
+                CitaTheme {
+                    val host = remember { SnackbarHostState() }
+                    val grades = MockFixtures.grades()
+                    MagsSignedInScaffold(
+                        profile = MockFixtures.profile(),
+                        grades = grades,
+                        averages = GradeCalculator.averagesBySubject(grades),
+                        appointments = MockFixtures.appointments(),
+                        homework = MockFixtures.homework(),
+                        messages = MockFixtures.messages(),
+                        detail = null,
+                        refreshing = false,
+                        exporting = false,
+                        tenantHost = "citadel.magister.net",
+                        schoolName = "Citadel College",
+                        webhookUrl = "",
+                        hasWebhookKey = false,
+                        demoMode = true,
+                        schools = emptyList(),
+                        searching = false,
+                        lastError = null,
+                        snackbarHost = host,
+                        onRefresh = {},
+                        onExport = {},
+                        onShareJson = {},
+                        onToggleHomework = { _, _ -> },
+                        onOpenMessage = {},
+                        onCloseMessage = {},
+                        onQuery = {},
+                        onSwitchSchool = { _, _, _ -> },
+                        onSaveWebhook = { _, _ -> },
+                        onLogout = {},
+                    )
+                }
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithTag("dock-tab-Vandaag").assertIsSelected()
+        compose.onAllNodesWithTag("dock-indicator").assertCountEquals(1)
+
+        compose.onNodeWithTag("dock-tab-Rooster").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag("rooster-pager").assertExists()
+        compose.onNodeWithTag("dock-tab-Rooster").assertIsSelected()
+        compose.onAllNodesWithTag("dock-indicator").assertCountEquals(1)
+
+        compose.onNodeWithTag("dock-tab-Cijfers").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Tik een vak voor de calculator.").assertExists()
+        compose.onNodeWithTag("dock-tab-Cijfers").assertIsSelected()
+        compose.onAllNodesWithTag("dock-indicator").assertCountEquals(1)
+
+        compose.onNodeWithTag("dock-tab-Huiswerk").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag("dock-tab-Huiswerk").assertIsSelected()
+        compose.onAllNodesWithTag("dock-indicator").assertCountEquals(1)
+
+        compose.onNodeWithTag("dock-tab-Vandaag").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("VOLGENDE LES").assertExists()
+        compose.onNodeWithTag("dock-tab-Vandaag").assertIsSelected()
+        compose.onAllNodesWithTag("dock-indicator").assertCountEquals(1)
+    }
+
+    @Test
+    fun dockScreenshotAt412WithInsetsHasOneIndicator() {
+        compose.setContent {
+            Box(
+                Modifier
+                    .requiredSize(412.dp, 915.dp)
+                    .windowInsetsPadding(WindowInsets(0, 48, 0, 32))
+                    .testTag("dock-shot"),
+            ) {
+                CitaTheme {
+                    Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 12.dp)) {
+                        PhotosDock(
+                            selected = MagsPage.Rooster,
+                            expansion = 1f,
+                            onSelect = {},
+                            onSearch = {},
+                        )
+                    }
+                }
+            }
+        }
+        compose.waitForIdle()
+        compose.onAllNodesWithTag("dock-indicator").assertCountEquals(1)
+        compose.onNodeWithTag("dock-tab-Rooster").assertIsSelected()
+        val image = compose.onNodeWithTag("dock-shot").captureToImage()
+        assertTrue(image.width > 0)
+        assertTrue(image.height > 0)
+    }
+}

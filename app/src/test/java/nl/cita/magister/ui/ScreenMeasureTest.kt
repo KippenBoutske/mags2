@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.api.School
@@ -46,7 +47,7 @@ import org.robolectric.annotation.GraphicsMode
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [34])
+@Config(sdk = [34], qualifiers = "w412dp-h915dp")
 class ScreenMeasureTest {
     @get:Rule
     val compose = createComposeRule()
@@ -161,22 +162,19 @@ class ScreenMeasureTest {
     @Test
     fun topBar_412() {
         measure(412) { topBar() }
-        compose.onNodeWithText("Mags").assertExists()
         compose.onNodeWithContentDescription("Profiel").assertExists()
     }
 
     @Test
     fun topBar_320() {
         measure(320) { topBar() }
-        compose.onNodeWithText("Mags").assertExists()
         compose.onNodeWithContentDescription("Profiel").assertExists()
     }
 
     @Test
     fun signedInShell_412() {
         measure(412) { shell() }
-        compose.onNodeWithText("Mags").assertExists()
-        compose.onNodeWithText("Vandaag").assertExists()
+        compose.onNodeWithTag("dock-tab-Vandaag").assertExists()
         compose.onNodeWithContentDescription("Zoeken").assertExists()
         compose.onNodeWithContentDescription("Profiel").assertExists()
     }
@@ -184,7 +182,7 @@ class ScreenMeasureTest {
     @Test
     fun signedInShell_320() {
         measure(320) { shell() }
-        compose.onNodeWithText("Mags").assertExists()
+        compose.onNodeWithTag("dock-tab-Vandaag").assertExists()
         compose.onNodeWithContentDescription("Zoeken").assertExists()
         compose.onNodeWithContentDescription("Profiel").assertExists()
     }
@@ -264,7 +262,11 @@ class ScreenMeasureTest {
 
     @Composable
     private fun homework() {
-        HomeworkScreen(MockFixtures.homework(), PaddingValues(bottom = 80.dp)) { _, _ -> }
+        HomeworkScreen(
+            items = MockFixtures.homework(),
+            contentPadding = PaddingValues(bottom = 80.dp),
+            onToggle = { _, _ -> },
+        )
     }
 
     @Composable

@@ -22,6 +22,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.InfoType
+import nl.cita.magister.model.ApiFailure
+import nl.cita.magister.ui.components.PageTitle
+import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatWhen
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.staggerEnter
@@ -35,6 +38,7 @@ fun HomeworkScreen(
     items: List<HomeworkItem>,
     contentPadding: PaddingValues,
     onToggle: (HomeworkItem, Boolean) -> Unit,
+    agendaError: ApiFailure? = null,
 ) {
     var filter by remember { mutableStateOf(HwFilter.Open) }
     val visible = when (filter) {
@@ -54,12 +58,9 @@ fun HomeworkScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
-            Text("Huiswerk", style = MaterialTheme.typography.headlineMedium)
-            Text(
-                "${items.count { !it.isDone }} open · tik aan als je klaar bent",
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            PageTitle("Huiswerk", "${items.count { !it.isDone }} open")
         }
+        agendaError?.let { item { SectionError(it) } }
         item {
             CitaActionRow(
                 actions = listOf(

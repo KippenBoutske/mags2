@@ -18,9 +18,12 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.MessageDetail
 import nl.cita.magister.model.MessagePreview
 import nl.cita.magister.parse.stripHtml
+import nl.cita.magister.ui.components.PageTitle
+import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatWhen
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.staggerEnter
@@ -32,23 +35,25 @@ fun MessagesScreen(
     contentPadding: PaddingValues,
     onOpen: (Int) -> Unit,
     onClose: () -> Unit,
+    messagesError: ApiFailure? = null,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = contentPadding.calculateTopPadding() + 8.dp,
+            start = 20.dp,
+            end = 20.dp,
+            top = contentPadding.calculateTopPadding() + 4.dp,
             bottom = contentPadding.calculateBottomPadding() + 8.dp,
         ),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        item {
-            Text("Berichten", style = MaterialTheme.typography.headlineMedium)
-            Text("Alleen lezen. Versturen kan later.", style = MaterialTheme.typography.bodyMedium)
+        item { PageTitle("Berichten", "Alleen lezen") }
+        messagesError?.let { item { SectionError(it) } }
+        if (messages.isEmpty() && messagesError == null) {
+            item { Text("Geen berichten. Als Magister dit blokkeert, zie je hier geen technische codes.") }
         }
-        if (messages.isEmpty()) {
-            item { Text("Geen berichten in de cache.") }
+        if (messages.isEmpty() && messagesError != null) {
+            item { Text("Berichten zijn nu niet beschikbaar.") }
         }
         itemsIndexed(messages, key = { _, it -> it.id }) { index, message ->
             val colors = if (message.isRead) {

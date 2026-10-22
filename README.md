@@ -11,7 +11,7 @@ Mags is **geen** product van Iddink/Magister. Werkt met elke Magister-school. Al
 - **Cijfers exporteren** naar Plan Goon of als JSON
 - Live schoolzoeken via Magister tenant-search
 - Offline cache, pull-to-refresh, Material 3 Expressive
-- Photos-stijl zwevende navbar: pill met Vandaag / Rooster / Cijfers / Huiswerk, ronde zoekknop, avatar voor Berichten en Meer
+- Donker-warm thema (concept 1), Photos-stijl zwevende navbar, swipebaar rooster
 - Crash-scherm met kopieerbare stacktrace
 - Nederlandse UI
 
@@ -25,17 +25,19 @@ cat mags-debug.apk.part-aa mags-debug.apk.part-ab > mags-debug.apk
 sha256sum -c mags-debug.apk.sha256
 ```
 
-3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.6** (`targetSdk` 37).
+3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.7** (`targetSdk` 37).
 4. Bij een crash: scherm **Mags is gestopt** → *Kopieer stacktrace*.
 
 Zelf bouwen:
 
 ```bash
 export ANDROID_HOME=/pad/naar/android-sdk
-./gradlew :core:test :app:assembleDebug
+./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug
+# of de hele zelftest (unit + screenshots + optionele emulator-smoke):
+./scripts/self-test.sh
 ```
 
-Vereist JDK 17+, Android SDK platform 37.
+Vereist JDK 17+, Android SDK platform 37. Screenshots landden in `app/build/outputs/self-test/screenshots`. Fake Magister (MockWebServer) zit in `:core:test` (`FakeMagisterFlowTest`).
 
 ## Inloggen
 

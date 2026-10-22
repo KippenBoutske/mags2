@@ -1,5 +1,6 @@
 package nl.cita.magister.ui.today
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,26 +9,42 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.Appointment
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.MessagePreview
 import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.SubjectAverage
+import nl.cita.magister.ui.components.CookieFlower
+import nl.cita.magister.ui.components.GradeTile
+import nl.cita.magister.ui.components.PageTitle
+import nl.cita.magister.ui.components.SectionError
+import nl.cita.magister.ui.components.minutesUntil
+import nl.cita.magister.ui.components.overLabel
 import nl.cita.magister.ui.formatGrade
 import nl.cita.magister.ui.formatTime
 import nl.cita.magister.ui.localDateOf
 import nl.cita.magister.ui.motion.PressScaleCard
-import nl.cita.magister.ui.motion.staggerEnter
 import nl.cita.magister.ui.nav.MagsPage
+import nl.cita.magister.ui.theme.GradeGold
+import nl.cita.magister.ui.theme.GradeSage
+import nl.cita.magister.ui.theme.GradeSlate
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
@@ -37,6 +54,7 @@ import java.util.Locale
 private val zone = ZoneId.of("Europe/Amsterdam")
 private val nl = Locale("nl", "NL")
 private val longDay = DateTimeFormatter.ofPattern("EEEE d MMMM", nl)
+private val tileColors = listOf(GradeGold, GradeSage, GradeSlate)
 
 @Composable
 fun TodayScreen(
@@ -47,162 +65,163 @@ fun TodayScreen(
     messages: List<MessagePreview>,
     contentPadding: PaddingValues,
     onOpenPage: (MagsPage) -> Unit,
+    agendaError: ApiFailure? = null,
+    gradesError: ApiFailure? = null,
+    messagesError: ApiFailure? = null,
 ) {
     val today = remember { LocalDate.now(zone) }
     val now = remember { LocalTime.now(zone) }
     val ofDay = remember(appointments, today) {
-        appointments
-            .filter { localDateOf(it.startIso) == today && !it.isCancelled }
-            .sortedBy { it.startIso }
+        appointments.filter { localDateOf(it.startIso) == today }.sortedBy { it.startIso }
     }
-    val next = ofDay.firstOrNull { lessonStart(it) >= now } ?: ofDay.lastOrNull()
+    val next = ofDay.firstOrNull { !it.isCancelled && lessonStart(it) >= now }
+        ?: ofDay.firstOrNull { !it.isCancelled }
     val openHw = remember(homework) { homework.filter { !it.isDone }.sortedBy { it.dueIso } }
-    val weak = remember(averages) { averages.filter { (it.average ?: 10.0) < 6.0 } }
+    val latest = remember(averages) { averages.filter { it.average != null }.take(3) }
     val unread = remember(messages) { messages.filter { !it.isRead } }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = contentPadding.calculateTopPadding() + 8.dp,
+            start = 20.dp,
+            end = 20.dp,
+            top = contentPadding.calculateTopPadding() + 4.dp,
             bottom = contentPadding.calculateBottomPadding() + 8.dp,
         ),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    profile?.firstName?.let { "Hoi $it" } ?: "Vandaag",
-                    style = MaterialTheme.typography.headlineMedium,
-                )
-                Text(
-                    today.format(longDay).replaceFirstChar { it.titlecase(nl) },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            PageTitle(
+                title = "Vandaag",
+                subtitle = today.format(longDay).replaceFirstChar { it.titlecase(nl) },
+            )
         }
+        agendaError?.let { item { SectionError(it) } }
         item {
             PressScaleCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .staggerEnter(0),
-                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
                 onClick = { onOpenPage(MagsPage.Rooster) },
             ) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Volgende les", style = MaterialTheme.typography.labelLarge)
-                    if (next == null) {
-                        Text("Geen lessen meer vandaag.", style = MaterialTheme.typography.titleMedium)
-                    } else {
-                        Text(next.title, style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            listOfNotNull(
-                                next.periodFrom?.let { "uur $it" },
-                                formatTime(next.startIso),
-                                formatTime(next.endIso),
-                                next.classroom ?: next.location,
-                            ).joinToString(" · "),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
+                Row(
+                    Modifier.padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    CookieFlower()
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("VOLGENDE LES", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (next == null) {
+                            Text("Geen lessen meer vandaag.", style = MaterialTheme.typography.headlineSmall)
+                        } else {
+                            Text(next.title, style = MaterialTheme.typography.headlineSmall)
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Outlined.Place, null, Modifier, MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(next.classroom ?: next.location ?: "–", style = MaterialTheme.typography.bodyMedium)
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Outlined.Schedule, null, Modifier, MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(formatTime(next.startIso), style = MaterialTheme.typography.bodyMedium)
+                            }
+                            Text(
+                                overLabel(minutesUntil(next.startIso)),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     }
                 }
             }
         }
         if (ofDay.isNotEmpty()) {
             item {
-                Text("Rooster", style = MaterialTheme.typography.titleMedium)
-            }
-            itemsIndexed(ofDay, key = { _, it -> it.id }) { index, item ->
-                PressScaleCard(
-                    modifier = Modifier
+                Row(
+                    Modifier
                         .fillMaxWidth()
-                        .staggerEnter(index + 1),
-                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
-                    onClick = { onOpenPage(MagsPage.Rooster) },
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Row(
-                        Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(item.title, style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                listOfNotNull(item.classroom, item.teachers.firstOrNull()).joinToString(" · "),
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                        Text(
-                            listOfNotNull(formatTime(item.startIso), formatTime(item.endIso)).joinToString("–"),
-                            style = MaterialTheme.typography.labelLarge,
+                    ofDay.forEach { lesson ->
+                        val label = lesson.periodFrom?.let { hour -> hour.toString() }
+                            ?: formatTime(lesson.startIso)
+                        FilterChip(
+                            selected = lesson.id == next?.id,
+                            onClick = { onOpenPage(MagsPage.Rooster) },
+                            shape = CircleShape,
+                            label = { Text(label) },
                         )
                     }
                 }
             }
         }
         item {
-            PressScaleCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .staggerEnter(ofDay.size + 1),
-                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
-                onClick = { onOpenPage(MagsPage.Huiswerk) },
-            ) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Huiswerk", style = MaterialTheme.typography.titleMedium)
-                    if (openHw.isEmpty()) {
-                        Text("Niets open. Lekker bezig.")
-                    } else {
-                        Text("${openHw.size} open")
-                        openHw.take(3).forEach { hw ->
-                            Text("· ${hw.subject} — ${hw.title}", style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
-                }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Laatste cijfers", style = MaterialTheme.typography.titleLarge)
+                TextButton(onClick = { onOpenPage(MagsPage.Cijfers) }) { Text("Alle cijfers →") }
             }
         }
-        if (weak.isNotEmpty()) {
+        gradesError?.let { item { SectionError(it) } }
+        if (latest.isNotEmpty()) {
             item {
-                PressScaleCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .staggerEnter(ofDay.size + 2),
-                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.tertiaryContainer),
-                    onClick = { onOpenPage(MagsPage.Cijfers) },
-                ) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Aandacht", style = MaterialTheme.typography.titleMedium)
-                        weak.take(4).forEach {
-                            Text("${it.subjectName}  ${formatGrade(it.average)}")
-                        }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    latest.forEachIndexed { index, subject ->
+                        GradeTile(
+                            value = formatGrade(subject.average),
+                            subject = subject.subjectName,
+                            color = tileColors[index % tileColors.size],
+                            modifier = Modifier.weight(1f),
+                            onClick = { onOpenPage(MagsPage.Cijfers) },
+                        )
                     }
                 }
             }
         }
         item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Huiswerk", style = MaterialTheme.typography.titleLarge)
+                TextButton(onClick = { onOpenPage(MagsPage.Huiswerk) }) { Text("Alles →") }
+            }
+        }
+        item {
             PressScaleCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .staggerEnter(ofDay.size + 3),
-                colors = CardDefaults.cardColors(
-                    if (unread.isNotEmpty()) MaterialTheme.colorScheme.secondaryContainer
-                    else MaterialTheme.colorScheme.surfaceContainerHigh,
-                ),
-                onClick = { onOpenPage(MagsPage.Berichten) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
+                onClick = { onOpenPage(MagsPage.Huiswerk) },
             ) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Berichten", style = MaterialTheme.typography.titleMedium)
-                    if (unread.isEmpty()) {
-                        Text("Geen ongelezen berichten.")
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (openHw.isEmpty()) {
+                        Text("Niets open. Lekker bezig.")
                     } else {
-                        Text("${unread.size} ongelezen")
-                        unread.take(2).forEach {
-                            Text("· ${it.sender} — ${it.subject}", style = MaterialTheme.typography.bodyMedium, maxLines = 1)
+                        openHw.take(3).forEach { hw ->
+                            Column {
+                                Text(hw.title, style = MaterialTheme.typography.titleMedium)
+                                Text(hw.subject, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
                     }
                 }
+            }
+        }
+        messagesError?.let { item { SectionError(it) } }
+        if (unread.isNotEmpty()) {
+            item {
+                PressScaleCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    onClick = { onOpenPage(MagsPage.Berichten) },
+                ) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("${unread.size} ongelezen", style = MaterialTheme.typography.titleMedium)
+                        unread.take(2).forEach {
+                            Text("· ${it.sender} — ${it.subject}", maxLines = 1)
+                        }
+                    }
+                }
+            }
+        }
+        profile?.firstName?.let {
+            item {
+                Text("Hoi $it", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

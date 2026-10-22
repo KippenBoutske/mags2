@@ -8,6 +8,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import nl.cita.magister.api.MagisterEndpoints
@@ -24,6 +26,9 @@ class MainActivity : ComponentActivity() {
         try {
             runCatching { enableEdgeToEdge() }
             handleAuthIntent(intent)
+            if (BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_DEMO, false)) {
+                viewModel.enterDemo()
+            }
             lifecycleScope.launch {
                 viewModel.shareJson.collect { json ->
                     val clipboard = getSystemService(ClipboardManager::class.java)
@@ -38,7 +43,8 @@ class MainActivity : ComponentActivity() {
             }
             val safeMode = CrashGuard.isSafeMode(this)
             setContent {
-                CitaTheme(safeMode = safeMode) {
+                val dynamic by viewModel.dynamicColor.collectAsStateWithLifecycle()
+                CitaTheme(safeMode = safeMode, dynamicColor = dynamic) {
                     CitaRoot(viewModel)
                 }
             }
@@ -61,5 +67,9 @@ class MainActivity : ComponentActivity() {
             // Custom Tabs kunnen code in query of fragment zetten; beide doorgeven.
             viewModel.handleRedirect(raw)
         }
+    }
+
+    companion object {
+        const val EXTRA_DEMO = "demo"
     }
 }
