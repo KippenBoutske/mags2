@@ -18,8 +18,8 @@ Mags is **geen** product van Iddink/Magister. Werkt met elke Magister-school. Al
 - Offline cache, pull-to-refresh, Material 3 Expressive (shared elements, spring-lijst)
 - Tabwissels als fade-through (fade + scale), navbar-pill op spring, rooster-dagindicator volgt de pager
 - Kaarten staggeren bij eerste verschijning; laden via shimmer-skeletons i.p.v. spinner
-- Donker-warm thema (concept 1, default; systeemkleuren blijven donker), Photos-stijl zwevende navbar
-- Material You onder Meer
+- Warm palet (licht/donker volgt de telefoon), Photos-stijl zwevende navbar
+- Material You onder Meer; contrast blijft AA in beide thema’s
 - Pixel-achtige haptics (direct op touch, Trillen + Licht/Normaal/Sterk onder Meer)
 - 48 dp-targets, font-schaal 1.3×
 - Baseline profile + ProfileInstaller

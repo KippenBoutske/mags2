@@ -4,17 +4,13 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.darkColorScheme
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.action.actionStartActivity
 import androidx.glance.material3.ColorProviders
-import nl.cita.magister.ui.theme.WarmBg
-import nl.cita.magister.ui.theme.WarmMuted
-import nl.cita.magister.ui.theme.WarmOn
-import nl.cita.magister.ui.theme.WarmSand
-import nl.cita.magister.ui.theme.WarmSurface
+import nl.cita.magister.ui.theme.WarmDarkScheme
+import nl.cita.magister.ui.theme.WarmLightScheme
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -40,13 +36,8 @@ class NextLessonWidget : GlanceAppWidget() {
         provideContent {
             GlanceTheme(
                 colors = ColorProviders(
-                    darkColorScheme(
-                        primary = WarmSand,
-                        background = WarmBg,
-                        surface = WarmSurface,
-                        onSurface = WarmOn,
-                        onSurfaceVariant = WarmMuted,
-                    ),
+                    light = WarmLightScheme,
+                    dark = WarmDarkScheme,
                 ),
             ) {
                 NextLessonContent(lesson)
