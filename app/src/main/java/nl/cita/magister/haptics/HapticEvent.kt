@@ -1,7 +1,7 @@
 package nl.cita.magister.haptics
 
 /**
- * Subtiele Pixel-achtige haptics. Geen lange buzz.
+ * Pixel-achtige haptics. Geen lange buzz.
  */
 enum class HapticEvent {
     TabSwitch,
@@ -20,6 +20,18 @@ enum class HapticEvent {
     LongPress,
     LoginSuccess,
     LoginError,
+}
+
+enum class HapticStrength(val id: String, val label: String, val scale: Float) {
+    Light("light", "Licht", 0.55f),
+    Normal("normal", "Normaal", 0.8f),
+    Strong("strong", "Sterk", 1.0f),
+    ;
+
+    companion object {
+        fun fromId(id: String?): HapticStrength =
+            entries.firstOrNull { it.id == id } ?: Strong
+    }
 }
 
 fun hapticForGrade(sufficient: Boolean): HapticEvent =

@@ -39,7 +39,7 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import nl.cita.magister.haptics.HapticEvent
-import nl.cita.magister.haptics.LocalMagsHaptics
+import nl.cita.magister.haptics.hapticOnDown
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -154,7 +154,7 @@ fun CircleCheck(
     modifier: Modifier = Modifier,
     contentDescription: String = if (checked) "Klaar" else "Open",
 ) {
-    val haptics = LocalMagsHaptics.current
+    val next = !checked
     val progress by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (checked) 1f else 0f,
         animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.7f, stiffness = 380f),
@@ -168,11 +168,8 @@ fun CircleCheck(
     Box(
         modifier
             .size(48.dp)
-            .clickable {
-                val next = !checked
-                haptics.play(if (next) HapticEvent.HomeworkDone else HapticEvent.HomeworkUndo)
-                onCheckedChange(next)
-            }
+            .hapticOnDown(if (next) HapticEvent.HomeworkDone else HapticEvent.HomeworkUndo)
+            .clickable { onCheckedChange(next) }
             .testTag("hw-checkbox")
             .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center,

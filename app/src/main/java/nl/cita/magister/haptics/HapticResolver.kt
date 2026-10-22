@@ -43,9 +43,6 @@ data class HapticCapability(
             return ids
         }
 
-        fun of(sdk: Int, supportedPrimitives: Set<Int>): HapticCapability =
-            HapticCapability(sdk, supportedPrimitives)
-
         fun none(sdk: Int): HapticCapability = HapticCapability(sdk, emptySet())
     }
 }
@@ -57,19 +54,30 @@ object HapticResolver {
         systemEnabled: Boolean,
         viewEnabled: Boolean,
         capability: HapticCapability,
+        strength: HapticStrength = HapticStrength.Strong,
     ): HapticPlay {
         if (!appEnabled || !systemEnabled || !viewEnabled) return HapticPlay.None
-        return resolve(event, capability)
+        return resolve(event, capability, strength)
     }
 
-    fun resolve(event: HapticEvent, capability: HapticCapability): HapticPlay =
-        resolve(planOf(event), capability)
+    fun resolve(
+        event: HapticEvent,
+        capability: HapticCapability,
+        strength: HapticStrength = HapticStrength.Strong,
+    ): HapticPlay = resolve(planOf(event), capability, strength)
 
-    fun resolve(plan: EventPlan, capability: HapticCapability): HapticPlay {
-        if (plan.primitives.isNotEmpty() && capability.supports(*plan.primitives.map { it.id }.toIntArray())) {
-            return HapticPlay.Composition(plan.primitives)
+    fun resolve(
+        plan: EventPlan,
+        capability: HapticCapability,
+        strength: HapticStrength = HapticStrength.Strong,
+    ): HapticPlay {
+        if (plan.preferComposition &&
+            plan.primitives.isNotEmpty() &&
+            capability.supports(*plan.primitives.map { it.id }.toIntArray())
+        ) {
+            return HapticPlay.Composition(plan.primitives.map { it.scaled(strength) })
         }
-        plan.viewConstants.firstOrNull { capability.viewAvailable(it) }?.let {
+        viewChoices(plan, strength).firstOrNull { capability.viewAvailable(it) }?.let {
             return HapticPlay.ViewConstant(it)
         }
         if (capability.predefinedAvailable && plan.effect != null) {
@@ -80,111 +88,157 @@ object HapticResolver {
 
     fun planOf(event: HapticEvent): EventPlan = when (event) {
         HapticEvent.TabSwitch -> EventPlan(
-            primitives = listOf(PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_TICK, 0.45f)),
-            viewConstants = listOf(HapticFeedbackConstants.SEGMENT_TICK, HapticFeedbackConstants.CLOCK_TICK),
-            effect = predefinedTick(),
+            primitives = listOf(tick(0.9f)),
+            viewLight = HapticFeedbackConstants.KEYBOARD_TAP,
+            viewNormal = HapticFeedbackConstants.CONTEXT_CLICK,
+            viewStrong = HapticFeedbackConstants.CONTEXT_CLICK,
+            effect = predefinedClick(),
         )
         HapticEvent.DaySnap -> EventPlan(
-            primitives = listOf(PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_LOW_TICK, 0.35f)),
-            viewConstants = listOf(HapticFeedbackConstants.CLOCK_TICK, HapticFeedbackConstants.CONTEXT_CLICK),
-            effect = predefinedTick(),
+            primitives = listOf(lowTick(0.7f)),
+            viewLight = HapticFeedbackConstants.KEYBOARD_TAP,
+            viewNormal = HapticFeedbackConstants.CONTEXT_CLICK,
+            viewStrong = HapticFeedbackConstants.CONTEXT_CLICK,
+            effect = predefinedClick(),
+            preferComposition = true,
         )
         HapticEvent.WeekChip -> EventPlan(
-            primitives = listOf(PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_TICK, 0.5f)),
-            viewConstants = listOf(HapticFeedbackConstants.SEGMENT_TICK, HapticFeedbackConstants.CONTEXT_CLICK),
+            primitives = listOf(tick(0.9f)),
+            viewLight = HapticFeedbackConstants.KEYBOARD_TAP,
+            viewNormal = HapticFeedbackConstants.CONTEXT_CLICK,
+            viewStrong = HapticFeedbackConstants.CONTEXT_CLICK,
             effect = predefinedClick(),
         )
         HapticEvent.TodayJump -> EventPlan(
-            primitives = listOf(PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.65f)),
-            viewConstants = listOf(HapticFeedbackConstants.CONFIRM, HapticFeedbackConstants.CONTEXT_CLICK),
+            primitives = listOf(click(1f)),
+            viewLight = HapticFeedbackConstants.CONTEXT_CLICK,
+            viewNormal = HapticFeedbackConstants.CONFIRM,
+            viewStrong = HapticFeedbackConstants.CONFIRM,
             effect = predefinedClick(),
         )
         HapticEvent.HomeworkThreshold -> EventPlan(
-            primitives = listOf(PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_QUICK_RISE, 0.4f)),
-            viewConstants = listOf(
-                HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE,
-                HapticFeedbackConstants.GESTURE_START,
-                HapticFeedbackConstants.CLOCK_TICK,
-            ),
+            primitives = listOf(quickRise(0.95f)),
+            viewLight = HapticFeedbackConstants.KEYBOARD_TAP,
+            viewNormal = HapticFeedbackConstants.GESTURE_START,
+            viewStrong = HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE,
             effect = predefinedClick(),
+            preferComposition = true,
         )
         HapticEvent.HomeworkDone -> EventPlan(
-            primitives = listOf(PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.6f)),
-            viewConstants = listOf(
-                HapticFeedbackConstants.TOGGLE_ON,
-                HapticFeedbackConstants.CONFIRM,
-                HapticFeedbackConstants.CONTEXT_CLICK,
-            ),
+            primitives = listOf(click(1f)),
+            viewLight = HapticFeedbackConstants.CONTEXT_CLICK,
+            viewNormal = HapticFeedbackConstants.CONFIRM,
+            viewStrong = HapticFeedbackConstants.TOGGLE_ON,
             effect = predefinedClick(),
         )
         HapticEvent.HomeworkUndo -> EventPlan(
-            primitives = listOf(PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_TICK, 0.45f)),
-            viewConstants = listOf(HapticFeedbackConstants.TOGGLE_OFF, HapticFeedbackConstants.CONTEXT_CLICK),
+            primitives = listOf(tick(0.85f)),
+            viewLight = HapticFeedbackConstants.KEYBOARD_TAP,
+            viewNormal = HapticFeedbackConstants.CONTEXT_CLICK,
+            viewStrong = HapticFeedbackConstants.TOGGLE_OFF,
             effect = predefinedTick(),
         )
         HapticEvent.RefreshThreshold -> EventPlan(
-            primitives = listOf(PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_TICK, 0.5f)),
-            viewConstants = listOf(
-                HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE,
-                HapticFeedbackConstants.GESTURE_START,
-                HapticFeedbackConstants.CLOCK_TICK,
-            ),
-            effect = predefinedTick(),
+            primitives = listOf(tick(0.9f)),
+            viewLight = HapticFeedbackConstants.KEYBOARD_TAP,
+            viewNormal = HapticFeedbackConstants.GESTURE_START,
+            viewStrong = HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE,
+            effect = predefinedClick(),
         )
         HapticEvent.RefreshDone -> EventPlan(
-            primitives = listOf(PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.6f)),
-            viewConstants = listOf(HapticFeedbackConstants.CONFIRM, HapticFeedbackConstants.CONTEXT_CLICK),
+            primitives = listOf(click(1f)),
+            viewLight = HapticFeedbackConstants.CONTEXT_CLICK,
+            viewNormal = HapticFeedbackConstants.CONFIRM,
+            viewStrong = HapticFeedbackConstants.CONFIRM,
             effect = predefinedClick(),
         )
         HapticEvent.RefreshError -> EventPlan(
-            primitives = listOf(PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_QUICK_FALL, 0.55f)),
-            viewConstants = listOf(HapticFeedbackConstants.REJECT, HapticFeedbackConstants.CONTEXT_CLICK),
+            primitives = listOf(quickFall(1f)),
+            viewLight = HapticFeedbackConstants.CONTEXT_CLICK,
+            viewNormal = HapticFeedbackConstants.REJECT,
+            viewStrong = HapticFeedbackConstants.REJECT,
             effect = predefinedHeavy(),
         )
         HapticEvent.GradeOpen -> EventPlan(
-            primitives = listOf(PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.55f)),
-            viewConstants = listOf(HapticFeedbackConstants.CONTEXT_CLICK, HapticFeedbackConstants.CONFIRM),
+            primitives = listOf(click(1f)),
+            viewLight = HapticFeedbackConstants.CONTEXT_CLICK,
+            viewNormal = HapticFeedbackConstants.CONTEXT_CLICK,
+            viewStrong = HapticFeedbackConstants.CONFIRM,
             effect = predefinedClick(),
         )
         HapticEvent.GradeFail -> EventPlan(
-            primitives = listOf(PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_THUD, 0.4f)),
-            viewConstants = listOf(HapticFeedbackConstants.REJECT, HapticFeedbackConstants.CONTEXT_CLICK),
+            primitives = listOf(thud(0.9f)),
+            viewLight = HapticFeedbackConstants.CONTEXT_CLICK,
+            viewNormal = HapticFeedbackConstants.REJECT,
+            viewStrong = HapticFeedbackConstants.REJECT,
             effect = predefinedHeavy(),
+            preferComposition = true,
         )
         HapticEvent.CalculatorStep -> EventPlan(
-            primitives = listOf(PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_LOW_TICK, 0.28f)),
-            viewConstants = listOf(HapticFeedbackConstants.SEGMENT_FREQUENT_TICK, HapticFeedbackConstants.CLOCK_TICK),
+            primitives = listOf(lowTick(0.7f)),
+            viewLight = HapticFeedbackConstants.KEYBOARD_TAP,
+            viewNormal = HapticFeedbackConstants.KEYBOARD_TAP,
+            viewStrong = HapticFeedbackConstants.CONTEXT_CLICK,
             effect = predefinedTick(),
         )
         HapticEvent.LongPress -> EventPlan(
-            primitives = listOf(PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_SLOW_RISE, 0.45f)),
-            viewConstants = listOf(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.CONTEXT_CLICK),
+            primitives = listOf(slowRise(0.9f)),
+            viewLight = HapticFeedbackConstants.LONG_PRESS,
+            viewNormal = HapticFeedbackConstants.LONG_PRESS,
+            viewStrong = HapticFeedbackConstants.LONG_PRESS,
             effect = predefinedHeavy(),
         )
         HapticEvent.LoginSuccess -> EventPlan(
-            primitives = listOf(
-                PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_QUICK_RISE, 0.45f),
-                PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.7f, delayMs = 40),
-            ),
-            viewConstants = listOf(HapticFeedbackConstants.CONFIRM, HapticFeedbackConstants.CONTEXT_CLICK),
+            primitives = listOf(quickRise(0.95f), click(1f)),
+            viewLight = HapticFeedbackConstants.CONTEXT_CLICK,
+            viewNormal = HapticFeedbackConstants.CONFIRM,
+            viewStrong = HapticFeedbackConstants.CONFIRM,
             effect = predefinedClick(),
+            preferComposition = true,
         )
         HapticEvent.LoginError -> EventPlan(
-            primitives = listOf(PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_QUICK_FALL, 0.55f)),
-            viewConstants = listOf(HapticFeedbackConstants.REJECT, HapticFeedbackConstants.CONTEXT_CLICK),
+            primitives = listOf(quickFall(1f)),
+            viewLight = HapticFeedbackConstants.CONTEXT_CLICK,
+            viewNormal = HapticFeedbackConstants.REJECT,
+            viewStrong = HapticFeedbackConstants.REJECT,
             effect = predefinedHeavy(),
         )
     }
 
+    fun viewChoices(plan: EventPlan, strength: HapticStrength): List<Int> {
+        val primary = when (strength) {
+            HapticStrength.Light -> plan.viewLight
+            HapticStrength.Normal -> plan.viewNormal
+            HapticStrength.Strong -> plan.viewStrong
+        }
+        return listOf(primary, plan.viewNormal, plan.viewLight, plan.viewStrong).distinct()
+    }
+
     data class EventPlan(
         val primitives: List<PrimitiveStep>,
-        val viewConstants: List<Int>,
+        val viewLight: Int,
+        val viewNormal: Int,
+        val viewStrong: Int,
         val effect: Int?,
+        val preferComposition: Boolean = false,
     )
 }
 
-private fun minSdkForView(constant: Int): Int = when (constant) {
-    HapticFeedbackConstants.LONG_PRESS -> 1
+private fun PrimitiveStep.scaled(strength: HapticStrength): PrimitiveStep =
+    copy(scale = (scale * strength.scale).coerceIn(0.15f, 1f), delayMs = 0)
+
+private fun tick(scale: Float) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_TICK, scale)
+private fun lowTick(scale: Float) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_LOW_TICK, scale)
+private fun click(scale: Float) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_CLICK, scale)
+private fun thud(scale: Float) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_THUD, scale)
+private fun quickRise(scale: Float) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_QUICK_RISE, scale)
+private fun quickFall(scale: Float) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_QUICK_FALL, scale)
+private fun slowRise(scale: Float) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_SLOW_RISE, scale)
+
+internal fun minSdkForView(constant: Int): Int = when (constant) {
+    HapticFeedbackConstants.LONG_PRESS,
+    HapticFeedbackConstants.KEYBOARD_TAP,
+    -> 1
     HapticFeedbackConstants.CLOCK_TICK -> 21
     HapticFeedbackConstants.CONTEXT_CLICK -> 23
     HapticFeedbackConstants.CONFIRM,
@@ -224,6 +278,7 @@ internal fun primitiveName(id: Int): String = when (id) {
 internal fun viewName(constant: Int): String = when (constant) {
     HapticFeedbackConstants.CLOCK_TICK -> "CLOCK_TICK"
     HapticFeedbackConstants.CONTEXT_CLICK -> "CONTEXT_CLICK"
+    HapticFeedbackConstants.KEYBOARD_TAP -> "KEYBOARD_TAP"
     HapticFeedbackConstants.LONG_PRESS -> "LONG_PRESS"
     HapticFeedbackConstants.CONFIRM -> "CONFIRM"
     HapticFeedbackConstants.REJECT -> "REJECT"

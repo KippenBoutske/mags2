@@ -53,6 +53,7 @@ import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.StudyGuide
 import nl.cita.magister.haptics.HapticEvent
+import nl.cita.magister.haptics.HapticStrength
 import nl.cita.magister.haptics.LocalMagsHaptics
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
@@ -90,6 +91,8 @@ fun SettingsScreen(
     onNotifications: (Boolean) -> Unit = {},
     hapticsEnabled: Boolean = true,
     onHaptics: (Boolean) -> Unit = {},
+    hapticStrength: HapticStrength = HapticStrength.Strong,
+    onHapticStrength: (HapticStrength) -> Unit = {},
     absences: List<Absence> = emptyList(),
     studyGuides: List<StudyGuide> = emptyList(),
     assignments: List<HomeworkItem> = emptyList(),
@@ -214,6 +217,8 @@ fun SettingsScreen(
                     onNotifications = onNotifications,
                     hapticsEnabled = hapticsEnabled,
                     onHaptics = onHaptics,
+                    hapticStrength = hapticStrength,
+                    onHapticStrength = onHapticStrength,
                     onSaveWebhook = onSaveWebhook,
                     onExport = onExport,
                     onShareJson = onShareJson,
@@ -424,6 +429,8 @@ private fun SettingsPane(
     onNotifications: (Boolean) -> Unit,
     hapticsEnabled: Boolean,
     onHaptics: (Boolean) -> Unit,
+    hapticStrength: HapticStrength,
+    onHapticStrength: (HapticStrength) -> Unit,
     onSaveWebhook: (url: String, key: String) -> Unit,
     onExport: () -> Unit,
     onShareJson: () -> Unit,
@@ -482,6 +489,20 @@ private fun SettingsPane(
                 }
             },
             modifier = Modifier.semantics { contentDescription = "Trillen" },
+        )
+    }
+    if (hapticsEnabled) {
+        CitaActionRow(
+            actions = HapticStrength.entries.map { level ->
+                CitaAction(level.label, selected = hapticStrength == level) {
+                    haptics.applyStrength(level)
+                    onHapticStrength(level)
+                    haptics.play(HapticEvent.TabSwitch, ignoreAppToggle = true)
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("meer-trillen-sterkte"),
         )
     }
     TextButton(

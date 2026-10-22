@@ -21,6 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.delay
+import nl.cita.magister.haptics.HapticEvent
+import nl.cita.magister.haptics.hapticOnDown
 
 fun <T> magsSpring(
     dampingRatio: Float = 0.78f,
@@ -75,6 +77,7 @@ fun PressScaleCard(
     modifier: Modifier = Modifier,
     colors: CardColors = CardDefaults.cardColors(),
     onClick: (() -> Unit)? = null,
+    haptic: HapticEvent? = null,
     content: @Composable () -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
@@ -91,15 +94,16 @@ fun PressScaleCard(
         }) { content() }
     }
     val shape = MaterialTheme.shapes.large
+    val cardModifier = if (haptic != null) modifier.hapticOnDown(haptic) else modifier
     if (onClick != null) {
         Card(
             onClick = onClick,
-            modifier = modifier,
+            modifier = cardModifier,
             colors = colors,
             shape = shape,
             interactionSource = interaction,
         ) { body() }
     } else {
-        Card(modifier = modifier, colors = colors, shape = shape) { body() }
+        Card(modifier = cardModifier, colors = colors, shape = shape) { body() }
     }
 }

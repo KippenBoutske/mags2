@@ -27,6 +27,7 @@ import nl.cita.magister.model.MessageDetail
 import nl.cita.magister.model.SectionErrors
 import nl.cita.magister.fixtures.DemoFixture
 import nl.cita.magister.haptics.HapticEvent
+import nl.cita.magister.haptics.HapticStrength
 import nl.cita.magister.ui.nav.MagsPage
 import java.time.LocalDate
 
@@ -54,6 +55,11 @@ class CitaViewModel(
     val dynamicColor = container.prefs.dynamicColor.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     val notifications = container.prefs.notifications.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     val haptics = container.prefs.haptics.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+    val hapticStrength = container.prefs.hapticStrength.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5_000),
+        HapticStrength.Strong,
+    )
 
     private val _signedIn = MutableStateFlow(repo.isLoggedIn() || false)
     val signedIn = _signedIn.asStateFlow()
@@ -310,6 +316,10 @@ class CitaViewModel(
 
     fun setHaptics(enabled: Boolean) {
         viewModelScope.launch { container.prefs.setHaptics(enabled) }
+    }
+
+    fun setHapticStrength(strength: HapticStrength) {
+        viewModelScope.launch { container.prefs.setHapticStrength(strength) }
     }
 
     fun prefetchAgenda(monday: LocalDate) {

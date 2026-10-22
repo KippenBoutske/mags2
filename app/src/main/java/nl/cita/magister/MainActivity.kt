@@ -54,8 +54,9 @@ class MainActivity : ComponentActivity() {
             setContent {
                 val dynamic by viewModel.dynamicColor.collectAsStateWithLifecycle()
                 val hapticsOn by viewModel.haptics.collectAsStateWithLifecycle()
+                val hapticStrength by viewModel.hapticStrength.collectAsStateWithLifecycle()
                 CitaTheme(safeMode = safeMode, dynamicColor = dynamic) {
-                    val haptics = rememberMagsHaptics(hapticsOn)
+                    val haptics = rememberMagsHaptics(hapticsOn, hapticStrength)
                     CompositionLocalProvider(LocalMagsHaptics provides haptics) {
                         CitaRoot(viewModel)
                     }

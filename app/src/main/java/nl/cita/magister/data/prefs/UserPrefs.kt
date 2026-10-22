@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import nl.cita.magister.api.Tenant
+import nl.cita.magister.haptics.HapticStrength
 
 /**
  * Gewone SharedPreferences — geen DataStore-native (`libdatastore_shared_counter.so`)
@@ -38,6 +39,11 @@ class UserPrefs(context: Context) {
     private val _haptics = MutableStateFlow(prefs.getBoolean(KEY_HAPTICS, true))
     val haptics: Flow<Boolean> = _haptics.asStateFlow()
 
+    private val _hapticStrength = MutableStateFlow(
+        HapticStrength.fromId(prefs.getString(KEY_HAPTIC_STRENGTH, HapticStrength.Strong.id)),
+    )
+    val hapticStrength: Flow<HapticStrength> = _hapticStrength.asStateFlow()
+
     suspend fun tenantHostNow(): String = _tenantHost.value
     suspend fun isDemo(): Boolean = _demoMode.value
     suspend fun schoolNameNow(): String = _schoolName.value
@@ -46,6 +52,7 @@ class UserPrefs(context: Context) {
     suspend fun dynamicColorNow(): Boolean = _dynamicColor.value
     suspend fun notificationsNow(): Boolean = _notifications.value
     suspend fun hapticsNow(): Boolean = _haptics.value
+    suspend fun hapticStrengthNow(): HapticStrength = _hapticStrength.value
 
     suspend fun setDynamicColor(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_DYNAMIC, enabled).apply()
@@ -78,6 +85,11 @@ class UserPrefs(context: Context) {
     suspend fun setHaptics(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_HAPTICS, enabled).apply()
         _haptics.value = enabled
+    }
+
+    suspend fun setHapticStrength(strength: HapticStrength) {
+        prefs.edit().putString(KEY_HAPTIC_STRENGTH, strength.id).apply()
+        _hapticStrength.value = strength
     }
 
     fun seenGradeIds(): Set<Int> =
@@ -120,6 +132,7 @@ class UserPrefs(context: Context) {
         const val KEY_DYNAMIC = "material_you"
         const val KEY_NOTIFY = "notify_updates"
         const val KEY_HAPTICS = "haptics"
+        const val KEY_HAPTIC_STRENGTH = "haptic_strength"
         const val KEY_SEEN_GRADES = "seen_grade_ids"
         const val KEY_SEEN_LESSONS = "seen_lesson_keys"
         const val KEY_SNAPSHOT = "sync_snapshot_ready"

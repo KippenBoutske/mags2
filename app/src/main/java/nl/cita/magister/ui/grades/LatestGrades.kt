@@ -16,8 +16,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.grades.GradeCalculator
-import nl.cita.magister.haptics.LocalMagsHaptics
 import nl.cita.magister.haptics.hapticForGrade
+import nl.cita.magister.haptics.hapticOnDown
 import nl.cita.magister.model.Grade
 import nl.cita.magister.ui.formatDayShort
 import nl.cita.magister.ui.formatGrade
@@ -46,17 +46,11 @@ fun LatestGradesStrip(
         )
         return
     }
-    val haptics = LocalMagsHaptics.current
     PressScaleCard(
         modifier = modifier
             .fillMaxWidth()
             .testTag("laatste-cijfers"),
         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
-        onClick = {
-            val first = grades.firstOrNull() ?: return@PressScaleCard
-            haptics.play(hapticForGrade(first.isSufficient))
-            onOpen(first)
-        },
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             grades.forEach { grade ->
@@ -66,10 +60,8 @@ fun LatestGradesStrip(
                     Modifier
                         .fillMaxWidth()
                         .testTag("laatste-cijfer")
-                        .clickable {
-                            haptics.play(hapticForGrade(grade.isSufficient))
-                            onOpen(grade)
-                        },
+                        .hapticOnDown(hapticForGrade(grade.isSufficient))
+                        .clickable { onOpen(grade) },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {

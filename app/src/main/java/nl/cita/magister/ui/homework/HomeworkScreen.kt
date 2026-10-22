@@ -28,13 +28,12 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -218,6 +217,7 @@ private fun HomeworkCard(
         else -> MaterialTheme.colorScheme.surfaceContainerHigh
     }
     val haptics = LocalMagsHaptics.current
+    val thresholdArmed = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
     val dismiss = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart && !item.isDone) {
@@ -226,13 +226,12 @@ private fun HomeworkCard(
             false
         },
     )
-    LaunchedEffect(dismiss, haptics) {
-        var last = dismiss.targetValue
-        snapshotFlow { dismiss.targetValue }.collect { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart && last != SwipeToDismissBoxValue.EndToStart) {
-                haptics.play(HapticEvent.HomeworkThreshold)
-            }
-            last = value
+    val swipeTarget = dismiss.targetValue
+    SideEffect {
+        if (swipeTarget == SwipeToDismissBoxValue.EndToStart) {
+            if (thresholdArmed.compareAndSet(false, true)) haptics.play(HapticEvent.HomeworkThreshold)
+        } else {
+            thresholdArmed.set(false)
         }
     }
     val peek by animateFloatAsState(

@@ -61,7 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import nl.cita.magister.haptics.HapticEvent
-import nl.cita.magister.haptics.LocalMagsHaptics
+import nl.cita.magister.haptics.hapticOnDown
 import nl.cita.magister.ui.motion.dockIndicatorSpring
 import kotlin.math.roundToInt
 
@@ -129,7 +129,6 @@ private fun DockPill(
     onIndicator: Color,
     onSelect: (MagsPage) -> Unit,
 ) {
-    val haptics = LocalMagsHaptics.current
     val density = LocalDensity.current
     val tabBounds = remember { mutableStateMapOf<MagsPage, Rect>() }
     val indicatorX = remember { Animatable(0f) }
@@ -211,11 +210,11 @@ private fun DockPill(
                                 tabBounds[tab.page] = next
                             }
                         }
+                        .hapticOnDown(HapticEvent.TabSwitch, enabled = tab.page != selected)
                         .clickable(
                             interactionSource = interaction,
                             indication = null,
                         ) {
-                            if (tab.page != selected) haptics.play(HapticEvent.TabSwitch)
                             onSelect(tab.page)
                         }
                         .graphicsLayer {
@@ -279,7 +278,6 @@ private fun SearchFab(
     content: Color,
     onClick: () -> Unit,
 ) {
-    val haptics = LocalMagsHaptics.current
     val interaction = remember { MutableInteractionSource() }
     Box(
         modifier = Modifier
@@ -287,11 +285,11 @@ private fun SearchFab(
             .shadow(6.dp, CircleShape, ambientColor = Color.Black.copy(alpha = 0.28f), spotColor = Color.Black.copy(alpha = 0.34f))
             .clip(CircleShape)
             .background(container)
+            .hapticOnDown(HapticEvent.TabSwitch)
             .clickable(
                 interactionSource = interaction,
                 indication = ripple(bounded = true, radius = size / 2),
             ) {
-                haptics.play(HapticEvent.TabSwitch)
                 onClick()
             }
             .testTag("dock-search")
