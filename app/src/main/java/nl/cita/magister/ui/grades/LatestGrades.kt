@@ -1,5 +1,6 @@
 package nl.cita.magister.ui.grades
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +16,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.grades.GradeCalculator
+import nl.cita.magister.haptics.LocalMagsHaptics
+import nl.cita.magister.haptics.hapticForGrade
 import nl.cita.magister.model.Grade
 import nl.cita.magister.ui.formatDayShort
 import nl.cita.magister.ui.formatGrade
@@ -31,7 +34,7 @@ internal fun latestGradeCaption(grade: Grade): String =
 @Composable
 fun LatestGradesStrip(
     grades: List<Grade>,
-    onOpen: () -> Unit,
+    onOpen: (Grade) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (grades.isEmpty()) {
@@ -43,12 +46,17 @@ fun LatestGradesStrip(
         )
         return
     }
+    val haptics = LocalMagsHaptics.current
     PressScaleCard(
         modifier = modifier
             .fillMaxWidth()
             .testTag("laatste-cijfers"),
         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
-        onClick = onOpen,
+        onClick = {
+            val first = grades.firstOrNull() ?: return@PressScaleCard
+            haptics.play(hapticForGrade(first.isSufficient))
+            onOpen(first)
+        },
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             grades.forEach { grade ->
@@ -57,7 +65,11 @@ fun LatestGradesStrip(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .testTag("laatste-cijfer"),
+                        .testTag("laatste-cijfer")
+                        .clickable {
+                            haptics.play(hapticForGrade(grade.isSufficient))
+                            onOpen(grade)
+                        },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {

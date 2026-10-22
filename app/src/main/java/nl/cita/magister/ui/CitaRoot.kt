@@ -44,6 +44,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.zIndex
 import kotlin.math.abs
 import androidx.compose.ui.Alignment
@@ -72,6 +73,8 @@ import nl.cita.magister.model.SectionErrors
 import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.StudyGuide
 import nl.cita.magister.model.SubjectAverage
+import nl.cita.magister.haptics.HapticEvent
+import nl.cita.magister.haptics.LocalMagsHaptics
 import nl.cita.magister.ui.grades.GradesScreen
 import nl.cita.magister.ui.homework.HomeworkScreen
 import nl.cita.magister.ui.login.BootSplash
@@ -100,8 +103,12 @@ fun CitaRoot(viewModel: CitaViewModel) {
     val webViewUrl by viewModel.webViewUrl.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
 
+    val haptics = LocalMagsHaptics.current
     LaunchedEffect(Unit) {
         viewModel.snackbar.collect { snackbarHost.showSnackbar(it) }
+    }
+    LaunchedEffect(haptics) {
+        viewModel.hapticPulse.collect { haptics.play(it) }
     }
 
     if (booting) {
@@ -164,6 +171,7 @@ fun CitaRoot(viewModel: CitaViewModel) {
     val sectionErrors by viewModel.sectionErrors.collectAsStateWithLifecycle()
     val dynamic by viewModel.dynamicColor.collectAsStateWithLifecycle()
     val notifications by viewModel.notifications.collectAsStateWithLifecycle()
+    val hapticsOn by viewModel.haptics.collectAsStateWithLifecycle()
     val clock by viewModel.clock.collectAsStateWithLifecycle()
     val pendingPage by viewModel.pendingPage.collectAsStateWithLifecycle()
     val offline by viewModel.offline.collectAsStateWithLifecycle()
@@ -206,6 +214,8 @@ fun CitaRoot(viewModel: CitaViewModel) {
         onDynamicColor = viewModel::setDynamicColor,
         notifications = notifications,
         onNotifications = viewModel::setNotifications,
+        hapticsEnabled = hapticsOn,
+        onHaptics = viewModel::setHaptics,
         onVisibleWeek = viewModel::prefetchAgenda,
         clockDate = clock.date,
         clockTime = clock.time,
@@ -256,6 +266,8 @@ fun MagsSignedInScaffold(
     onDynamicColor: (Boolean) -> Unit = {},
     notifications: Boolean = true,
     onNotifications: (Boolean) -> Unit = {},
+    hapticsEnabled: Boolean = true,
+    onHaptics: (Boolean) -> Unit = {},
     onVisibleWeek: (LocalDate) -> Unit = {},
     clockDate: LocalDate = LocalDate.now(),
     clockTime: LocalTime = LocalTime.now(),
@@ -338,6 +350,19 @@ fun MagsSignedInScaffold(
     )
 
     val ptr = rememberPullToRefreshState()
+    val haptics = LocalMagsHaptics.current
+    var refreshArmed by remember { mutableStateOf(false) }
+    LaunchedEffect(ptr, haptics) {
+        snapshotFlow { ptr.distanceFraction }
+            .collect { fraction ->
+                if (fraction >= 1f && !refreshArmed) {
+                    refreshArmed = true
+                    haptics.play(HapticEvent.RefreshThreshold)
+                } else if (fraction < 0.45f) {
+                    refreshArmed = false
+                }
+            }
+    }
     val overlayScale = 1f - backProgress * 0.06f
     val overlayAlpha = 1f - backProgress * 0.25f
 
@@ -488,6 +513,8 @@ fun MagsSignedInScaffold(
                                     onDynamicColor = onDynamicColor,
                                     notifications = notifications,
                                     onNotifications = onNotifications,
+                                    hapticsEnabled = hapticsEnabled,
+                                    onHaptics = onHaptics,
                                     absences = absences,
                                     studyGuides = studyGuides,
                                     assignments = assignments,

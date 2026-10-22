@@ -28,6 +28,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import nl.cita.magister.haptics.HapticEvent
+import nl.cita.magister.haptics.LocalMagsHaptics
 import nl.cita.magister.model.StudentProfile
 
 @Composable
@@ -40,6 +42,7 @@ fun MagsTopBar(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     var menu by remember { mutableStateOf(false) }
+    val haptics = LocalMagsHaptics.current
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -55,7 +58,10 @@ fun MagsTopBar(
                     .size(48.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)
-                    .clickable { menu = true }
+                    .clickable {
+                        haptics.play(HapticEvent.LongPress)
+                        menu = true
+                    }
                     .semantics { contentDescription = "Profiel" },
                 contentAlignment = Alignment.Center,
             ) {

@@ -45,13 +45,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -62,6 +60,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import nl.cita.magister.haptics.HapticEvent
+import nl.cita.magister.haptics.LocalMagsHaptics
 import nl.cita.magister.ui.motion.dockIndicatorSpring
 import kotlin.math.roundToInt
 
@@ -129,7 +129,7 @@ private fun DockPill(
     onIndicator: Color,
     onSelect: (MagsPage) -> Unit,
 ) {
-    val haptic = LocalHapticFeedback.current
+    val haptics = LocalMagsHaptics.current
     val density = LocalDensity.current
     val tabBounds = remember { mutableStateMapOf<MagsPage, Rect>() }
     val indicatorX = remember { Animatable(0f) }
@@ -215,7 +215,7 @@ private fun DockPill(
                             interactionSource = interaction,
                             indication = null,
                         ) {
-                            haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
+                            if (tab.page != selected) haptics.play(HapticEvent.TabSwitch)
                             onSelect(tab.page)
                         }
                         .graphicsLayer {
@@ -279,7 +279,7 @@ private fun SearchFab(
     content: Color,
     onClick: () -> Unit,
 ) {
-    val haptic = LocalHapticFeedback.current
+    val haptics = LocalMagsHaptics.current
     val interaction = remember { MutableInteractionSource() }
     Box(
         modifier = Modifier
@@ -291,7 +291,7 @@ private fun SearchFab(
                 interactionSource = interaction,
                 indication = ripple(bounded = true, radius = size / 2),
             ) {
-                haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
+                haptics.play(HapticEvent.TabSwitch)
                 onClick()
             }
             .testTag("dock-search")

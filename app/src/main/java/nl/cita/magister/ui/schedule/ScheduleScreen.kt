@@ -62,8 +62,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import nl.cita.magister.haptics.HapticEvent
+import nl.cita.magister.haptics.LocalMagsHaptics
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.Appointment
 import nl.cita.magister.model.HomeworkItem
@@ -131,6 +134,18 @@ fun ScheduleScreen(
     val selected = days.getOrElse(pager.currentPage) { today }
     val byDate = remember(appointments) { appointments.groupBy { localDateOf(it.startIso) } }
     var openLesson by remember { mutableStateOf<Appointment?>(null) }
+    val haptics = LocalMagsHaptics.current
+    val skipDaySnap = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
+
+    LaunchedEffect(pager, haptics) {
+        snapshotFlow { pager.settledPage }
+            .drop(1)
+            .distinctUntilChanged()
+            .collect {
+                if (skipDaySnap.getAndSet(false)) return@collect
+                haptics.play(HapticEvent.DaySnap)
+            }
+    }
 
     LaunchedEffect(pager) {
         snapshotFlow { days.getOrNull(pager.settledPage)?.with(DayOfWeek.MONDAY) }
@@ -164,10 +179,16 @@ fun ScheduleScreen(
             }
     }
 
-    fun jumpTo(date: LocalDate) {
+    fun jumpTo(date: LocalDate, haptic: HapticEvent? = HapticEvent.WeekChip) {
         val target = nextSchoolDate(date, weekendLessons)
         val index = days.indexOf(target)
-        if (index >= 0) scope.launch { pager.animateScrollToPage(index) }
+        if (index < 0 || index == pager.settledPage) {
+            haptic?.let(haptics::play)
+            return
+        }
+        skipDaySnap.set(true)
+        haptic?.let(haptics::play)
+        scope.launch { pager.animateScrollToPage(index) }
     }
 
     Column(
@@ -201,7 +222,7 @@ fun ScheduleScreen(
             )
             if (today in days && selected != today) {
                 FilledTonalButton(
-                    onClick = { jumpTo(today) },
+                    onClick = { jumpTo(today, HapticEvent.TodayJump) },
                     modifier = Modifier.testTag("rooster-vandaag"),
                 ) { Text("Vandaag") }
             }

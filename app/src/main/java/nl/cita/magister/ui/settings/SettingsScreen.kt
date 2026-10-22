@@ -52,6 +52,8 @@ import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.StudyGuide
+import nl.cita.magister.haptics.HapticEvent
+import nl.cita.magister.haptics.LocalMagsHaptics
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatWhen
@@ -86,6 +88,8 @@ fun SettingsScreen(
     onDynamicColor: (Boolean) -> Unit = {},
     notifications: Boolean = true,
     onNotifications: (Boolean) -> Unit = {},
+    hapticsEnabled: Boolean = true,
+    onHaptics: (Boolean) -> Unit = {},
     absences: List<Absence> = emptyList(),
     studyGuides: List<StudyGuide> = emptyList(),
     assignments: List<HomeworkItem> = emptyList(),
@@ -208,6 +212,8 @@ fun SettingsScreen(
                     onDynamicColor = onDynamicColor,
                     notifications = notifications,
                     onNotifications = onNotifications,
+                    hapticsEnabled = hapticsEnabled,
+                    onHaptics = onHaptics,
                     onSaveWebhook = onSaveWebhook,
                     onExport = onExport,
                     onShareJson = onShareJson,
@@ -416,6 +422,8 @@ private fun SettingsPane(
     onDynamicColor: (Boolean) -> Unit,
     notifications: Boolean,
     onNotifications: (Boolean) -> Unit,
+    hapticsEnabled: Boolean,
+    onHaptics: (Boolean) -> Unit,
     onSaveWebhook: (url: String, key: String) -> Unit,
     onExport: () -> Unit,
     onShareJson: () -> Unit,
@@ -450,6 +458,30 @@ private fun SettingsPane(
             checked = notifications,
             onCheckedChange = onNotifications,
             modifier = Modifier.semantics { contentDescription = "Meldingen" },
+        )
+    }
+    val haptics = LocalMagsHaptics.current
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 48.dp)
+            .testTag("meer-trillen"),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("Trillen", modifier = Modifier.weight(1f))
+        Switch(
+            checked = hapticsEnabled,
+            onCheckedChange = { next ->
+                if (next) {
+                    onHaptics(true)
+                    haptics.play(HapticEvent.HomeworkDone, ignoreAppToggle = true)
+                } else {
+                    haptics.play(HapticEvent.HomeworkUndo)
+                    onHaptics(false)
+                }
+            },
+            modifier = Modifier.semantics { contentDescription = "Trillen" },
         )
     }
     TextButton(

@@ -35,6 +35,9 @@ class UserPrefs(context: Context) {
     private val _notifications = MutableStateFlow(prefs.getBoolean(KEY_NOTIFY, true))
     val notifications: Flow<Boolean> = _notifications.asStateFlow()
 
+    private val _haptics = MutableStateFlow(prefs.getBoolean(KEY_HAPTICS, true))
+    val haptics: Flow<Boolean> = _haptics.asStateFlow()
+
     suspend fun tenantHostNow(): String = _tenantHost.value
     suspend fun isDemo(): Boolean = _demoMode.value
     suspend fun schoolNameNow(): String = _schoolName.value
@@ -42,6 +45,7 @@ class UserPrefs(context: Context) {
     suspend fun webhookUrlNow(): String = _webhookUrl.value
     suspend fun dynamicColorNow(): Boolean = _dynamicColor.value
     suspend fun notificationsNow(): Boolean = _notifications.value
+    suspend fun hapticsNow(): Boolean = _haptics.value
 
     suspend fun setDynamicColor(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_DYNAMIC, enabled).apply()
@@ -69,6 +73,11 @@ class UserPrefs(context: Context) {
     suspend fun setNotifications(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_NOTIFY, enabled).apply()
         _notifications.value = enabled
+    }
+
+    suspend fun setHaptics(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_HAPTICS, enabled).apply()
+        _haptics.value = enabled
     }
 
     fun seenGradeIds(): Set<Int> =
@@ -110,6 +119,7 @@ class UserPrefs(context: Context) {
         const val KEY_WEBHOOK_URL = "plan_goon_webhook_url"
         const val KEY_DYNAMIC = "material_you"
         const val KEY_NOTIFY = "notify_updates"
+        const val KEY_HAPTICS = "haptics"
         const val KEY_SEEN_GRADES = "seen_grade_ids"
         const val KEY_SEEN_LESSONS = "seen_lesson_keys"
         const val KEY_SNAPSHOT = "sync_snapshot_ready"

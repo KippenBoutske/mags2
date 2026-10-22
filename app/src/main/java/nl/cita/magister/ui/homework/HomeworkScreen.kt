@@ -28,11 +28,13 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +44,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import nl.cita.magister.haptics.HapticEvent
+import nl.cita.magister.haptics.LocalMagsHaptics
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.ui.AppClock
@@ -76,8 +80,10 @@ fun HomeworkScreen(
     val buckets = remember(items, filter, clockDate) { groupHomework(items, clockDate, filter) }
     val scope = rememberCoroutineScope()
     val openCount = items.count { !it.isDone }
+    val haptics = LocalMagsHaptics.current
 
     fun markDone(item: HomeworkItem) {
+        haptics.play(HapticEvent.HomeworkDone)
         onToggle(item, true)
         val host = snackbarHost ?: return
         scope.launch {
@@ -86,7 +92,10 @@ fun HomeworkScreen(
                 actionLabel = "Herstel",
                 duration = SnackbarDuration.Short,
             )
-            if (result == SnackbarResult.ActionPerformed) onToggle(item, false)
+            if (result == SnackbarResult.ActionPerformed) {
+                haptics.play(HapticEvent.HomeworkUndo)
+                onToggle(item, false)
+            }
         }
     }
 
@@ -208,6 +217,7 @@ private fun HomeworkCard(
         )
         else -> MaterialTheme.colorScheme.surfaceContainerHigh
     }
+    val haptics = LocalMagsHaptics.current
     val dismiss = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart && !item.isDone) {
@@ -216,6 +226,15 @@ private fun HomeworkCard(
             false
         },
     )
+    LaunchedEffect(dismiss, haptics) {
+        var last = dismiss.targetValue
+        snapshotFlow { dismiss.targetValue }.collect { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart && last != SwipeToDismissBoxValue.EndToStart) {
+                haptics.play(HapticEvent.HomeworkThreshold)
+            }
+            last = value
+        }
+    }
     val peek by animateFloatAsState(
         targetValue = if (dismiss.targetValue == SwipeToDismissBoxValue.EndToStart) 1f else 0f,
         label = "hw-swipe",

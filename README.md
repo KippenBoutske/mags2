@@ -18,6 +18,7 @@ Mags is **geen** product van Iddink/Magister. Werkt met elke Magister-school. Al
 - Offline cache, pull-to-refresh, Material 3 Expressive (shared elements, spring-lijst, morphing `LoadingIndicator`)
 - Donker-warm thema (concept 1), Photos-stijl zwevende navbar
 - Material You onder Meer
+- Pixel-achtige haptics (composition primitives, Trillen onder Meer)
 - 48 dp-targets, font-schaal 1.3×
 - Baseline profile + ProfileInstaller
 - Meldingen bij nieuwe cijfers en roosterwijzigingen (WorkManager)
@@ -37,7 +38,7 @@ cat mags-debug.apk.part-aa mags-debug.apk.part-ab > mags-debug.apk
 sha256sum -c mags-debug.apk.sha256
 ```
 
-3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.16** (`targetSdk` 37).
+3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.17** (`targetSdk` 37).
 4. Er is ook een **release-APK** (`mags-release.apk`, applicationId `app.mags`) met R8. Die is getekend met de lokale dev-keystore in `app/keystore/` — **niet** voor Play.
 5. Bij een crash: scherm **Mags is gestopt** → *Kopieer stacktrace*.
 

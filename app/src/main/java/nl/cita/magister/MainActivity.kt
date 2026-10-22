@@ -13,12 +13,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.content.ContextCompat
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import nl.cita.magister.api.MagisterEndpoints
 import nl.cita.magister.crash.CrashGuard
+import nl.cita.magister.haptics.LocalMagsHaptics
+import nl.cita.magister.haptics.rememberMagsHaptics
 import nl.cita.magister.ui.CitaRoot
 import nl.cita.magister.ui.CitaViewModel
 import nl.cita.magister.ui.theme.CitaTheme
@@ -50,8 +53,12 @@ class MainActivity : ComponentActivity() {
             val safeMode = CrashGuard.isSafeMode(this)
             setContent {
                 val dynamic by viewModel.dynamicColor.collectAsStateWithLifecycle()
+                val hapticsOn by viewModel.haptics.collectAsStateWithLifecycle()
                 CitaTheme(safeMode = safeMode, dynamicColor = dynamic) {
-                    CitaRoot(viewModel)
+                    val haptics = rememberMagsHaptics(hapticsOn)
+                    CompositionLocalProvider(LocalMagsHaptics provides haptics) {
+                        CitaRoot(viewModel)
+                    }
                 }
             }
         } catch (error: Throwable) {

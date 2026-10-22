@@ -48,6 +48,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import nl.cita.magister.api.School
+import nl.cita.magister.haptics.HapticEvent
+import nl.cita.magister.haptics.LocalMagsHaptics
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.ui.components.CookieFlower
 import nl.cita.magister.ui.school.SchoolPicker
@@ -70,6 +72,7 @@ fun LoginScreen(
     val context = LocalContext.current
     val focus = LocalFocusManager.current
     var menuOpen by remember { mutableStateOf(false) }
+    val haptics = LocalMagsHaptics.current
     androidx.compose.runtime.LaunchedEffect(Unit) { focus.clearFocus() }
 
     Box(
@@ -87,7 +90,10 @@ fun LoginScreen(
     ) {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopEnd) {
             IconButton(
-                onClick = { menuOpen = true },
+                onClick = {
+                    haptics.play(HapticEvent.LongPress)
+                    menuOpen = true
+                },
                 modifier = Modifier
                     .defaultMinSize(48.dp, 48.dp)
                     .semantics { contentDescription = "Meer" },

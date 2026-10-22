@@ -26,6 +26,7 @@ import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.MessageDetail
 import nl.cita.magister.model.SectionErrors
 import nl.cita.magister.fixtures.DemoFixture
+import nl.cita.magister.haptics.HapticEvent
 import nl.cita.magister.ui.nav.MagsPage
 import java.time.LocalDate
 
@@ -52,6 +53,7 @@ class CitaViewModel(
     val demoMode = container.prefs.demoMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     val dynamicColor = container.prefs.dynamicColor.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     val notifications = container.prefs.notifications.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+    val haptics = container.prefs.haptics.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     private val _signedIn = MutableStateFlow(repo.isLoggedIn() || false)
     val signedIn = _signedIn.asStateFlow()
@@ -88,6 +90,9 @@ class CitaViewModel(
 
     private val _shareJson = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val shareJson = _shareJson.asSharedFlow()
+
+    private val _hapticPulse = MutableSharedFlow<HapticEvent>(extraBufferCapacity = 8)
+    val hapticPulse = _hapticPulse.asSharedFlow()
 
     private val _clock = MutableStateFlow(AppClock.system())
     val clock = _clock.asStateFlow()
@@ -177,6 +182,7 @@ class CitaViewModel(
             val error = AuthRequestFactory.extractError(url)
             if (error != null) {
                 _lastError.value = ApiFailure("oauth", 0, error)
+                _hapticPulse.tryEmit(HapticEvent.LoginError)
                 _snackbar.emit("Inloggen geannuleerd.")
                 return@launch
             }
@@ -184,6 +190,7 @@ class CitaViewModel(
             val pending = container.pendingAuth.read()
             if (code == null || pending == null) {
                 _lastError.value = ApiFailure("oauth", 0, "Geen autorisatiecode ontvangen.")
+                _hapticPulse.tryEmit(HapticEvent.LoginError)
                 _snackbar.emit("Inloggen mislukt.")
                 return@launch
             }
@@ -194,6 +201,7 @@ class CitaViewModel(
                     container.pendingAuth.clear()
                     _webViewUrl.value = null
                     _signedIn.value = true
+                    _hapticPulse.tryEmit(HapticEvent.LoginSuccess)
                     val name = result.profile?.firstName
                     if (name != null) {
                         _snackbar.emit("Ingelogd als $name.")
@@ -204,6 +212,7 @@ class CitaViewModel(
                 }
                 .onFailure { error ->
                     rememberFailure(error)
+                    _hapticPulse.tryEmit(HapticEvent.LoginError)
                     _snackbar.emit(friendlyOf(error))
                 }
             _refreshing.value = false
@@ -219,6 +228,7 @@ class CitaViewModel(
             _lastError.value = null
             _offline.value = offline
             _booting.value = false
+            _hapticPulse.tryEmit(HapticEvent.LoginSuccess)
             _snackbar.emit(if (offline) "Offline · cache." else "Voorbeeld.")
         }
     }
@@ -247,10 +257,12 @@ class CitaViewModel(
                 .onSuccess {
                     reportWarnings(it.warnings)
                     _offline.value = false
+                    _hapticPulse.tryEmit(HapticEvent.RefreshDone)
                 }
                 .onFailure { error ->
                     rememberFailure(error)
                     _offline.value = true
+                    _hapticPulse.tryEmit(HapticEvent.RefreshError)
                     _snackbar.emit(friendlyOf(error))
                 }
             _refreshing.value = false
@@ -294,6 +306,10 @@ class CitaViewModel(
 
     fun setNotifications(enabled: Boolean) {
         viewModelScope.launch { container.prefs.setNotifications(enabled) }
+    }
+
+    fun setHaptics(enabled: Boolean) {
+        viewModelScope.launch { container.prefs.setHaptics(enabled) }
     }
 
     fun prefetchAgenda(monday: LocalDate) {

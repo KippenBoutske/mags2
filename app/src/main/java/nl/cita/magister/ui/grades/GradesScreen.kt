@@ -56,6 +56,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.grades.GradeCalculator
+import nl.cita.magister.haptics.HapticEvent
+import nl.cita.magister.haptics.LocalMagsHaptics
+import nl.cita.magister.haptics.hapticForGrade
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.Grade
 import nl.cita.magister.model.GradeColumnType
@@ -148,7 +151,7 @@ fun GradesScreen(
                             Text("Laatste cijfers", style = MaterialTheme.typography.titleLarge)
                         }
                         item {
-                            LatestGradesStrip(grades = latestGrades.take(3), onOpen = {})
+                            LatestGradesStrip(grades = latestGrades.take(3), onOpen = { openGrade = it })
                         }
                     }
                     if (refreshing && averages.isEmpty()) {
@@ -227,10 +230,14 @@ private fun SubjectCard(
     )
     val fail = isFailing(avg)
     val numberColor = if (fail) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+    val haptics = LocalMagsHaptics.current
     PressScaleCard(
         modifier = modifier.fillMaxWidth().testTag("cijfers-vak"),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        onClick = onOpen,
+        onClick = {
+            haptics.play(HapticEvent.GradeOpen)
+            onOpen()
+        },
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -294,6 +301,7 @@ private fun SubjectPage(
     onGrade: (Grade) -> Unit,
     sharedModifier: Modifier,
 ) {
+    val haptics = LocalMagsHaptics.current
     val counted = remember(grades) {
         GradeCalculator.countedGrades(grades).sortedBy { it.enteredAt.orEmpty() }
     }
@@ -356,7 +364,10 @@ private fun SubjectPage(
                     .staggerEnter(index)
                     .testTag("cijfers-cijfer"),
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
-                onClick = { onGrade(grade) },
+                onClick = {
+                    haptics.play(hapticForGrade(grade.isSufficient))
+                    onGrade(grade)
+                },
             ) {
                 Row(
                     Modifier.padding(16.dp),
@@ -478,6 +489,7 @@ private fun CalculatorBlock(
     subject: SubjectAverage,
     grades: List<Grade>,
 ) {
+    val haptics = LocalMagsHaptics.current
     var target by remember { mutableFloatStateOf(7f) }
     val columnWeights = remember(grades) {
         grades.mapNotNull { it.weight?.toInt()?.takeIf { weight -> weight in 1..6 } }
@@ -505,7 +517,13 @@ private fun CalculatorBlock(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             FilledTonalIconButton(
-                onClick = { target = (target - 0.1f).coerceIn(4f, 10f) },
+                onClick = {
+                    val next = (target - 0.1f).coerceIn(4f, 10f)
+                    if (next != target) {
+                        haptics.play(HapticEvent.CalculatorStep)
+                        target = next
+                    }
+                },
                 modifier = Modifier.testTag("cijfers-doel-min"),
             ) {
                 Icon(Icons.Outlined.Remove, contentDescription = "Doel lager")
@@ -515,7 +533,13 @@ private fun CalculatorBlock(
                 style = MaterialTheme.typography.titleLarge,
             )
             FilledTonalIconButton(
-                onClick = { target = (target + 0.1f).coerceIn(4f, 10f) },
+                onClick = {
+                    val next = (target + 0.1f).coerceIn(4f, 10f)
+                    if (next != target) {
+                        haptics.play(HapticEvent.CalculatorStep)
+                        target = next
+                    }
+                },
                 modifier = Modifier.testTag("cijfers-doel-plus"),
             ) {
                 Icon(Icons.Outlined.Add, contentDescription = "Doel hoger")
@@ -532,7 +556,12 @@ private fun CalculatorBlock(
             weightChoices.forEach { choice ->
                 FilterChip(
                     selected = weight.toInt() == choice,
-                    onClick = { weight = choice.toFloat() },
+                    onClick = {
+                        if (weight.toInt() != choice) {
+                            haptics.play(HapticEvent.CalculatorStep)
+                            weight = choice.toFloat()
+                        }
+                    },
                     label = { Text("${choice}×") },
                     modifier = Modifier.testTag("cijfers-weging-$choice"),
                 )

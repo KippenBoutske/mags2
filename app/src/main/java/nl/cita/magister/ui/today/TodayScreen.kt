@@ -195,7 +195,7 @@ fun TodayScreen(
         }
         gradesError?.let { item { SectionError(it) } }
         item {
-            LatestGradesStrip(grades = latest, onOpen = { onOpenPage(MagsPage.Cijfers) })
+            LatestGradesStrip(grades = latest, onOpen = { _ -> onOpenPage(MagsPage.Cijfers) })
         }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
