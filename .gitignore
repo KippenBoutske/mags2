@@ -10,7 +10,7 @@
 /local.properties
 /captures
 *.apk
-!artifacts/*.apk
+!artifacts/**/*.apk
 *.ap_
 *.aab
 *.dex

@@ -18,12 +18,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.Appointment
@@ -31,6 +33,7 @@ import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.MessagePreview
 import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.SubjectAverage
+import nl.cita.magister.ui.components.CircleCheck
 import nl.cita.magister.ui.components.CookieFlower
 import nl.cita.magister.ui.components.GradeTile
 import nl.cita.magister.ui.components.PageTitle
@@ -65,6 +68,7 @@ fun TodayScreen(
     messages: List<MessagePreview>,
     contentPadding: PaddingValues,
     onOpenPage: (MagsPage) -> Unit,
+    onToggleHomework: (HomeworkItem, Boolean) -> Unit = { _, _ -> },
     agendaError: ApiFailure? = null,
     gradesError: ApiFailure? = null,
     messagesError: ApiFailure? = null,
@@ -138,17 +142,17 @@ fun TodayScreen(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
+                        .horizontalScroll(rememberScrollState())
+                        .testTag("today-lesson-chips"),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     ofDay.forEach { lesson ->
-                        val label = lesson.periodFrom?.let { hour -> hour.toString() }
-                            ?: formatTime(lesson.startIso)
                         FilterChip(
                             selected = lesson.id == next?.id,
                             onClick = { onOpenPage(MagsPage.Rooster) },
                             shape = CircleShape,
-                            label = { Text(label) },
+                            modifier = Modifier.testTag("today-lesson-chip"),
+                            label = { Text(lessonChipLabel(lesson)) },
                         )
                     }
                 }
@@ -168,6 +172,7 @@ fun TodayScreen(
                         GradeTile(
                             value = formatGrade(subject.average),
                             subject = subject.subjectName,
+                            code = subject.subjectCode,
                             color = tileColors[index % tileColors.size],
                             modifier = Modifier.weight(1f),
                             onClick = { onOpenPage(MagsPage.Cijfers) },
@@ -184,19 +189,22 @@ fun TodayScreen(
         }
         item {
             PressScaleCard(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("today-homework"),
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
                 onClick = { onOpenPage(MagsPage.Huiswerk) },
             ) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (openHw.isEmpty()) {
                         Text("Niets open. Lekker bezig.")
                     } else {
                         openHw.take(3).forEach { hw ->
-                            Column {
-                                Text(hw.title, style = MaterialTheme.typography.titleMedium)
-                                Text(hw.subject, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
+                            HomeworkRow(
+                                item = hw,
+                                today = today,
+                                onToggle = { onToggleHomework(hw, it) },
+                            )
                         }
                     }
                 }
@@ -223,6 +231,35 @@ fun TodayScreen(
             item {
                 Text("Hoi $it", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+        }
+    }
+}
+
+@Composable
+private fun HomeworkRow(
+    item: HomeworkItem,
+    today: LocalDate,
+    onToggle: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("today-homework-row"),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        CircleCheck(checked = item.isDone, onCheckedChange = onToggle)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(item.subject, style = MaterialTheme.typography.titleMedium)
+            Text(
+                homeworkBody(item),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            SuggestionChip(
+                onClick = {},
+                label = { Text(dueChipLabel(item.dueIso, today)) },
+            )
         }
     }
 }

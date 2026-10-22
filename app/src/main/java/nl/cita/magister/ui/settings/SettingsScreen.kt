@@ -58,6 +58,8 @@ fun SettingsScreen(
     onLogout: () -> Unit,
     dynamicColor: Boolean = false,
     onDynamicColor: (Boolean) -> Unit = {},
+    notifications: Boolean = true,
+    onNotifications: (Boolean) -> Unit = {},
     absences: List<Absence> = emptyList(),
     studyGuides: List<StudyGuide> = emptyList(),
     assignments: List<HomeworkItem> = emptyList(),
@@ -181,6 +183,20 @@ fun SettingsScreen(
                         )
                     }
                     Switch(checked = dynamicColor, onCheckedChange = onDynamicColor)
+                }
+                androidx.compose.foundation.layout.Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Meldingen")
+                        Text(
+                            "Nieuwe cijfers en roosterwijzigingen. Widget ‘Volgende les’ op het startscherm.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = notifications, onCheckedChange = onNotifications)
                 }
             }
         }

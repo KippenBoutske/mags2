@@ -32,12 +32,16 @@ class UserPrefs(context: Context) {
     private val _dynamicColor = MutableStateFlow(prefs.getBoolean(KEY_DYNAMIC, false))
     val dynamicColor: Flow<Boolean> = _dynamicColor.asStateFlow()
 
+    private val _notifications = MutableStateFlow(prefs.getBoolean(KEY_NOTIFY, true))
+    val notifications: Flow<Boolean> = _notifications.asStateFlow()
+
     suspend fun tenantHostNow(): String = _tenantHost.value
     suspend fun isDemo(): Boolean = _demoMode.value
     suspend fun schoolNameNow(): String = _schoolName.value
     suspend fun tenantIdNow(): String = _tenantId.value
     suspend fun webhookUrlNow(): String = _webhookUrl.value
     suspend fun dynamicColorNow(): Boolean = _dynamicColor.value
+    suspend fun notificationsNow(): Boolean = _notifications.value
 
     suspend fun setDynamicColor(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_DYNAMIC, enabled).apply()
@@ -62,6 +66,35 @@ class UserPrefs(context: Context) {
         _demoMode.value = enabled
     }
 
+    suspend fun setNotifications(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_NOTIFY, enabled).apply()
+        _notifications.value = enabled
+    }
+
+    fun seenGradeIds(): Set<Int> =
+        prefs.getString(KEY_SEEN_GRADES, null)
+            ?.split(',')
+            ?.mapNotNull { it.toIntOrNull() }
+            ?.toSet()
+            .orEmpty()
+
+    fun snapshotReady(): Boolean = prefs.getBoolean(KEY_SNAPSHOT, false)
+
+    fun seenAppointmentKeys(): Set<String> =
+        prefs.getString(KEY_SEEN_LESSONS, null)
+            ?.split('\n')
+            ?.filter { it.isNotBlank() }
+            ?.toSet()
+            .orEmpty()
+
+    suspend fun rememberSnapshot(gradeIds: Set<Int>, appointmentKeys: Set<String>) {
+        prefs.edit()
+            .putString(KEY_SEEN_GRADES, gradeIds.joinToString(","))
+            .putString(KEY_SEEN_LESSONS, appointmentKeys.joinToString("\n"))
+            .putBoolean(KEY_SNAPSHOT, true)
+            .apply()
+    }
+
     suspend fun setWebhookUrl(url: String) {
         val trimmed = url.trim()
         prefs.edit().putString(KEY_WEBHOOK_URL, trimmed).apply()
@@ -76,5 +109,9 @@ class UserPrefs(context: Context) {
         const val KEY_DEMO = "demo_mode"
         const val KEY_WEBHOOK_URL = "plan_goon_webhook_url"
         const val KEY_DYNAMIC = "material_you"
+        const val KEY_NOTIFY = "notify_updates"
+        const val KEY_SEEN_GRADES = "seen_grade_ids"
+        const val KEY_SEEN_LESSONS = "seen_lesson_keys"
+        const val KEY_SNAPSHOT = "sync_snapshot_ready"
     }
 }

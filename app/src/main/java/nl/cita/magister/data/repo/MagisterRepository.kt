@@ -57,6 +57,16 @@ class MagisterRepository(
 
     suspend fun isDemo(): Boolean = prefs.isDemo()
 
+    suspend fun cachedGrades(): List<Grade> =
+        cache.get(KEY_GRADES)?.json?.let {
+            MagisterJson.instance.decodeFromString(ListSerializerGrade, it)
+        }.orEmpty()
+
+    suspend fun cachedAppointments(): List<Appointment> =
+        cache.get(KEY_APPOINTMENTS)?.json?.let {
+            MagisterJson.instance.decodeFromString(ListSerializerAppointment, it)
+        }.orEmpty()
+
     fun observeProfile(): Flow<StudentProfile?> = cache.observe(KEY_PROFILE).map { blob ->
         blob?.json?.let { MagisterJson.instance.decodeFromString(StudentProfile.serializer(), it) }
     }

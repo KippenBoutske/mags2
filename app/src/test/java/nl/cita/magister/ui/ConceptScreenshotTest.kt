@@ -68,6 +68,8 @@ class ConceptScreenshotTest {
     @Test fun meer412() = snap("meer", 412) { settings() }
     @Test fun meer360() = snap("meer", 360) { settings() }
     @Test fun dockVandaag412() = snap("dock-vandaag", 412) { dock(MagsPage.Vandaag) }
+    @Test fun dockVandaag360() = snap("dock-vandaag", 360) { dock(MagsPage.Vandaag) }
+    @Test fun dockHuiswerk360() = snap("dock-huiswerk", 360) { dock(MagsPage.Huiswerk) }
     @Test fun dockRooster412() = snap("dock-rooster", 412) { dock(MagsPage.Rooster) }
     @Test fun shellVandaag412() = snap("shell-vandaag", 412) { shell(MagsPage.Vandaag) }
     @Test fun shellRooster412() = snap("shell-rooster", 412) { shell(MagsPage.Rooster) }
@@ -113,9 +115,8 @@ class ConceptScreenshotTest {
     private fun outDirs(): List<File> = listOf(
         File("app/build/outputs/self-test/screenshots"),
         File("build/outputs/self-test/screenshots"),
-        File("/cursor/stores/self/artifacts/0.1.7"),
-        File("/cursor/stores/self/artifacts/screens-0.1.8"),
-        File("/opt/cursor/artifacts/0.1.8"),
+        File("/cursor/stores/self/artifacts/screens-0.1.9"),
+        File("/opt/cursor/artifacts/0.1.9"),
     )
 
     @Composable

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -150,6 +151,7 @@ fun CitaRoot(viewModel: CitaViewModel) {
     val error by viewModel.lastError.collectAsStateWithLifecycle()
     val sectionErrors by viewModel.sectionErrors.collectAsStateWithLifecycle()
     val dynamic by viewModel.dynamicColor.collectAsStateWithLifecycle()
+    val notifications by viewModel.notifications.collectAsStateWithLifecycle()
 
     MagsSignedInScaffold(
         profile = profile,
@@ -186,6 +188,8 @@ fun CitaRoot(viewModel: CitaViewModel) {
         sectionErrors = sectionErrors,
         dynamicColor = dynamic,
         onDynamicColor = viewModel::setDynamicColor,
+        notifications = notifications,
+        onNotifications = viewModel::setNotifications,
         onVisibleWeek = viewModel::prefetchAgenda,
     )
 }
@@ -228,6 +232,8 @@ fun MagsSignedInScaffold(
     sectionErrors: SectionErrors = SectionErrors(),
     dynamicColor: Boolean = false,
     onDynamicColor: (Boolean) -> Unit = {},
+    notifications: Boolean = true,
+    onNotifications: (Boolean) -> Unit = {},
     onVisibleWeek: (LocalDate) -> Unit = {},
 ) {
     var page by remember { mutableStateOf(initialPage) }
@@ -372,6 +378,7 @@ fun MagsSignedInScaffold(
                                         page = next
                                         expansion = 1f
                                     },
+                                    onToggleHomework = onToggleHomework,
                                     agendaError = sectionErrors.agenda,
                                     gradesError = sectionErrors.grades,
                                     messagesError = sectionErrors.messages,
@@ -426,6 +433,8 @@ fun MagsSignedInScaffold(
                                     onLogout = onLogout,
                                     dynamicColor = dynamicColor,
                                     onDynamicColor = onDynamicColor,
+                                    notifications = notifications,
+                                    onNotifications = onNotifications,
                                     absences = absences,
                                     studyGuides = studyGuides,
                                     assignments = assignments,
@@ -461,6 +470,7 @@ fun MagsSignedInScaffold(
                 onSearch = { searchOpen = true },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
                     .navigationBarsPadding()
                     .padding(bottom = 12.dp)
                     .zIndex(2f)

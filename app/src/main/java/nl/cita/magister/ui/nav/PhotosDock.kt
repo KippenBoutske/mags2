@@ -1,6 +1,11 @@
 package nl.cita.magister.ui.nav
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -9,12 +14,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Search
@@ -55,8 +60,8 @@ import nl.cita.magister.ui.motion.dockIndicatorSpring
 import kotlin.math.roundToInt
 
 /**
- * Photos-stijl dock: één indicator, icon+label altijd (geen layout-shift).
- * Geen ButtonGroup, geen per-tab selected-achtergrond.
+ * Photos-stijl dock: één indicator, label alleen op de geselecteerde tab.
+ * 16 dp zijmarge zit op de parent; de zoekknop mag nooit van het scherm af.
  */
 @Composable
 fun PhotosDock(
@@ -71,12 +76,13 @@ fun PhotosDock(
     val onPill = MaterialTheme.colorScheme.onSurface
     val indicatorColor = MaterialTheme.colorScheme.secondaryContainer
     val onIndicator = MaterialTheme.colorScheme.onSecondaryContainer
-    val compact = false
 
     Row(
         modifier = modifier
-            .wrapContentSize(Alignment.Center)
-            .passHorizontalSwipes(),
+            .fillMaxWidth()
+            .padding(horizontal = MagsChrome.DockSide)
+            .passHorizontalSwipes()
+            .testTag("dock-row"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MagsChrome.DockGap),
     ) {
@@ -87,8 +93,8 @@ fun PhotosDock(
             onPill = onPill,
             indicatorColor = indicatorColor,
             onIndicator = onIndicator,
-            compact = compact,
             onSelect = onSelect,
+            modifier = Modifier.weight(1f),
         )
         SearchFab(
             size = MagsChrome.PillHeight,
@@ -97,7 +103,6 @@ fun PhotosDock(
             onClick = onSearch,
         )
     }
-    // expansion is applied by the parent (translate), not by hiding tabs.
     @Suppress("UNUSED_VARIABLE")
     val unused = expansion
 }
@@ -110,8 +115,8 @@ private fun DockPill(
     onPill: Color,
     indicatorColor: Color,
     onIndicator: Color,
-    compact: Boolean,
     onSelect: (MagsPage) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -137,7 +142,7 @@ private fun DockPill(
     }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .height(MagsChrome.PillHeight)
             .shadow(6.dp, CircleShape, ambientColor = Color.Black.copy(alpha = 0.28f), spotColor = Color.Black.copy(alpha = 0.34f))
             .clip(CircleShape)
@@ -191,7 +196,7 @@ private fun DockPill(
                             haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
                             onSelect(tab.page)
                         }
-                        .padding(horizontal = if (compact) 8.dp else 10.dp)
+                        .padding(horizontal = 8.dp)
                         .testTag("dock-tab-${tab.page.name}")
                         .semantics {
                             contentDescription = tab.label
@@ -206,15 +211,21 @@ private fun DockPill(
                         modifier = Modifier.size(18.dp),
                         tint = if (isSelected) onIndicator else onPill.copy(alpha = 0.88f),
                     )
-                    Text(
-                        tab.label,
-                        color = if (isSelected) onIndicator else onPill.copy(alpha = 0.88f),
-                        fontSize = 13.sp,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Clip,
-                        softWrap = false,
-                    )
+                    AnimatedVisibility(
+                        visible = isSelected,
+                        enter = fadeIn() + expandHorizontally(expandFrom = Alignment.Start),
+                        exit = fadeOut() + shrinkHorizontally(shrinkTowards = Alignment.Start),
+                    ) {
+                        Text(
+                            tab.label,
+                            color = onIndicator,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Clip,
+                            softWrap = false,
+                        )
+                    }
                 }
             }
         }
@@ -251,7 +262,6 @@ private fun SearchFab(
     }
 }
 
-/** Horizontal day-swipes must not become tab presses. Vertical collapse stays on the parent. */
 private fun Modifier.passHorizontalSwipes(): Modifier = pointerInput(Unit) {
     awaitPointerEventScope {
         while (true) {

@@ -9,6 +9,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,12 +36,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.ui.theme.WarmOnTile
 import nl.cita.magister.ui.theme.WarmSand
+import nl.cita.magister.ui.today.subjectChipLabel
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -98,14 +103,18 @@ fun GradeTile(
     subject: String,
     color: Color,
     modifier: Modifier = Modifier,
+    code: String = "",
     onClick: () -> Unit = {},
 ) {
+    val label = subjectChipLabel(subject, code)
     Column(
         modifier
             .clip(RoundedCornerShape(28.dp))
             .background(color)
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 16.dp),
+            .padding(horizontal = 14.dp, vertical = 16.dp)
+            .semantics { contentDescription = "$value $subject" }
+            .testTag("grade-tile"),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -122,7 +131,40 @@ fun GradeTile(
                 .background(Color.White.copy(alpha = 0.28f))
                 .padding(horizontal = 10.dp, vertical = 4.dp),
         ) {
-            Text(subject, color = WarmOnTile, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+            Text(
+                label,
+                color = WarmOnTile,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
+                softWrap = false,
+            )
+        }
+    }
+}
+
+@Composable
+fun CircleCheck(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    contentDescription: String = if (checked) "Klaar" else "Open",
+) {
+    val ring = if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+    val fill = if (checked) MaterialTheme.colorScheme.primary else Color.Transparent
+    Box(
+        modifier
+            .size(28.dp)
+            .clip(CircleShape)
+            .border(2.dp, ring, CircleShape)
+            .background(fill, CircleShape)
+            .clickable { onCheckedChange(!checked) }
+            .testTag("hw-checkbox")
+            .semantics { this.contentDescription = contentDescription },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (checked) {
+            Text("✓", color = MaterialTheme.colorScheme.onPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

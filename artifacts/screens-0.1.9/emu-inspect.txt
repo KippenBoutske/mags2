@@ -1,0 +1,1 @@
+search Zoeken bounds [891,1741][1038,1888] on 1080x1920 — fully inside (right 1038 < 1080, left margin 42). No FATAL EXCEPTION.

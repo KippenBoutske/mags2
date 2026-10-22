@@ -1,0 +1,402 @@
+--------- beginning of system
+10-22 01:26:57.403  1664  1679 W ActivityManager: Launch timeout has expired, giving up wake lock!
+--------- beginning of main
+10-22 01:26:57.361  1393  1393 I chatty  : uid=1000(system) allocator@2.0-s expire 1 line
+10-22 01:26:57.366  1393  1393 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 8298496
+10-22 01:26:57.497  5692  5724 D         : HostConnection::get() New Host Connection established 0x7cd4ba22ed80, tid 5724
+10-22 01:26:57.530  5692  5724 I OpenGLRenderer: Initialized EGL, version 1.4
+10-22 01:26:57.531  5692  5724 D OpenGLRenderer: Swap behavior 1
+10-22 01:26:57.543  5692  5724 D EGL_emulation: eglCreateContext: 0x7cd4ba259b20: maj 3 min 0 rcv 3
+10-22 01:26:57.559  5692  5724 D EGL_emulation: eglMakeCurrent: 0x7cd4ba259b20: ver 3 0 (tinfo 0x7cd4ba2edf00)
+10-22 01:26:58.018  5692  5692 D WM-WorkerWrapper: Starting work for nl.cita.magister.work.MagisterSyncWorker
+10-22 01:26:58.035  5692  5692 D WM-WorkerWrapper: Starting work for nl.cita.magister.work.MagisterSyncWorker
+10-22 01:26:58.236  2748  5728 I Vision  : Requesting optional module download of ocr.
+10-22 01:26:58.251  2748  5728 I Vision  : Checking for download completion for 884088 -- ocr
+10-22 01:26:58.344  1664  1678 E memtrack: Couldn't load memtrack module
+10-22 01:26:58.345  1664  1678 W android.os.Debug: failed to get memory consumption info: -1
+10-22 01:26:59.045  1664  1740 I InputReader: Reconfiguring input devices.  changes=0x00000010
+10-22 01:26:59.380  1907  1907 D CarrierSvcBindHelper: No carrier app for: 0
+10-22 01:26:59.380  1907  1907 D ImsResolver: maybeAddedImsService, packageName: app.mags.debug
+10-22 01:26:59.431  1664  1664 I Telecom : DefaultDialerCache: Refreshing default dialer for user 0: now com.google.android.dialer: DDC.oR@AJ4
+10-22 01:26:59.761  1664  1678 E memtrack: Couldn't load memtrack module
+10-22 01:26:59.761  1664  1678 W android.os.Debug: failed to get memory consumption info: -1
+10-22 01:26:59.775  2800  2800 E WakelockManager: Keep alive invocation counter should never be below zero.
+10-22 01:26:59.816  2800  5732 I Fitness : OnPackageChangedOperation got intent: Intent { act=android.intent.action.PACKAGE_CHANGED dat=package:app.mags.debug flg=0x45000010 cmp=com.google.android.gms/.chimera.PersistentIntentOperationService (has extras) } [CONTEXT service_id=17 ]
+10-22 01:26:59.916  2800  5732 I Fitness : FitCleanupIntentOperation received Intent android.intent.action.PACKAGE_CHANGED [CONTEXT service_id=17 ]
+10-22 01:27:00.221  1394  1420 D hwcomposer: hw_composer sent 28 syncs in 60s
+10-22 01:27:00.283  5692  5692 I Choreographer: Skipped 461 frames!  The application may be doing too much work on its main thread.
+10-22 01:27:00.481  5424  5730 I ProvidersCache: Provider returned no roots. Possibly naughty: com.google.android.apps.docs.storage
+10-22 01:27:01.025  2748  3092 I Icing   : IndexChimeraService.getServiceInterface callingPackage=com.google.android.gms componentName=AppsCorpus serviceId=36
+10-22 01:27:01.109  5692  5697 I zygote64: Do full code cache collection, code=235KB, data=243KB
+10-22 01:27:01.272  2748  5392 W Icing   : No valid account for uploading user actions
+10-22 01:27:01.379  5692  5697 I zygote64: After code cache collection, code=186KB, data=143KB
+10-22 01:27:01.552  5692  5703 I zygote64: Background concurrent copying GC freed 19744(1237KB) AllocSpace objects, 14(280KB) LOS objects, 49% free, 3MB/7MB, paused 29.017ms total 2.565s
+10-22 01:27:01.606  2748  3310 I Icing   : IndexChimeraService.getServiceInterface callingPackage=com.google.android.gms componentName=null serviceId=30
+10-22 01:27:02.032  1664  1678 E memtrack: Couldn't load memtrack module
+10-22 01:27:02.032  1664  1678 W android.os.Debug: failed to get memory consumption info: -1
+10-22 01:27:02.491  2748  5392 I Icing   : Usage reports ok 1, Failed Usage reports 0, indexed 0, rejected 0
+10-22 01:27:02.608  2748  5392 W Icing   : No valid account for uploading user actions
+10-22 01:27:02.844  2748  5392 I Icing   : Usage reports ok 0, Failed Usage reports 0, indexed 0, rejected 0
+10-22 01:27:03.179  5692  5727 W zygote64: Long monitor contention with owner DefaultDispatcher-worker-1 (5726) at void nl.cita.magister.data.db.JsonOfflineStore.putBlob(nl.cita.magister.data.db.CacheBlob)(CitaDatabase.kt:-1) waiters=0 in void nl.cita.magister.data.db.JsonOfflineStore.putBlob(nl.cita.magister.data.db.CacheBlob) for 110ms
+10-22 01:27:03.641  1664  1678 E memtrack: Couldn't load memtrack module
+10-22 01:27:03.641  1664  1678 W android.os.Debug: failed to get memory consumption info: -1
+10-22 01:27:04.008  2748  5392 I Icing   : Indexing com.google.android.gms-internal.3p:MobileApplication from com.google.android.gms
+10-22 01:27:04.103  2748  5392 I Icing   : Indexing com.google.android.gms-apps from com.google.android.gms
+10-22 01:27:04.303  1664  1678 E memtrack: Couldn't load memtrack module
+10-22 01:27:04.303  1664  1678 W android.os.Debug: failed to get memory consumption info: -1
+10-22 01:27:04.362  2748  5392 I Icing   : Indexing done com.google.android.gms-internal.3p:MobileApplication
+10-22 01:27:04.368  2748  5392 I Icing   : Indexing done com.google.android.gms-apps
+10-22 01:27:05.212  5692  5724 D EGL_emulation: eglMakeCurrent: 0x7cd4ba259b20: ver 3 0 (tinfo 0x7cd4ba2edf00)
+10-22 01:27:06.018  1664  1664 W JobServiceContext: 3fb3c14 #u0a78/1 app.mags.debug/androidx.work.impl.background.systemjob.SystemJobService
+10-22 01:27:06.102  1664  1664 W JobServiceContext: 71c7168 #u0a78/0 app.mags.debug/androidx.work.impl.background.systemjob.SystemJobService
+10-22 01:27:06.374  2800  2811 I zygote64: Background concurrent copying GC freed 92679(5MB) AllocSpace objects, 2(40KB) LOS objects, 45% free, 7MB/13MB, paused 285us total 426.761ms
+10-22 01:27:06.415  5692  5697 I zygote64: Do partial code cache collection, code=219KB, data=243KB
+10-22 01:27:06.415  5692  5697 I zygote64: After code cache collection, code=219KB, data=243KB
+10-22 01:27:06.415  5692  5697 I zygote64: Increasing code cache capacity to 1024KB
+10-22 01:27:06.820  5692  5692 D WM-SystemJobService: onStartJob for WorkGenerationalId(workSpecId=f9d626df-83a4-4290-a215-f8a8d797a1b9, generation=0)
+10-22 01:27:06.838  5692  5692 D WM-SystemJobService: onStartJob for WorkGenerationalId(workSpecId=dcdcc845-ae6c-4995-8f24-17b03a5290ea, generation=0)
+10-22 01:27:06.845  1664  1686 I ActivityManager: Displayed app.mags.debug/nl.cita.magister.MainActivity: +19s290ms
+10-22 01:27:06.952  5692  5747 D ProfileInstaller: Installing profile for app.mags.debug
+10-22 01:27:06.974  5692  5711 D WM-Processor: Work WorkGenerationalId(workSpecId=f9d626df-83a4-4290-a215-f8a8d797a1b9, generation=0) is already enqueued for processing
+10-22 01:27:06.997  5692  5711 D WM-Processor: Work WorkGenerationalId(workSpecId=dcdcc845-ae6c-4995-8f24-17b03a5290ea, generation=0) is already enqueued for processing
+10-22 01:27:07.060  1406  1406 W SurfaceFlinger: couldn't log to binary event log: overflow.
+10-22 01:27:07.061  1406  1406 W SurfaceFlinger: couldn't log to binary event log: overflow.
+10-22 01:27:07.514  5692  5692 I Choreographer: Skipped 431 frames!  The application may be doing too much work on its main thread.
+10-22 01:27:07.747  5692  5711 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=dcdcc845-ae6c-4995-8f24-17b03a5290ea, tags={ nl.cita.magister.work.MagisterSyncWorker } ]
+10-22 01:27:08.005  5692  5711 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=f9d626df-83a4-4290-a215-f8a8d797a1b9, tags={ nl.cita.magister.work.MagisterSyncWorker } ]
+10-22 01:27:08.158  5692  5692 D WM-Processor: Processor dcdcc845-ae6c-4995-8f24-17b03a5290ea executed; reschedule = false
+10-22 01:27:08.175  5692  5692 D WM-GreedyScheduler: Stopping tracking for WorkGenerationalId(workSpecId=dcdcc845-ae6c-4995-8f24-17b03a5290ea, generation=0)
+10-22 01:27:08.260  2748  5605 W ChimeraConfigurator: Error syncing flags: qoq: COMMIT_TIMEOUT
+10-22 01:27:08.260  2748  5605 I ChmraDebugLogger: [79] COMMIT_TIMEOUT
+10-22 01:27:08.266  2748  5605 I ChmraDebugLogger: [52] null
+10-22 01:27:08.292  2748  5605 W ChimeraConfigService: Retry attempt was throttled.
+10-22 01:27:08.343  2748  5605 I Vision  : Requesting optional module download of ocr.
+10-22 01:27:08.344  2748  5605 I Vision  : Checking for download completion for 894194 -- ocr
+10-22 01:27:08.383  5692  5692 D WM-Processor: Processor f9d626df-83a4-4290-a215-f8a8d797a1b9 executed; reschedule = false
+10-22 01:27:08.464  5692  5711 D WM-GreedyScheduler: Cancelling work ID dcdcc845-ae6c-4995-8f24-17b03a5290ea
+10-22 01:27:08.584  2504  2504 W SearchService: Abort, client detached.
+10-22 01:27:08.730  2504  2504 E WorkerRegistryImpl: getWorker() is called after WorkerRegistry disposal.
+10-22 01:27:08.732  2504  2504 E WorkerRegistryImpl: getWorker() is called after WorkerRegistry disposal.
+10-22 01:27:09.027  5692  5711 D WM-SystemJobScheduler: Scheduling work ID dcdcc845-ae6c-4995-8f24-17b03a5290eaJob ID 0
+10-22 01:27:09.100  5692  5719 D WM-NetworkStateTracker: Unregistering network callback
+10-22 01:27:09.105  1664  1759 D ConnectivityService: releasing NetworkRequest [ TRACK_DEFAULT id=10, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VPN] ] (CALLBACK_RELEASED)
+10-22 01:27:09.185  5692  5711 D WM-GreedyScheduler: Cancelling work ID f9d626df-83a4-4290-a215-f8a8d797a1b9
+10-22 01:27:09.423  1406  1732 E SurfaceFlinger: ro.sf.lcd_density must be defined as a build property
+10-22 01:27:09.627  1393  1393 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 8298496
+10-22 01:27:09.630  2800  4673 I zygote64: Deoptimizing void aabu.a(aabp) due to JIT inline cache
+10-22 01:27:09.640  5750  5750 D         : HostConnection::get() New Host Connection established 0x7aee0b22f780, tid 5750
+10-22 01:27:10.839  1664  5613 W ActivityManager: Slow operation: 60ms so far, now at getContentProviderImpl: after updateOomAdj
+10-22 01:27:10.839  1664  5613 W ActivityManager: Slow operation: 60ms so far, now at getContentProviderImpl: done!
+10-22 01:27:11.462  2800  4993 W ctxmgr  : [WorkManager] Long workInfo: pkg=com.google.android.gms, lbl=ControllerOperation_finalizeTask, start=2026-10-22 01:27:10.190+0000, stop=2026-10-22 01:27:11.438+0000, durtn=1248ms [CONTEXT service_id=47 ]
+10-22 01:27:11.681  2800  4993 I zygote64: Deoptimizing boolean caao.c(java.util.Map$Entry) due to JIT inline cache
+10-22 01:27:14.042  2800  4993 W ctxmgr  : [WorkManager] Long workInfo: pkg=com.google.android.gms, lbl=ListenerInvokerRunner, start=2026-10-22 01:27:11.462+0000, stop=2026-10-22 01:27:13.706+0000, durtn=2244ms [CONTEXT service_id=47 ]
+10-22 01:27:14.845  1664  1678 E memtrack: Couldn't load memtrack module
+10-22 01:27:14.845  1664  1678 W android.os.Debug: failed to get memory consumption info: -1
+10-22 01:27:15.032  1664  1674 I zygote64: Background concurrent copying GC freed 58145(4MB) AllocSpace objects, 20(424KB) LOS objects, 41% free, 8MB/14MB, paused 1.289ms total 393.946ms
+10-22 01:27:15.375  1664  1678 E memtrack: Couldn't load memtrack module
+10-22 01:27:15.375  1664  1678 W android.os.Debug: failed to get memory consumption info: -1
+10-22 01:27:15.744  2800  4993 W ctxmgr  : [WorkManager] Long workInfo: pkg=com.google.android.gms, lbl=ListenerInvokerRunner, start=2026-10-22 01:27:14.194+0000, stop=2026-10-22 01:27:15.743+0000, durtn=1549ms [CONTEXT service_id=47 ]
+10-22 01:27:15.843  5692  5697 I zygote64: Compiler allocated 4MB to compile boolean androidx.compose.runtime.snapshots.SnapshotStateObserver$ObservedScopeMap.recordInvalidation(java.util.Set)
+10-22 01:27:16.177  2800  4702 I LogUtils: [Places]: ?: Couldn't find platform key file. [CONTEXT service_id=253 ]
+10-22 01:27:16.266  2504  5753 W zygote  : Long monitor contention with owner NonUserFacing9 (5752) at boolean com.google.android.apps.gsa.staticplugins.r.o.aNR()(SourceFile:38) waiters=0 in boolean com.google.android.apps.gsa.staticplugins.r.o.aNS() for 6.929s
+10-22 01:27:16.593  2504  5753 W zygote  : Long monitor contention with owner NonUserFacing9 (5752) at boolean com.google.android.apps.gsa.staticplugins.r.o.aNT()(SourceFile:79) waiters=0 in boolean com.google.android.apps.gsa.staticplugins.r.o.aNS() for 324ms
+10-22 01:27:16.925  2800  4169 I LogUtils: [Places]: ?: Couldn't find platform key file. [CONTEXT service_id=253 ]
+10-22 01:27:17.318  2800  5767 I LogUtils: [Places]: ?: Couldn't find platform key file. [CONTEXT service_id=253 ]
+10-22 01:27:17.513  2800  5771 I LogUtils: [Places]: ?: Couldn't find platform key file. [CONTEXT service_id=253 ]
+10-22 01:27:18.560  2748  5773 I Vision  : Requesting optional module download of ocr.
+10-22 01:27:18.562  2748  5773 I Vision  : Exceeded maximum feature download tries for ocr
+10-22 01:27:18.562  2748  5773 W Vision  : Request of optional module download of ocr failed.
+10-22 01:27:18.620  2800  2800 I zygote64: Deoptimizing void com.google.android.gms.common.api.internal.BasePendingResult.<init>(rlc) due to JIT same target
+10-22 01:27:18.624  2800  2800 I GeofencerStateMachine: removeGeofences: removeRequest=RemoveGeofencingRequest[REMOVE_BY_PENDING_INTENT pendingIntent=PendingIntent[creatorPackage=com.google.android.gms], packageName=com.google.android.gms]
+10-22 01:27:18.657  2800  2800 I GeofencerStateMachine: removeGeofences: removeRequest=RemoveGeofencingRequest[REMOVE_BY_PENDING_INTENT pendingIntent=PendingIntent[creatorPackage=com.google.android.gms], packageName=com.google.android.gms]
+10-22 01:27:18.713  2748  5773 I Vision  : Checking for download completion for 904415 -- ocr
+10-22 01:27:18.817  2504  5774 I EventLogSendingHelper: Sending log events.
+10-22 01:27:19.173  2800  5771 I LogUtils: [Places]: ?: Couldn't find platform key file. [CONTEXT service_id=253 ]
+10-22 01:27:19.412  2800  3163 W GCoreFlp: No location to return for getLastLocation()
+10-22 01:27:19.719  5692  5697 I zygote64: Do full code cache collection, code=476KB, data=472KB
+10-22 01:27:19.857  2800  5766 I PlacesLogger: [PlaceInferenceEngine]: [anon] Changed inference mode: 0 [CONTEXT service_id=253 ]
+10-22 01:27:19.862  2800  5771 I LogUtils: [Places]: ?: Couldn't find platform key file. [CONTEXT service_id=253 ]
+10-22 01:27:20.062  5692  5697 I zygote64: After code cache collection, code=353KB, data=264KB
+10-22 01:27:20.335  2800  5766 I LogUtils: [Places]: ?: PlacesBleScanner start() with priority 2 [CONTEXT service_id=253 ]
+10-22 01:27:20.969  2800  5766 I PlacesLogger: [PlaceInferenceEngine]: [anon] Changed inference mode: 1 [CONTEXT service_id=253 ]
+10-22 01:27:20.982  2800  2800 E BeaconBle: Missing BluetoothAdapter [CONTEXT service_id=111 ]
+10-22 01:27:21.080  2800  2800 I BeaconBle: BLE 'KK+' software access layer enabled [CONTEXT service_id=111 ]
+10-22 01:27:21.081  2800  2800 I zygote64: Deoptimizing void atoj.<init>(android.content.Context, int, java.lang.String, java.lang.String, java.lang.String, java.lang.String) due to JIT same target
+10-22 01:27:21.520  2800  3163 W GCoreFlp: No location to return for getLastLocation()
+10-22 01:27:21.625  2800  3160 I zygote64: Deoptimizing void bzyp.a(java.lang.Iterable, java.util.List) due to JIT inline cache
+10-22 01:27:21.636  2800  4993 I LogUtils: [Places]: ?: Couldn't find platform key file. [CONTEXT service_id=253 ]
+10-22 01:27:21.715  2800  5766 I LogUtils: [Places]: ?: PlacesBleScanner stop() [CONTEXT service_id=253 ]
+10-22 01:27:21.728  2800  5766 I PlacesLogger: [PlaceInferenceEngine]: [anon] Changed inference mode: 0 [CONTEXT service_id=253 ]
+10-22 01:27:21.766  2800  2800 I BeaconBle: Client requested scan, settings=BleSettings [scanMode=ZERO_POWER, callbackType=ALL_MATCHES, reportDelayMillis=0, 1 filters, 0 clients, callingClientName=Places] [CONTEXT service_id=111 ]
+10-22 01:27:21.851  2800  2800 I BeaconBle: Scan : No clients left, canceling alarm. [CONTEXT service_id=111 ]
+10-22 01:27:21.852  2800  2800 E BeaconBle: Scan couldn't start for Places [CONTEXT service_id=111 ]
+10-22 01:27:21.854  2800  2800 I BeaconBle: Scan : No clients left, canceling alarm. [CONTEXT service_id=111 ]
+10-22 01:27:21.855  2800  2800 I BeaconBle: Scan canceled successfully. [CONTEXT service_id=111 ]
+10-22 01:27:22.238  2800  4993 I LogUtils: [Places]: ?: Couldn't find platform key file. [CONTEXT service_id=253 ]
+10-22 01:27:22.557  2800  5769 I LogUtils: [Places]: ?: Couldn't find platform key file. [CONTEXT service_id=253 ]
+10-22 01:27:22.581  2800  2811 I zygote64: Background concurrent copying GC freed 42247(2MB) AllocSpace objects, 2(40KB) LOS objects, 43% free, 7MB/13MB, paused 24.119ms total 2.576s
+10-22 01:27:22.799  2800  3163 W GCoreFlp: No location to return for getLastLocation()
+10-22 01:27:22.912  2800  2800 I GeofencerStateMachine: removeGeofences: removeRequest=RemoveGeofencingRequest[REMOVE_BY_PENDING_INTENT pendingIntent=PendingIntent[creatorPackage=com.google.android.gms], packageName=com.google.android.gms]
+10-22 01:27:26.271  5692  5697 I zygote64: Do partial code cache collection, code=483KB, data=356KB
+10-22 01:27:26.289  5692  5697 I zygote64: After code cache collection, code=474KB, data=353KB
+10-22 01:27:26.289  5692  5697 I zygote64: Increasing code cache capacity to 2MB
+10-22 01:27:26.290  5692  5697 I zygote64: Compiler allocated 6MB to compile void android.view.ViewRootImpl.performTraversals()
+10-22 01:27:26.405  1664  1679 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.DROPBOX_ENTRY_ADDED flg=0x10 (has extras) } to com.google.android.gms/.stats.service.DropBoxEntryAddedReceiver
+10-22 01:27:26.405  1664  1679 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.DROPBOX_ENTRY_ADDED flg=0x10 (has extras) } to com.google.android.gms/.chimera.GmsIntentOperationService$PersistentTrustedReceiver
+10-22 01:27:27.525  1664  1678 E memtrack: Couldn't load memtrack module
+10-22 01:27:27.525  1664  1678 W android.os.Debug: failed to get memory consumption info: -1
+10-22 01:27:27.555  2800  2800 I BeaconBle: Scan : No clients left, canceling alarm. [CONTEXT service_id=111 ]
+10-22 01:27:28.626  2748  5781 I Vision  : Requesting optional module download of ocr.
+10-22 01:27:28.706  2748  5784 I ChimeraConfigurator: Starting update, reason: 4 urgentFeatures: vision.ocr:-1
+10-22 01:27:28.780  2748  5781 I Vision  : Checking for download completion for 914603 -- ocr
+10-22 01:27:30.293  5692  5703 I zygote64: Background concurrent copying GC freed 44515(2MB) AllocSpace objects, 32(640KB) LOS objects, 50% free, 4MB/8MB, paused 292us total 128.906ms
+10-22 01:27:36.424  1404  1404 I boot-pipe: done populating /dev/random
+10-22 01:27:38.867  2748  5786 I Vision  : Requesting optional module download of ocr.
+10-22 01:27:38.964  2800  5732 I aorp    : updateFromConfigurations using legacy put method [CONTEXT service_id=204 ]
+10-22 01:27:39.462  2504  5756 W GmsLocationProvider: Error removing location updates: 16
+10-22 01:27:40.567  1664  1678 E memtrack: Couldn't load memtrack module
+10-22 01:27:40.568  1664  1678 W android.os.Debug: failed to get memory consumption info: -1
+10-22 01:27:40.866  2800  3117 I zygote64: Deoptimizing aabe com.google.android.gms.framework.tracing.AbstractGmsTracer.a(java.lang.String, boyf, android.content.Intent, java.lang.ClassLoader) due to JIT inline cache
+10-22 01:27:40.924  1664  5613 W AlarmManager: Window length 1152921504606846975ms suspiciously long; limiting to 1 hour
+10-22 01:27:49.046  5795  5795 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-22 01:27:49.591  5795  5795 W app_process: Unexpected CPU variant for X86 using defaults: x86_64
+10-22 01:27:49.886  5795  5795 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+10-22 01:27:49.958  5795  5795 I Input   : injectMotionEvent: MotionEvent { action=ACTION_DOWN, actionButton=0, id[0]=0, x[0]=540.0, y[0]=1400.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=925745, downTime=925745, deviceId=0, source=0x1002 }
+10-22 01:27:50.068  5795  5795 I Input   : injectMotionEvent: MotionEvent { action=ACTION_MOVE, actionButton=0, id[0]=0, x[0]=540.0, y[0]=1400.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=925745, downTime=925745, deviceId=0, source=0x1002 }
+10-22 01:27:50.120  5795  5795 I Input   : injectMotionEvent: MotionEvent { action=ACTION_MOVE, actionButton=0, id[0]=0, x[0]=540.0, y[0]=875.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=925970, downTime=925970, deviceId=0, source=0x1002 }
+10-22 01:27:50.190  5795  5795 I Input   : injectMotionEvent: MotionEvent { action=ACTION_MOVE, actionButton=0, id[0]=0, x[0]=540.0, y[0]=709.3333, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=926041, downTime=926041, deviceId=0, source=0x1002 }
+10-22 01:27:50.344  5795  5795 I Input   : injectMotionEvent: MotionEvent { action=ACTION_UP, actionButton=0, id[0]=0, x[0]=540.0, y[0]=700.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=926195, downTime=926195, deviceId=0, source=0x1002 }
+10-22 01:27:50.454  5795  5795 D AndroidRuntime: Shutting down VM
+10-22 01:27:52.232  1406  1432 E SurfaceFlinger: ro.sf.lcd_density must be defined as a build property
+10-22 01:27:52.341  1393  1393 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 8298496
+10-22 01:27:52.348  5808  5808 D         : HostConnection::get() New Host Connection established 0x737102a2f780, tid 5808
+10-22 01:27:54.088  1664  1678 E memtrack: Couldn't load memtrack module
+10-22 01:27:54.098  1664  1678 W android.os.Debug: failed to get memory consumption info: -1
+10-22 01:27:55.613  5811  5811 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-22 01:27:56.155  5811  5811 W app_process: Unexpected CPU variant for X86 using defaults: x86_64
+10-22 01:27:56.417  5811  5811 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+10-22 01:27:56.454  5811  5811 I Input   : injectMotionEvent: MotionEvent { action=ACTION_DOWN, actionButton=0, id[0]=0, x[0]=380.0, y[0]=1840.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=932273, downTime=932273, deviceId=0, source=0x1002 }
+10-22 01:27:56.525  5811  5811 I Input   : injectMotionEvent: MotionEvent { action=ACTION_UP, actionButton=0, id[0]=0, x[0]=380.0, y[0]=1840.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=932273, downTime=932273, deviceId=0, source=0x1002 }
+10-22 01:27:56.604  5811  5811 D AndroidRuntime: Shutting down VM
+10-22 01:27:56.681  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 155286 , only wrote 154800
+10-22 01:27:56.761  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 158732 , only wrote 157680
+10-22 01:27:56.808  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 159930 , only wrote 159840
+10-22 01:27:56.830  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 160912 , only wrote 159840
+10-22 01:27:56.864  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 161450 , only wrote 161280
+10-22 01:27:56.880  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 162052 , only wrote 162000
+10-22 01:27:57.261  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 180277 , only wrote 180000
+10-22 01:27:57.322  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 182912 , only wrote 182880
+10-22 01:27:57.369  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 185156 , only wrote 185040
+10-22 01:27:57.461  5692  5697 I zygote64: Compiler allocated 5MB to compile void nl.cita.magister.ui.schedule.ScheduleScreenKt.ScheduleScreen(java.util.List, androidx.compose.foundation.layout.PaddingValues, nl.cita.magister.model.ApiFailure, java.time.LocalDate, kotlin.jvm.functions.Function1, androidx.compose.runtime.Composer, int, int)
+10-22 01:27:57.669  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 199463 , only wrote 199440
+10-22 01:27:57.719  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 201837 , only wrote 201600
+10-22 01:27:58.037  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 216847 , only wrote 216720
+10-22 01:27:58.041  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 216926 , only wrote 216720
+10-22 01:27:58.059  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 217561 , only wrote 217440
+10-22 01:27:58.079  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 218404 , only wrote 218160
+10-22 01:27:58.229  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 225380 , only wrote 225360
+10-22 01:27:58.233  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 225523 , only wrote 225360
+10-22 01:27:58.246  5692  5697 I zygote64: Compiler allocated 6MB to compile void nl.cita.magister.ui.nav.PhotosDockKt.DockPill-xBv1rpU(java.util.List, nl.cita.magister.ui.nav.MagsPage, long, long, long, long, kotlin.jvm.functions.Function1, androidx.compose.ui.Modifier, androidx.compose.runtime.Composer, int, int)
+10-22 01:27:58.279  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 227566 , only wrote 227520
+10-22 01:27:58.313  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 229176 , only wrote 228960
+10-22 01:27:59.124  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 267874 , only wrote 267840
+10-22 01:27:59.156  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 269371 , only wrote 269280
+10-22 01:27:59.444  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 283103 , only wrote 282960
+10-22 01:27:59.475  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 284457 , only wrote 284400
+10-22 01:27:59.488  5692  5697 I zygote64: Compiler allocated 6MB to compile void nl.cita.magister.ui.schedule.ScheduleScreenKt.WeekChips(java.util.List, androidx.compose.foundation.pager.PagerState, java.util.List, java.time.LocalDate, kotlin.jvm.functions.Function1, androidx.compose.runtime.Composer, int)
+10-22 01:27:59.925  1384  1617 W audio_hw_generic: Not supplying enough data to HAL, expected position 327377 , only wrote 306000
+10-22 01:28:00.170  1394  1420 D hwcomposer: hw_composer sent 6 syncs in 60s
+10-22 01:28:00.495  1406  1430 E SurfaceFlinger: ro.sf.lcd_density must be defined as a build property
+10-22 01:28:00.645  1393  1393 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 8298496
+10-22 01:28:00.680  5823  5823 D         : HostConnection::get() New Host Connection established 0x7c94c602f780, tid 5823
+10-22 01:28:01.897  5692  5692 I Choreographer: Skipped 315 frames!  The application may be doing too much work on its main thread.
+10-22 01:28:03.446  5692  5692 I Choreographer: Skipped 66 frames!  The application may be doing too much work on its main thread.
+10-22 01:28:04.224  5692  5697 I zygote64: Compiler allocated 5MB to compile void nl.cita.magister.ui.schedule.ScheduleScreenKt$DayTimeline$1$1$2$1.invoke(androidx.compose.runtime.Composer, int)
+10-22 01:28:05.261  5826  5826 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-22 01:28:05.770  5692  5697 I zygote64: Do full code cache collection, code=998KB, data=872KB
+10-22 01:28:05.775  5692  5697 I zygote64: After code cache collection, code=964KB, data=750KB
+10-22 01:28:05.881  5826  5826 W app_process: Unexpected CPU variant for X86 using defaults: x86_64
+10-22 01:28:06.044  5826  5826 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+10-22 01:28:06.078  5826  5826 I Input   : injectMotionEvent: MotionEvent { action=ACTION_DOWN, actionButton=0, id[0]=0, x[0]=900.0, y[0]=900.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=941899, downTime=941899, deviceId=0, source=0x1002 }
+10-22 01:28:06.148  5826  5826 I Input   : injectMotionEvent: MotionEvent { action=ACTION_MOVE, actionButton=0, id[0]=0, x[0]=900.0, y[0]=900.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=941899, downTime=941899, deviceId=0, source=0x1002 }
+10-22 01:28:06.172  5826  5826 I Input   : injectMotionEvent: MotionEvent { action=ACTION_MOVE, actionButton=0, id[0]=0, x[0]=583.71423, y[0]=900.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=942022, downTime=942022, deviceId=0, source=0x1002 }
+10-22 01:28:06.210  5826  5826 I Input   : injectMotionEvent: MotionEvent { action=ACTION_MOVE, actionButton=0, id[0]=0, x[0]=486.0, y[0]=900.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=942060, downTime=942060, deviceId=0, source=0x1002 }
+10-22 01:28:06.622  5826  5826 I Input   : injectMotionEvent: MotionEvent { action=ACTION_UP, actionButton=0, id[0]=0, x[0]=180.0, y[0]=900.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=942472, downTime=942472, deviceId=0, source=0x1002 }
+10-22 01:28:06.776  5826  5826 D AndroidRuntime: Shutting down VM
+10-22 01:28:07.822  5692  5692 I Choreographer: Skipped 37 frames!  The application may be doing too much work on its main thread.
+10-22 01:28:07.984  5692  5697 I zygote64: Do partial code cache collection, code=1002KB, data=801KB
+10-22 01:28:08.002  5692  5697 I zygote64: After code cache collection, code=1001KB, data=800KB
+10-22 01:28:08.003  5692  5697 I zygote64: Increasing code cache capacity to 3MB
+10-22 01:28:08.160  5692  5703 I zygote64: Background concurrent copying GC freed 79060(2MB) AllocSpace objects, 0(0B) LOS objects, 49% free, 5MB/11MB, paused 2.440ms total 496.411ms
+10-22 01:28:08.400  5692  5692 I Choreographer: Skipped 33 frames!  The application may be doing too much work on its main thread.
+10-22 01:28:09.002  2748  5784 W ChimeraConfigurator: Error syncing flags: qoq: COMMIT_TIMEOUT
+10-22 01:28:09.002  2748  5784 I ChmraDebugLogger: [79] COMMIT_TIMEOUT
+10-22 01:28:09.072  2748  5784 I ChmraDebugLogger: [52] null
+10-22 01:28:09.097  2748  5784 W ChimeraConfigService: Retry attempt was throttled.
+10-22 01:28:09.302  1406  1732 E SurfaceFlinger: ro.sf.lcd_density must be defined as a build property
+10-22 01:28:09.375  1393  1393 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 8298496
+10-22 01:28:09.382  5838  5838 D         : HostConnection::get() New Host Connection established 0x7ca07842f780, tid 5838
+10-22 01:28:11.052  5842  5842 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-22 01:28:11.325  5842  5842 W app_process: Unexpected CPU variant for X86 using defaults: x86_64
+10-22 01:28:11.458  5842  5842 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+10-22 01:28:11.491  5842  5842 I Input   : injectMotionEvent: MotionEvent { action=ACTION_DOWN, actionButton=0, id[0]=0, x[0]=500.0, y[0]=1840.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=947328, downTime=947328, deviceId=0, source=0x1002 }
+10-22 01:28:11.522  5842  5842 I Input   : injectMotionEvent: MotionEvent { action=ACTION_UP, actionButton=0, id[0]=0, x[0]=500.0, y[0]=1840.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=947328, downTime=947328, deviceId=0, source=0x1002 }
+10-22 01:28:11.556  5842  5842 D AndroidRuntime: Shutting down VM
+10-22 01:28:11.644  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 306272 , only wrote 306000
+10-22 01:28:11.780  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 312559 , only wrote 306720
+10-22 01:28:11.787  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 307060 , only wrote 306720
+10-22 01:28:12.814  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 356018 , only wrote 355680
+10-22 01:28:12.971  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 363220 , only wrote 362880
+10-22 01:28:12.989  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 363719 , only wrote 363600
+10-22 01:28:13.009  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 364566 , only wrote 363600
+10-22 01:28:13.458  5692  5692 I Choreographer: Skipped 111 frames!  The application may be doing too much work on its main thread.
+10-22 01:28:13.520  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 388157 , only wrote 388080
+10-22 01:28:13.641  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 393882 , only wrote 393840
+10-22 01:28:13.699  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 396594 , only wrote 396000
+10-22 01:28:13.839  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 402730 , only wrote 402480
+10-22 01:28:13.860  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 403500 , only wrote 403200
+10-22 01:28:14.090  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 414213 , only wrote 414000
+10-22 01:28:14.107  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 414827 , only wrote 414720
+10-22 01:28:14.139  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 416272 , only wrote 416160
+10-22 01:28:14.391  5692  5692 I Choreographer: Skipped 30 frames!  The application may be doing too much work on its main thread.
+10-22 01:28:14.548  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 435768 , only wrote 435600
+10-22 01:28:14.580  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 437149 , only wrote 437040
+10-22 01:28:14.596  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 437818 , only wrote 437760
+10-22 01:28:14.899  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 452287 , only wrote 452160
+10-22 01:28:14.976  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 455836 , only wrote 455760
+10-22 01:28:15.031  1384  1617 W audio_hw_generic: Not supplying enough data to HAL, expected position 460183 , only wrote 457920
+10-22 01:28:15.600  1406  1432 E SurfaceFlinger: ro.sf.lcd_density must be defined as a build property
+10-22 01:28:15.754  1393  1393 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 8298496
+10-22 01:28:15.762  5855  5855 D         : HostConnection::get() New Host Connection established 0x76f87ac2f780, tid 5855
+10-22 01:28:17.755  5858  5858 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-22 01:28:18.018  5858  5858 W app_process: Unexpected CPU variant for X86 using defaults: x86_64
+10-22 01:28:18.146  5858  5858 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+10-22 01:28:18.167  5858  5858 I Input   : injectMotionEvent: MotionEvent { action=ACTION_DOWN, actionButton=0, id[0]=0, x[0]=620.0, y[0]=1840.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=954002, downTime=954002, deviceId=0, source=0x1002 }
+10-22 01:28:18.197  5858  5858 I Input   : injectMotionEvent: MotionEvent { action=ACTION_UP, actionButton=0, id[0]=0, x[0]=620.0, y[0]=1840.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=954002, downTime=954002, deviceId=0, source=0x1002 }
+10-22 01:28:18.253  5858  5858 D AndroidRuntime: Shutting down VM
+10-22 01:28:18.268  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 458787 , only wrote 457920
+10-22 01:28:18.496  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 468832 , only wrote 468720
+10-22 01:28:18.516  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 469713 , only wrote 469440
+10-22 01:28:18.532  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 470199 , only wrote 470160
+10-22 01:28:18.579  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 472398 , only wrote 472320
+10-22 01:28:18.598  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 473254 , only wrote 473040
+10-22 01:28:18.616  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 473880 , only wrote 473760
+10-22 01:28:18.637  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 474752 , only wrote 474480
+10-22 01:28:18.697  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 477388 , only wrote 477360
+10-22 01:28:18.707  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 477846 , only wrote 477360
+10-22 01:28:18.762  5692  5697 I zygote64: Compiler allocated 6MB to compile void nl.cita.magister.ui.CitaRootKt.MagsSignedInScaffold(nl.cita.magister.model.StudentProfile, java.util.List, java.util.List, java.util.List, java.util.List, java.util.List, java.util.List, java.util.List, java.util.List, nl.cita.magister.model.MessageDetail, boolean, boolean, java.lang.String, java.lang.String, java.lang.String, boolean, boolean, java.util.List, boolean, nl.cita.magister.model.ApiFailure, androidx.compose.material3.SnackbarHostState, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function2, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function3, kotlin.jvm.functions.Function2, kotlin.jvm.functions.Function0, nl.cita.magister.ui.nav.MagsPage, nl.cita.magister.model.SectionErrors, boolean, kotlin.jvm.functions.Function1, boolean, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, androidx.compose.runtime.
+10-22 01:28:18.859  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 484633 , only wrote 484560
+10-22 01:28:18.906  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 486817 , only wrote 486720
+10-22 01:28:19.392  5692  5692 I Choreographer: Skipped 71 frames!  The application may be doing too much work on its main thread.
+10-22 01:28:19.674  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 523573 , only wrote 523440
+10-22 01:28:20.049  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 541450 , only wrote 541440
+10-22 01:28:20.069  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 542396 , only wrote 542160
+10-22 01:28:20.115  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 544384 , only wrote 544320
+10-22 01:28:21.078  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 590519 , only wrote 590400
+10-22 01:28:21.309  5692  5697 I zygote64: Do full code cache collection, code=1508KB, data=1274KB
+10-22 01:28:21.318  5692  5697 I zygote64: After code cache collection, code=1458KB, data=1126KB
+10-22 01:28:21.618  1384  1617 W audio_hw_generic: Not supplying enough data to HAL, expected position 641703 , only wrote 616320
+10-22 01:28:21.798  1406  1430 E SurfaceFlinger: ro.sf.lcd_density must be defined as a build property
+10-22 01:28:21.855  1393  1393 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 8298496
+10-22 01:28:21.861  5871  5871 D         : HostConnection::get() New Host Connection established 0x7117d5c2f780, tid 5871
+10-22 01:28:22.991  1664  1678 E memtrack: Couldn't load memtrack module
+10-22 01:28:22.991  1664  1678 W android.os.Debug: failed to get memory consumption info: -1
+10-22 01:28:23.331  2800  4469 V NativeCrypto: Read error: ssl=0x7cd4a7fee608: I/O error during system call, Connection reset by peer
+10-22 01:28:23.343  2800  4469 V NativeCrypto: SSL shutdown failed: ssl=0x7cd4a7fee608: I/O error during system call, Broken pipe
+10-22 01:28:23.347  2800  4469 E WakeLock: GCM_HB_ALARM release without a matched acquire!
+10-22 01:28:23.395  2800  4439 E WakeLock: GCM_HB_ALARM release without a matched acquire!
+10-22 01:28:23.395  2800  4439 W WakeLock: GCM_HB_ALARM counter does not exist
+10-22 01:28:23.479  1664  5061 D ConnectivityService: reportNetworkConnectivity(101, false) by 10013
+10-22 01:28:23.490  1664  3587 D NetworkMonitor/NetworkAgentInfo [WIFI () - 101]: Forcing reevaluation for UID 10013
+10-22 01:28:23.672  1664  5878 D NetworkMonitor/NetworkAgentInfo [WIFI () - 101]: PROBE_DNS connectivitycheck.gstatic.com 138ms OK 142.251.150.120,2001:4860:4826:7800::
+10-22 01:28:23.747  2800  5881 I qtaguid : Tagging socket -1 with tag 3000040700000000(805307399) for uid -1 failed errno=-9
+10-22 01:28:23.748  2800  5881 I NetworkManagementSocketTagger: tagSocketFd(-1, 805307399, -1) failed with errno-9
+10-22 01:28:23.847  1664  5877 D NetworkMonitor/NetworkAgentInfo [WIFI () - 101]: PROBE_DNS www.google.com 317ms OK 142.251.155.119,142.251.150.119,142.251.154.119,142.251.156.119,142.251.151.119,142.251.152.119,142.251.153.119,142.251.157.119,2001:4860:482c:7700::,2001:4860:4829:7700::,2001:4860:4828:7700::,2001:4860:482a:7700::,2001:4860:4826:7700::,2001:4860:482b:7700::,2001:4860:482d:7700::,2001:4860:4827:7700::
+10-22 01:28:23.902  1664  5878 D NetworkMonitor/NetworkAgentInfo [WIFI () - 101]: PROBE_HTTP http://connectivitycheck.gstatic.com/generate_204 time=214ms ret=204 request={User-Agent=[Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.82 Safari/537.36]} headers={null=[HTTP/1.1 204 No Content], Connection=[keep-alive], Content-Length=[0], Cross-Origin-Resource-Policy=[cross-origin], Date=[Thu, 22 Oct 2026 01:28:23 GMT], X-Android-Received-Millis=[1792632503888], X-Android-Response-Source=[NETWORK 204], X-Android-Selected-Protocol=[http/1.1], X-Android-Sent-Millis=[1792632503856]}
+10-22 01:28:24.217  5874  5874 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-22 01:28:24.227  1664  5877 D NetworkMonitor/NetworkAgentInfo [WIFI () - 101]: PROBE_HTTPS https://www.google.com/generate_204 time=322ms ret=204 request={User-Agent=[Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.82 Safari/537.36]} headers={null=[HTTP/1.1 204 No Content], Alt-Svc=[h3=":443"; ma=2592000,h3-29=":443"; ma=2592000], Content-Length=[0], Cross-Origin-Resource-Policy=[cross-origin], Date=[Thu, 22 Oct 2026 01:28:24 GMT], X-Android-Received-Millis=[1792632504212], X-Android-Response-Source=[NETWORK 204], X-Android-Selected-Protocol=[http/1.1], X-Android-Sent-Millis=[1792632504179]}
+10-22 01:28:24.262  1664  1759 D ConnectivityService: NetworkAgentInfo [WIFI () - 101] validation passed
+10-22 01:28:24.750  5874  5874 W app_process: Unexpected CPU variant for X86 using defaults: x86_64
+10-22 01:28:24.778  1664  1674 I zygote64: Background concurrent copying GC freed 20932(1252KB) AllocSpace objects, 3(60KB) LOS objects, 42% free, 8MB/14MB, paused 464us total 237.738ms
+10-22 01:28:24.936  5874  5874 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+10-22 01:28:24.961  5874  5874 I Input   : injectMotionEvent: MotionEvent { action=ACTION_DOWN, actionButton=0, id[0]=0, x[0]=1000.0, y[0]=130.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=960794, downTime=960794, deviceId=0, source=0x1002 }
+10-22 01:28:24.987  5874  5874 I Input   : injectMotionEvent: MotionEvent { action=ACTION_UP, actionButton=0, id[0]=0, x[0]=1000.0, y[0]=130.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=960794, downTime=960794, deviceId=0, source=0x1002 }
+10-22 01:28:25.043  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 617358 , only wrote 616320
+10-22 01:28:25.098  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 618881 , only wrote 617040
+10-22 01:28:25.130  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 618660 , only wrote 617760
+10-22 01:28:25.147  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 618566 , only wrote 617760
+10-22 01:28:25.161  5692  5692 W zygote64: Verification of void androidx.compose.ui.window.PopupLayout.maybeRegisterBackCallback() took 122.212ms
+10-22 01:28:25.190  1506  1609 D AudioFlinger: mixer(0xe9083dc0) throttle end: throttle time(11)
+10-22 01:28:25.229  5874  5874 D AndroidRuntime: Shutting down VM
+10-22 01:28:25.239  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 622172 , only wrote 622080
+10-22 01:28:25.259  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 623032 , only wrote 622800
+10-22 01:28:25.282  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 623927 , only wrote 623520
+10-22 01:28:25.313  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 624963 , only wrote 624960
+10-22 01:28:25.329  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 625741 , only wrote 625680
+10-22 01:28:25.390  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 628608 , only wrote 628560
+10-22 01:28:25.466  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 632207 , only wrote 632160
+10-22 01:28:25.544  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 635907 , only wrote 635760
+10-22 01:28:25.619  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 639362 , only wrote 639360
+10-22 01:28:25.634  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 640101 , only wrote 640080
+10-22 01:28:25.651  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 640863 , only wrote 640800
+10-22 01:28:25.689  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 642636 , only wrote 642240
+10-22 01:28:26.014  1393  1393 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 573440
+10-22 01:28:26.030  1393  1393 I chatty  : uid=1000(system) allocator@2.0-s identical 1 line
+10-22 01:28:26.037  1393  1393 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 573440
+10-22 01:28:26.096  5692  5692 I Choreographer: Skipped 49 frames!  The application may be doing too much work on its main thread.
+10-22 01:28:26.099  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 661916 , only wrote 661680
+10-22 01:28:26.118  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 662584 , only wrote 662400
+10-22 01:28:26.138  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 663364 , only wrote 663120
+10-22 01:28:26.305  5692  5724 D EGL_emulation: eglMakeCurrent: 0x7cd4ba259b20: ver 3 0 (tinfo 0x7cd4ba2edf00)
+10-22 01:28:26.337  5692  5724 D EGL_emulation: eglMakeCurrent: 0x7cd4ba259b20: ver 3 0 (tinfo 0x7cd4ba2edf00)
+10-22 01:28:26.417  5692  5697 I zygote64: Do partial code cache collection, code=1470KB, data=1164KB
+10-22 01:28:26.426  5692  5697 I zygote64: After code cache collection, code=1470KB, data=1164KB
+10-22 01:28:26.426  5692  5697 I zygote64: Increasing code cache capacity to 4MB
+10-22 01:28:26.439  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 677581 , only wrote 677520
+10-22 01:28:26.596  5692  5724 D EGL_emulation: eglMakeCurrent: 0x7cd4ba259b20: ver 3 0 (tinfo 0x7cd4ba2edf00)
+10-22 01:28:26.631  5692  5724 D EGL_emulation: eglMakeCurrent: 0x7cd4ba259b20: ver 3 0 (tinfo 0x7cd4ba2edf00)
+10-22 01:28:28.480  1384  1617 W audio_hw_generic: Not supplying enough data to HAL, expected position 872752 , only wrote 775440
+10-22 01:28:28.916  1406  1430 E SurfaceFlinger: ro.sf.lcd_density must be defined as a build property
+10-22 01:28:28.997  1393  1393 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 8298496
+10-22 01:28:29.005  5895  5895 D         : HostConnection::get() New Host Connection established 0x79ccb222f780, tid 5895
+10-22 01:28:31.111  5898  5898 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-22 01:28:31.509  5898  5898 W app_process: Unexpected CPU variant for X86 using defaults: x86_64
+10-22 01:28:31.701  5898  5898 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+10-22 01:28:31.706  5898  5898 I Input   : injectKeyEvent: KeyEvent { action=ACTION_DOWN, keyCode=KEYCODE_BACK, scanCode=0, metaState=0, flags=0x0, repeatCount=0, eventTime=967556, downTime=967556, deviceId=-1, source=0x101 }
+10-22 01:28:31.751  5898  5898 I Input   : injectKeyEvent: KeyEvent { action=ACTION_UP, keyCode=KEYCODE_BACK, scanCode=0, metaState=0, flags=0x0, repeatCount=0, eventTime=967556, downTime=967556, deviceId=-1, source=0x101 }
+10-22 01:28:31.758  1664  1680 D AutofillManagerService: onBackKeyPressed()
+10-22 01:28:31.762  5898  5898 D AndroidRuntime: Shutting down VM
+10-22 01:28:31.890  5692  5724 D EGL_emulation: eglMakeCurrent: 0x7cd4ba259b20: ver 3 0 (tinfo 0x7cd4ba2edf00)
+10-22 01:28:32.096  5692  5724 I chatty  : uid=10078(u0_a78) RenderThread identical 1 line
+10-22 01:28:32.152  5692  5724 D EGL_emulation: eglMakeCurrent: 0x7cd4ba259b20: ver 3 0 (tinfo 0x7cd4ba2edf00)
+10-22 01:28:33.869  5908  5908 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-22 01:28:34.142  5908  5908 W app_process: Unexpected CPU variant for X86 using defaults: x86_64
+10-22 01:28:34.271  5908  5908 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+10-22 01:28:34.294  5908  5908 I Input   : injectMotionEvent: MotionEvent { action=ACTION_DOWN, actionButton=0, id[0]=0, x[0]=1000.0, y[0]=130.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=970126, downTime=970126, deviceId=0, source=0x1002 }
+10-22 01:28:34.327  5908  5908 I Input   : injectMotionEvent: MotionEvent { action=ACTION_UP, actionButton=0, id[0]=0, x[0]=1000.0, y[0]=130.0, toolType[0]=TOOL_TYPE_UNKNOWN, buttonState=0, metaState=0, flags=0x0, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=970126, downTime=970126, deviceId=0, source=0x1002 }
+10-22 01:28:34.350  5908  5908 D AndroidRuntime: Shutting down VM
+10-22 01:28:34.412  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 775841 , only wrote 775440
+10-22 01:28:34.429  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 776243 , only wrote 776160
+10-22 01:28:34.440  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 776687 , only wrote 776160
+10-22 01:28:34.456  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 776944 , only wrote 776880
+10-22 01:28:34.503  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 779137 , only wrote 779040
+10-22 01:28:34.670  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 787026 , only wrote 786960
+10-22 01:28:34.875  1393  1393 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 573440
+10-22 01:28:34.880  1393  1393 I chatty  : uid=1000(system) allocator@2.0-s identical 1 line
+10-22 01:28:34.894  1393  1393 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 573440
+10-22 01:28:34.931  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 799510 , only wrote 799200
+10-22 01:28:34.950  5692  5692 I Choreographer: Skipped 32 frames!  The application may be doing too much work on its main thread.
+10-22 01:28:34.959  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 800533 , only wrote 799920
+10-22 01:28:34.975  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 800671 , only wrote 800640
+10-22 01:28:34.978  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 800783 , only wrote 800640
+10-22 01:28:34.993  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 801374 , only wrote 801360
+10-22 01:28:35.068  5692  5724 D EGL_emulation: eglMakeCurrent: 0x7cd4ba259b20: ver 3 0 (tinfo 0x7cd4ba2edf00)
+10-22 01:28:35.252  5692  5724 I chatty  : uid=10078(u0_a78) RenderThread identical 2 lines
+10-22 01:28:35.276  5692  5724 D EGL_emulation: eglMakeCurrent: 0x7cd4ba259b20: ver 3 0 (tinfo 0x7cd4ba2edf00)
+10-22 01:28:36.427  1404  1404 I boot-pipe: done populating /dev/random
+10-22 01:28:36.886  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 892222 , only wrote 892080
+10-22 01:28:36.920  1384  5683 W audio_hw_generic: Not supplying enough data to HAL, expected position 893695 , only wrote 893520
+10-22 01:28:37.106  1406  1430 E SurfaceFlinger: ro.sf.lcd_density must be defined as a build property
+10-22 01:28:37.181  1393  1393 D gralloc_ranchu: gralloc_alloc: Creating ashmem region of size 8298496
+10-22 01:28:37.191  5920  5920 D         : HostConnection::get() New Host Connection established 0x7be19cc2f780, tid 5920
+10-22 01:28:37.640  1384  1617 W audio_hw_generic: Not supplying enough data to HAL, expected position 962081 , only wrote 928080

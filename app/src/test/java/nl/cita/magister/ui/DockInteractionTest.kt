@@ -2,6 +2,7 @@ package nl.cita.magister.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
@@ -18,6 +19,7 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
@@ -136,5 +138,41 @@ class DockInteractionTest {
         val image = compose.onNodeWithTag("dock-shot").captureToImage()
         assertTrue(image.width > 0)
         assertTrue(image.height > 0)
+    }
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp")
+    fun searchButtonBoundsStayInside360() {
+        compose.setContent {
+            Box(
+                Modifier
+                    .requiredSize(360.dp, 800.dp)
+                    .testTag("dock-screen-360"),
+            ) {
+                CitaTheme {
+                    Box(
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                    ) {
+                        PhotosDock(
+                            selected = MagsPage.Huiswerk,
+                            expansion = 1f,
+                            onSelect = {},
+                            onSearch = {},
+                        )
+                    }
+                }
+            }
+        }
+        compose.waitForIdle()
+        val screen = compose.onNodeWithTag("dock-screen-360").getUnclippedBoundsInRoot()
+        val search = compose.onNodeWithTag("dock-search").getUnclippedBoundsInRoot()
+        assertTrue("search left ${search.left} < screen ${screen.left}", search.left >= screen.left)
+        assertTrue("search right ${search.right} > screen ${screen.right}", search.right <= screen.right)
+        assertTrue("search top ${search.top} < screen ${screen.top}", search.top >= screen.top)
+        assertTrue("search bottom ${search.bottom} > screen ${screen.bottom}", search.bottom <= screen.bottom)
+        compose.onNodeWithTag("dock-tab-Huiswerk").assertIsSelected()
     }
 }

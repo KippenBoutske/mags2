@@ -11,7 +11,9 @@ Mags is **geen** product van Iddink/Magister. Werkt met elke Magister-school. Al
 - **Cijfers exporteren** naar Plan Goon of als JSON
 - Live schoolzoeken via Magister tenant-search
 - Offline cache, pull-to-refresh, Material 3 Expressive
-- Donker-warm thema (concept 1), Photos-stijl zwevende navbar, swipebaar rooster
+- Donker-warm thema (concept 1), Photos-stijl zwevende navbar (label alleen op de actieve tab), swipebaar rooster
+- Meldingen bij nieuwe cijfers en roosterwijzigingen (WorkManager)
+- Startscherm-widget **Volgende les** (Glance)
 - Crash-scherm met kopieerbare stacktrace
 - Nederlandse UI
 
@@ -27,7 +29,7 @@ cat mags-debug.apk.part-aa mags-debug.apk.part-ab > mags-debug.apk
 sha256sum -c mags-debug.apk.sha256
 ```
 
-3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.8** (`targetSdk` 37).
+3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.9** (`targetSdk` 37).
 4. Bij een crash: scherm **Mags is gestopt** → *Kopieer stacktrace*.
 
 Zelf bouwen:

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,8 +22,10 @@ import androidx.compose.ui.unit.dp
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.InfoType
 import nl.cita.magister.model.ApiFailure
+import nl.cita.magister.ui.components.CircleCheck
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
+import nl.cita.magister.ui.today.homeworkBody
 import nl.cita.magister.ui.formatWhen
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.staggerEnter
@@ -95,19 +96,16 @@ fun HomeworkScreen(
                     .animateItem(),
             ) {
                 Column(Modifier.padding(12.dp)) {
-                    androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = item.isDone, onCheckedChange = { onToggle(item, it) })
-                        Column(Modifier.weight(1f)) {
+                    androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.Top) {
+                        CircleCheck(checked = item.isDone, onCheckedChange = { onToggle(item, it) })
+                        Column(Modifier.weight(1f).padding(start = 8.dp)) {
                             Text(item.subject, style = MaterialTheme.typography.titleMedium)
-                            Text(item.title, style = MaterialTheme.typography.bodyMedium)
+                            Text(homeworkBody(item), style = MaterialTheme.typography.bodyMedium)
                             Text(
                                 listOfNotNull(item.infoType.label(), formatWhen(item.dueIso)).joinToString(" · "),
                                 style = MaterialTheme.typography.labelMedium,
                             )
                         }
-                    }
-                    item.description?.let {
-                        Text(it, modifier = Modifier.padding(start = 48.dp, top = 4.dp))
                     }
                 }
             }

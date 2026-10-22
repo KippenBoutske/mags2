@@ -178,7 +178,7 @@ class ScreenMeasureTest {
     @Test
     fun photosDockNoSelection_320() {
         measure(320) { dock(1f, null) }
-        compose.onNodeWithText("Vandaag").assertExists()
+        compose.onNodeWithTag("dock-tab-Vandaag").assertExists()
         compose.onNodeWithContentDescription("Zoeken").assertExists()
     }
 

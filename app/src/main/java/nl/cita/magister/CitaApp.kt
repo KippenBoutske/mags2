@@ -4,6 +4,8 @@ import android.app.Application
 import android.content.Context
 import nl.cita.magister.crash.CrashGuard
 import nl.cita.magister.di.AppContainer
+import nl.cita.magister.work.MagisterSyncWorker
+import nl.cita.magister.work.MagsNotifier
 
 class CitaApp : Application() {
     private val containerHolder = lazy { AppContainer(this) }
@@ -17,7 +19,8 @@ class CitaApp : Application() {
     override fun onCreate() {
         super.onCreate()
         if (CrashGuard.isCrashProcess(this)) return
-        // AppContainer blijft lazy: MasterKey/prefs gebeuren pas bij eerste scherm,
-        // nadat de crash-handler staat.
+        runCatching { MagsNotifier.ensureChannel(this) }
+        // Robolectric heeft geen WorkManager-initializer; op het toestel staat die via androidx.startup.
+        runCatching { MagisterSyncWorker.enqueue(this) }
     }
 }

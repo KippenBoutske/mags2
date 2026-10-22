@@ -48,6 +48,7 @@ class CitaViewModel(
     val webhookUrl = container.prefs.webhookUrl.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     val demoMode = container.prefs.demoMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     val dynamicColor = container.prefs.dynamicColor.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    val notifications = container.prefs.notifications.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     private val _signedIn = MutableStateFlow(repo.isLoggedIn() || false)
     val signedIn = _signedIn.asStateFlow()
@@ -241,6 +242,10 @@ class CitaViewModel(
 
     fun setDynamicColor(enabled: Boolean) {
         viewModelScope.launch { container.prefs.setDynamicColor(enabled) }
+    }
+
+    fun setNotifications(enabled: Boolean) {
+        viewModelScope.launch { container.prefs.setNotifications(enabled) }
     }
 
     fun prefetchAgenda(monday: LocalDate) {
