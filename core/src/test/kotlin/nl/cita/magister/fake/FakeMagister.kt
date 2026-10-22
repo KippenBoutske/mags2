@@ -61,6 +61,7 @@ class FakeMagister(
             path.endsWith("/api/account") -> json(200, MockFixtures.accountJson)
             path.contains("/aanmeldingen") && !path.contains("cijfers") -> json(200, MockFixtures.enrollmentsJson)
             path.contains("extracijferkolominfo") -> extraColumn(path)
+            path.contains("/cijfers/laatste") -> latest()
             path.contains("/cijfers/") || path.contains("/cijfers") -> grades()
             path.contains("/afspraken") -> agenda()
             path.contains("/absenties") -> extra(FakeScenario.AbsencesForbidden, MockFixtures.absencesJson)
@@ -106,6 +107,13 @@ class FakeMagister(
                 MockFixtures.gradesJson.replace("Nederlands", "Maatschappijwetenschappen en levensbeschouwing"),
             )
             else -> json(200, MockFixtures.gradesJson)
+        }
+
+    private fun latest(): MockResponse =
+        when (scenario) {
+            FakeScenario.GradesForbidden -> json(403, """{"fouttype":"OnvoldoendePrivileges"}""")
+            FakeScenario.NoGrades -> json(200, """{"items":[]}""")
+            else -> json(200, MockFixtures.recentGradesJson)
         }
 
     private fun extraColumn(path: String): MockResponse {

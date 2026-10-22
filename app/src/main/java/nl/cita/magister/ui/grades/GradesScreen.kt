@@ -85,6 +85,7 @@ fun GradesScreen(
     profile: StudentProfile?,
     averages: List<SubjectAverage>,
     grades: List<Grade>,
+    latestGrades: List<Grade> = emptyList(),
     refreshing: Boolean,
     exporting: Boolean,
     contentPadding: PaddingValues,
@@ -141,6 +142,14 @@ fun GradesScreen(
                             ),
                             modifier = Modifier.fillMaxWidth(),
                         )
+                    }
+                    if (filter == GradeFilter.All) {
+                        item {
+                            Text("Laatste cijfers", style = MaterialTheme.typography.titleLarge)
+                        }
+                        item {
+                            LatestGradesStrip(grades = latestGrades.take(3), onOpen = {})
+                        }
                     }
                     if (refreshing && averages.isEmpty()) {
                         item { ListSkeleton(rows = 3, contentDescription = "Cijfers laden") }

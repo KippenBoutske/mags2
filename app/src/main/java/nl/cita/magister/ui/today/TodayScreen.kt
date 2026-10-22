@@ -26,28 +26,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import nl.cita.magister.grades.GradeCalculator
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.Appointment
+import nl.cita.magister.model.Grade
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.MessagePreview
 import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.SubjectAverage
 import nl.cita.magister.ui.components.CircleCheck
 import nl.cita.magister.ui.components.CookieFlower
-import nl.cita.magister.ui.components.GradeTile
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.components.TodaySkeleton
-import nl.cita.magister.ui.formatGrade
+import nl.cita.magister.ui.grades.LatestGradesStrip
 import nl.cita.magister.ui.localDateOf
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.AppClock
 import nl.cita.magister.ui.nav.MagsChrome
 import nl.cita.magister.ui.nav.MagsPage
 import nl.cita.magister.ui.parseInstant
-import nl.cita.magister.ui.theme.GradeGold
-import nl.cita.magister.ui.theme.GradeSage
-import nl.cita.magister.ui.theme.GradeSlate
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -55,14 +53,14 @@ import java.util.Locale
 
 private val nl = Locale("nl", "NL")
 private val longDay = DateTimeFormatter.ofPattern("EEEE d MMMM", nl)
-private val tileColors = listOf(GradeGold, GradeSage, GradeSlate)
 
 @Composable
 fun TodayScreen(
     profile: StudentProfile?,
     appointments: List<Appointment>,
     homework: List<HomeworkItem>,
-    averages: List<SubjectAverage>,
+    averages: List<SubjectAverage> = emptyList(),
+    grades: List<Grade> = emptyList(),
     messages: List<MessagePreview>,
     contentPadding: PaddingValues,
     onOpenPage: (MagsPage) -> Unit,
@@ -84,7 +82,7 @@ fun TodayScreen(
     val next = ofDay.firstOrNull { !it.isCancelled && lessonStart(it) > now }
     val hero = current ?: next
     val openHw = remember(homework) { homework.filter { !it.isDone }.sortedBy { it.dueIso } }
-    val latest = remember(averages) { averages.filter { it.average != null }.take(3) }
+    val latest = remember(grades) { GradeCalculator.latestEarnedGrades(grades) }
     val unread = remember(messages) { messages.filter { !it.isRead } }
 
     LazyColumn(
@@ -196,21 +194,8 @@ fun TodayScreen(
             }
         }
         gradesError?.let { item { SectionError(it) } }
-        if (latest.isNotEmpty()) {
-            item {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    latest.forEachIndexed { index, subject ->
-                        GradeTile(
-                            value = formatGrade(subject.average, subject.averageLabel),
-                            subject = subject.subjectName,
-                            code = subject.subjectCode,
-                            color = tileColors[index % tileColors.size],
-                            modifier = Modifier.weight(1f),
-                            onClick = { onOpenPage(MagsPage.Cijfers) },
-                        )
-                    }
-                }
-            }
+        item {
+            LatestGradesStrip(grades = latest, onOpen = { onOpenPage(MagsPage.Cijfers) })
         }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {

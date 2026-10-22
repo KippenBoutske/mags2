@@ -36,6 +36,7 @@ object MockFixtures {
     val enrollmentsJson get() = load("enrollments.json")
     val gradesJson get() = load("grades.json")
     val citadelGradesJson get() = load("grades-citadel.json")
+    val recentGradesJson get() = load("grades-laatste.json")
 
     fun extraColumnInfoJson(columnId: Int): String {
         data class Extra(

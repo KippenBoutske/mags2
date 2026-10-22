@@ -87,6 +87,16 @@ class MagisterRepository(
 
     fun observeAverages(): Flow<List<SubjectAverage>> = observeGrades().map { GradeCalculator.averagesBySubject(it) }
 
+    fun observeLatestGrades(): Flow<List<Grade>> = combine(
+        cache.observe(KEY_LATEST),
+        observeGrades(),
+    ) { blob, grades ->
+        val stored = blob?.json?.let {
+            MagisterJson.instance.decodeFromString(ListSerializerGrade, it)
+        }.orEmpty()
+        GradeCalculator.latestEarnedGrades(stored.ifEmpty { grades })
+    }
+
     fun observeAppointments(): Flow<List<Appointment>> = cache.observe(KEY_APPOINTMENTS).map { blob ->
         blob?.json?.let { MagisterJson.instance.decodeFromString(ListSerializerAppointment, it) } ?: emptyList()
     }
@@ -181,7 +191,17 @@ class MagisterRepository(
         prefs.setTenant(nl.cita.magister.api.Tenant.CITADEL_HOST, nl.cita.magister.api.Tenant.CITADEL_DISPLAY, null)
         tokenStore.clear()
         writeCache(KEY_PROFILE, MagisterJson.instance.encodeToString(MockFixtures.profile()))
-        writeCache(KEY_GRADES, MagisterJson.instance.encodeToString(MockFixtures.grades(fixture)))
+        val demoGrades = MockFixtures.grades(fixture)
+        writeCache(KEY_GRADES, MagisterJson.instance.encodeToString(demoGrades))
+        val demoLatest = if (fixture == DemoFixture.NoGrades) {
+            emptyList()
+        } else {
+            GradeCalculator.latestEarnedGrades(
+                MagisterParsers.parseRecentGrades(MockFixtures.recentGradesJson).ifEmpty { demoGrades },
+                8,
+            )
+        }
+        writeCache(KEY_LATEST, MagisterJson.instance.encodeToString(demoLatest))
         writeCache(KEY_APPOINTMENTS, MagisterJson.instance.encodeToString(MockFixtures.appointments(fixture)))
         writeCache(KEY_HOMEWORK, MagisterJson.instance.encodeToString(MockFixtures.homework(fixture)))
         writeCache(KEY_MESSAGES, MagisterJson.instance.encodeToString(MockFixtures.messages()))
@@ -318,7 +338,13 @@ class MagisterRepository(
         val resolved = profile ?: cachedProfile()
         val enrollmentId = resolved?.enrollmentId
         if (prefs.isDemo() || resolved == null || enrollmentId == null) {
-            writeCache(KEY_GRADES, MagisterJson.instance.encodeToString(MockFixtures.grades()))
+            val demo = MockFixtures.grades()
+            writeCache(KEY_GRADES, MagisterJson.instance.encodeToString(demo))
+            val latest = GradeCalculator.latestEarnedGrades(
+                MagisterParsers.parseRecentGrades(MockFixtures.recentGradesJson).ifEmpty { demo },
+                8,
+            )
+            writeCache(KEY_LATEST, MagisterJson.instance.encodeToString(latest))
             return
         }
         val session = tokenStore.read() ?: return
@@ -337,6 +363,19 @@ class MagisterRepository(
         val extra = fetchColumnInfo(root, resolved.personId, enrollmentId, parsed)
         val enriched = MagisterParsers.applyColumnInfo(parsed, extra)
         writeCache(KEY_GRADES, MagisterJson.instance.encodeToString(enriched))
+        val recent = runCatching {
+            MagisterParsers.parseRecentGrades(
+                http.get(MagisterEndpoints.recentGrades(root, resolved.personId, top = 20)),
+            )
+        }.getOrDefault(emptyList())
+        val recentExtra = fetchColumnInfo(root, resolved.personId, enrollmentId, recent)
+        val recentEnriched = MagisterParsers.applyColumnInfo(recent, recentExtra)
+        writeCache(
+            KEY_LATEST,
+            MagisterJson.instance.encodeToString(
+                GradeCalculator.latestEarnedGrades(recentEnriched.ifEmpty { enriched }, 8),
+            ),
+        )
     }
 
     private suspend fun fetchColumnInfo(
@@ -627,6 +666,7 @@ class MagisterRepository(
     private companion object {
         const val KEY_PROFILE = "profile"
         const val KEY_GRADES = "grades"
+        const val KEY_LATEST = "grades-latest"
         const val KEY_APPOINTMENTS = "appointments"
         const val KEY_HOMEWORK = "homework"
         const val KEY_MESSAGES = "messages"

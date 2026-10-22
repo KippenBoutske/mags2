@@ -146,6 +146,7 @@ class AccessibilityTest {
                             profile = MockFixtures.profile(),
                             grades = grades,
                             averages = GradeCalculator.averagesBySubject(grades),
+                            latestGrades = GradeCalculator.latestEarnedGrades(grades),
                             appointments = MockFixtures.appointments(),
                             homework = MockFixtures.homework(),
                             messages = MockFixtures.messages(),

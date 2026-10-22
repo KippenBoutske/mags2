@@ -1,0 +1,49 @@
+{
+  "items": [
+    {
+      "kolomId": 32,
+      "waarde": "5,3",
+      "weegfactor": 3.0,
+      "isVoldoende": false,
+      "ingevoerdOp": "2025-10-10T10:00:00.0000000Z",
+      "omschrijving": "PW2",
+      "vak": { "id": 3, "code": "wi", "omschrijving": "Wiskunde B" }
+    },
+    {
+      "kolomId": 19,
+      "waarde": "7,1",
+      "weegfactor": 0,
+      "isVoldoende": true,
+      "ingevoerdOp": "2025-10-11T12:00:00.0000000Z",
+      "omschrijving": "Voortschrijdend gemiddelde",
+      "vak": { "id": 1, "code": "ne", "omschrijving": "Nederlands" }
+    },
+    {
+      "kolomId": 22,
+      "waarde": "7,6",
+      "weegfactor": 2.0,
+      "isVoldoende": true,
+      "ingevoerdOp": "2025-10-08T10:00:00.0000000Z",
+      "omschrijving": "Writing",
+      "vak": { "id": 2, "code": "en", "omschrijving": "Engels" }
+    },
+    {
+      "kolomId": 202,
+      "waarde": "4,8",
+      "weegfactor": 0,
+      "isVoldoende": false,
+      "ingevoerdOp": "2025-10-09T09:00:00.0000000Z",
+      "omschrijving": "SE cijfer",
+      "vak": { "id": 6, "code": "bi", "omschrijving": "biologie" }
+    },
+    {
+      "kolomId": 12,
+      "waarde": "6,8",
+      "weegfactor": 1.0,
+      "isVoldoende": true,
+      "ingevoerdOp": "2025-10-03T10:00:00.0000000Z",
+      "omschrijving": "Literatuur",
+      "vak": { "id": 1, "code": "ne", "omschrijving": "Nederlands" }
+    }
+  ]
+}

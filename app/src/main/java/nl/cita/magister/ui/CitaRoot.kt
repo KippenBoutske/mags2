@@ -144,6 +144,7 @@ fun CitaRoot(viewModel: CitaViewModel) {
     val profile by viewModel.profile.collectAsStateWithLifecycle()
     val grades by viewModel.grades.collectAsStateWithLifecycle()
     val averages by viewModel.averages.collectAsStateWithLifecycle()
+    val latestGrades by viewModel.latestGrades.collectAsStateWithLifecycle()
     val appointments by viewModel.appointments.collectAsStateWithLifecycle()
     val homework by viewModel.homework.collectAsStateWithLifecycle()
     val messages by viewModel.messages.collectAsStateWithLifecycle()
@@ -171,6 +172,7 @@ fun CitaRoot(viewModel: CitaViewModel) {
         profile = profile,
         grades = grades,
         averages = averages,
+        latestGrades = latestGrades,
         appointments = appointments,
         homework = homework,
         messages = messages,
@@ -219,6 +221,7 @@ fun MagsSignedInScaffold(
     profile: StudentProfile?,
     grades: List<Grade>,
     averages: List<SubjectAverage>,
+    latestGrades: List<Grade> = emptyList(),
     appointments: List<Appointment>,
     homework: List<HomeworkItem>,
     messages: List<MessagePreview>,
@@ -405,6 +408,7 @@ fun MagsSignedInScaffold(
                                     appointments = appointments,
                                     homework = homework,
                                     averages = averages,
+                                    grades = latestGrades,
                                     messages = messages,
                                     contentPadding = contentPadding,
                                     onOpenPage = { next ->
@@ -437,6 +441,7 @@ fun MagsSignedInScaffold(
                                     profile = profile,
                                     averages = averages,
                                     grades = grades,
+                                    latestGrades = latestGrades,
                                     refreshing = refreshing,
                                     exporting = exporting,
                                     contentPadding = contentPadding,

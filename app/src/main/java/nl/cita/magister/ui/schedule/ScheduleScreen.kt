@@ -95,35 +95,6 @@ private val zone = ZoneId.of("Europe/Amsterdam")
 private val nl = Locale("nl", "NL")
 private val titleDay = DateTimeFormatter.ofPattern("EEEE d MMMM", nl)
 private const val WeekRadius = 40
-private const val MinGapMinutes = 10L
-
-internal sealed class DaySlot {
-    data class Lesson(val item: Appointment) : DaySlot()
-    data class Gap(val fromIso: String, val toIso: String) : DaySlot()
-}
-
-internal fun buildDaySlots(lessons: List<Appointment>, minGapMinutes: Long = MinGapMinutes): List<DaySlot> {
-    val sorted = lessons.sortedBy { it.startIso }
-    if (sorted.isEmpty()) return emptyList()
-    val slots = mutableListOf<DaySlot>()
-    sorted.forEachIndexed { index, item ->
-        if (index > 0) {
-            val previous = sorted[index - 1]
-            val minutes = minutesBetween(previous.endIso, item.startIso)
-            if (minutes != null && minutes >= minGapMinutes) {
-                slots += DaySlot.Gap(previous.endIso, item.startIso)
-            }
-        }
-        slots += DaySlot.Lesson(item)
-    }
-    return slots
-}
-
-internal fun minutesBetween(fromIso: String, toIso: String): Long? {
-    val from = lessonDateTime(fromIso) ?: return null
-    val to = lessonDateTime(toIso) ?: return null
-    return Duration.between(from, to).toMinutes()
-}
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -141,12 +112,15 @@ fun ScheduleScreen(
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
 ) {
     val today = clockDate
+    val weekendLessons = remember(appointments) { weekendDatesWithLessons(appointments) }
     val startMonday = remember(today) { today.minusWeeks(WeekRadius.toLong()).with(DayOfWeek.MONDAY) }
-    val days = remember(startMonday) {
-        List(WeekRadius * 2 * 7) { startMonday.plusDays(it.toLong()) }
-    }
     val weekCount = WeekRadius * 2
-    val seed = initialDate ?: today
+    val days = remember(startMonday, weekendLessons) {
+        schoolDays(startMonday, weekCount, weekendLessons)
+    }
+    val seed = remember(initialDate, today, weekendLessons) {
+        nextSchoolDate(initialDate ?: today, weekendLessons)
+    }
     val initialPage = remember(days, seed) { days.indexOf(seed).coerceIn(0, days.lastIndex) }
     val initialWeek = remember(startMonday, seed) {
         ChronoUnit.WEEKS.between(startMonday, seed.with(DayOfWeek.MONDAY)).toInt().coerceIn(0, weekCount - 1)
@@ -183,7 +157,7 @@ fun ScheduleScreen(
                 val monday = startMonday.plusWeeks(week.toLong())
                 val currentMonday = selected.with(DayOfWeek.MONDAY)
                 if (monday == currentMonday || pager.isScrollInProgress) return@collect
-                val weekday = selected.dayOfWeek.value.coerceIn(1, 5)
+                val weekday = selected.dayOfWeek.value.let { if (it in 1..5) it else 1 }
                 val target = monday.plusDays((weekday - 1).toLong())
                 val index = days.indexOf(target)
                 if (index >= 0) pager.animateScrollToPage(index)
@@ -191,7 +165,8 @@ fun ScheduleScreen(
     }
 
     fun jumpTo(date: LocalDate) {
-        val index = days.indexOf(date)
+        val target = nextSchoolDate(date, weekendLessons)
+        val index = days.indexOf(target)
         if (index >= 0) scope.launch { pager.animateScrollToPage(index) }
     }
 
@@ -206,6 +181,7 @@ fun ScheduleScreen(
         ) {
             AnimatedContent(
                 targetState = selected,
+                modifier = Modifier.testTag("rooster-titel-$selected"),
                 transitionSpec = { fadeIn(magsSpring()) togetherWith fadeOut() },
                 label = "rooster-titel",
             ) { date ->
@@ -218,11 +194,12 @@ fun ScheduleScreen(
                 dayPager = pager,
                 days = days,
                 today = today,
+                weekendLessons = weekendLessons,
                 onPick = ::jumpTo,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
             )
-            if (selected != today) {
+            if (today in days && selected != today) {
                 FilledTonalButton(
                     onClick = { jumpTo(today) },
                     modifier = Modifier.testTag("rooster-vandaag"),
@@ -284,6 +261,7 @@ private fun WeekStrip(
     dayPager: PagerState,
     days: List<LocalDate>,
     today: LocalDate,
+    weekendLessons: Set<LocalDate>,
     onPick: (LocalDate) -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
@@ -298,7 +276,7 @@ private fun WeekStrip(
         key = { startMonday.plusWeeks(it.toLong()) },
     ) { week ->
         val monday = startMonday.plusWeeks(week.toLong())
-        val weekDays = remember(monday) { (0..4).map { monday.plusDays(it.toLong()) } }
+        val weekDays = remember(monday, weekendLessons) { weekVisibleDays(monday, weekendLessons) }
         WeekChips(
             weekDays = weekDays,
             dayPager = dayPager,
@@ -325,10 +303,9 @@ private fun WeekChips(
     val density = LocalDensity.current
     var stripWidth by remember { mutableIntStateOf(0) }
     val slot = if (weekDays.isEmpty() || stripWidth == 0) 0f else stripWidth / weekDays.size.toFloat()
-    val pillIndex = weekdayOffset(dayPager, days)
-    val onWeekend = weekDays.none { it == days.getOrNull(dayPager.currentPage) } &&
-        abs(dayPager.currentPageOffsetFraction) < 0.02f
-    val pillAlpha = if (onWeekend) 0f else 1f
+    val pillIndex = weekdayOffset(dayPager, days, weekDays)
+    val onThisWeek = weekDays.any { it == days.getOrNull(dayPager.currentPage) }
+    val pillAlpha = if (onThisWeek) 1f else 0f
     val selectedDate = days.getOrNull(dayPager.currentPage)
 
     Box(
@@ -404,11 +381,13 @@ private fun WeekChips(
     }
 }
 
-/** 0 = Ma … 4 = Vr, plus the live pager fraction so the pill slides with the day page. */
-internal fun weekdayOffset(pager: PagerState, days: List<LocalDate>): Float {
+/** Index in [weekDays], plus the live pager fraction so the pill slides with the day page. */
+internal fun weekdayOffset(pager: PagerState, days: List<LocalDate>, weekDays: List<LocalDate>): Float {
     val date = days.getOrNull(pager.currentPage) ?: return 0f
-    val base = (date.dayOfWeek.value - 1).toFloat()
-    return (base + pager.currentPageOffsetFraction).coerceIn(-0.15f, 4.15f)
+    val index = weekDays.indexOf(date)
+    if (index < 0) return 0f
+    val last = (weekDays.size - 1).coerceAtLeast(0).toFloat()
+    return (index + pager.currentPageOffsetFraction).coerceIn(-0.15f, last + 0.15f)
 }
 
 @Composable
@@ -421,13 +400,14 @@ private fun DayTimeline(
     onOpen: (Appointment) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val weekend = date.dayOfWeek == DayOfWeek.SATURDAY || date.dayOfWeek == DayOfWeek.SUNDAY
+    val weekend = isWeekend(date)
     val slots = remember(lessons) { buildDaySlots(lessons) }
     val isToday = date == today
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .testTag("rooster-dag-$date"),
+        userScrollEnabled = slots.isNotEmpty(),
         contentPadding = PaddingValues(
             start = MagsChrome.PageGutter,
             end = MagsChrome.PageGutter,
@@ -464,7 +444,7 @@ private fun DayTimeline(
             when (slot) {
                 is DaySlot.Gap -> {
                     Box(Modifier.staggerEnter(index)) {
-                        GapRow(slot)
+                        if (slot.kind == GapKind.FreePeriod) GapRow(slot) else BreakMark()
                         if (isToday && nowInsideGap(slot, now)) {
                             NowLine(Modifier.align(Alignment.Center))
                         }
@@ -533,6 +513,37 @@ private fun GapRow(slot: DaySlot.Gap) {
         Text("Tussenuur", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.weight(1f))
         Text("$from–$to", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun BreakMark() {
+    val line = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(14.dp)
+            .testTag("pauze"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
+            Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(line),
+        )
+        Text(
+            "pauze",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+        )
+        Box(
+            Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(line),
+        )
     }
 }
 
@@ -710,7 +721,7 @@ private fun matchesHomework(item: HomeworkItem, lesson: Appointment): Boolean {
 
 private fun slotKey(slot: DaySlot): String = when (slot) {
     is DaySlot.Lesson -> "les-${slot.item.id}"
-    is DaySlot.Gap -> "gap-${slot.fromIso}-${slot.toIso}"
+    is DaySlot.Gap -> "gap-${slot.kind}-${slot.fromIso}-${slot.toIso}"
 }
 
 private fun isCurrent(item: Appointment, isToday: Boolean, now: LocalTime): Boolean {
@@ -759,11 +770,3 @@ private fun slotEnd(slot: DaySlot): LocalTime? = when (slot) {
 
 private fun lessonTime(iso: String?): LocalTime? =
     lessonDateTime(iso)?.toLocalTime()
-
-private fun lessonDateTime(iso: String?): java.time.ZonedDateTime? {
-    if (iso.isNullOrBlank()) return null
-    val instant = runCatching { java.time.Instant.parse(iso) }.getOrNull()
-        ?: runCatching { java.time.OffsetDateTime.parse(iso).toInstant() }.getOrNull()
-        ?: return null
-    return instant.atZone(zone)
-}

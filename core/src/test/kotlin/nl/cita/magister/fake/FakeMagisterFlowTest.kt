@@ -165,6 +165,20 @@ class FakeMagisterFlowTest {
     }
 
     @Test
+    fun latestGradesEndpointDropsGemAndSe() {
+        val json = get("/api/personen/424242/cijfers/laatste?top=20", "live-access")
+        val parsed = MagisterParsers.parseRecentGrades(json)
+        val latest = GradeCalculator.latestEarnedGrades(parsed)
+        assertEquals(listOf("5,3", "7,6", "6,8"), latest.map { it.value })
+        assertEquals(listOf("PW2", "Writing", "Literatuur"), latest.map { it.columnHeading })
+        assertTrue(latest.none { it.columnHeading?.contains("gemiddelde", ignoreCase = true) == true })
+        assertTrue(latest.none { it.columnHeading?.contains("SE", ignoreCase = true) == true })
+        fake.scenario = FakeScenario.NoGrades
+        val empty = get("/api/personen/424242/cijfers/laatste?top=5", "live-access")
+        assertTrue(MagisterParsers.parseRecentGrades(empty).isEmpty())
+    }
+
+    @Test
     fun citadelAveragesFetchKolomInfoAndPreferSe() {
         fake.scenario = FakeScenario.CitadelAverages
         val overview = get(

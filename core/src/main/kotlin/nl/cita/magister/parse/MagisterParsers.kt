@@ -80,27 +80,30 @@ object MagisterParsers {
     fun parseRecentGrades(json: String): List<Grade> {
         val items = MagisterJson.instance.decodeFromString<ItemsDto<RecentGradeDto>>(json).all
         return items.mapIndexed { index, dto ->
-            val value = dto.value
+            val value = dto.resolvedValue
             val numeric = GradeCalculator.parseDutchNumber(value)
-            val type = columnType(null, dto.description, dto.description, dto.description)
+            val description = dto.resolvedDescription
+            val inferred = columnType(null, description, description, description)
+            val type = if (inferred == GradeColumnType.Other) GradeColumnType.Grade else inferred
+            val subject = dto.resolvedSubject
             Grade(
-                id = dto.columnId ?: -(index + 1),
+                id = dto.resolvedColumnId ?: -(index + 1),
                 value = value,
                 numericValue = numeric,
-                isSufficient = dto.isSufficient ?: ((numeric ?: 0.0) >= 5.5),
+                isSufficient = dto.resolvedSufficient ?: ((numeric ?: 0.0) >= 5.5),
                 counts = type == GradeColumnType.Grade && numeric != null,
-                weight = dto.weight,
-                subjectId = dto.subject?.id ?: 0,
-                subjectName = dto.subject?.name ?: "Onbekend",
-                subjectCode = dto.subject?.code ?: "?",
-                columnHeading = dto.description,
-                columnDescription = dto.description,
+                weight = dto.resolvedWeight,
+                subjectId = subject?.resolvedId ?: 0,
+                subjectName = subject?.resolvedName ?: "Onbekend",
+                subjectCode = subject?.resolvedCode ?: "?",
+                columnHeading = description,
+                columnDescription = description,
                 columnType = type,
                 teacher = null,
-                enteredAt = dto.enteredAt,
+                enteredAt = dto.resolvedEnteredAt,
                 periodName = null,
                 isPta = false,
-                columnId = dto.columnId,
+                columnId = dto.resolvedColumnId,
             )
         }
     }

@@ -64,6 +64,21 @@ class MagisterParsersTest {
     }
 
     @Test
+    fun parseRecentGradesKeepsTestsAndDropsGemSe() {
+        val parsed = MagisterParsers.parseRecentGrades(MockFixtures.recentGradesJson)
+        assertEquals(5, parsed.size)
+        assertEquals(GradeColumnType.Grade, parsed.first { it.columnHeading == "PW2" }.columnType)
+        assertEquals(GradeColumnType.Average, parsed.first { it.columnHeading == "Voortschrijdend gemiddelde" }.columnType)
+        assertEquals(GradeColumnType.Average, parsed.first { it.columnHeading == "SE cijfer" }.columnType)
+        val latest = nl.cita.magister.grades.GradeCalculator.latestEarnedGrades(parsed)
+        assertEquals(listOf("5,3", "7,6", "6,8"), latest.map { it.value })
+        assertEquals(listOf("PW2", "Writing", "Literatuur"), latest.map { it.columnHeading })
+        assertEquals(listOf("Wiskunde B", "Engels", "Nederlands"), latest.map { it.subjectName })
+        assertEquals(3.0, latest.first().weight!!, 0.0001)
+        assertEquals("2025-10-10T10:00:00.0000000Z", latest.first().enteredAt)
+    }
+
+    @Test
     fun extraColumnInfoFillsWeightWithoutClobberingHeading() {
         val parsed = MagisterParsers.parseGrades(MockFixtures.citadelGradesJson)
         val extra = mapOf(201 to MagisterParsers.parseColumnInfo(MockFixtures.extraColumnInfoJson(201)))

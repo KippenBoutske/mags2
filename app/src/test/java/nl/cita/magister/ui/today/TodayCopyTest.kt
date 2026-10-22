@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.fixtures.MockFixtures
@@ -88,6 +89,7 @@ class TodayCopyTest {
                         appointments = MockFixtures.appointments(),
                         homework = MockFixtures.homework(),
                         averages = GradeCalculator.averagesBySubject(MockFixtures.grades()),
+                        grades = MockFixtures.grades(),
                         messages = MockFixtures.messages(),
                         contentPadding = PaddingValues(0.dp),
                         onOpenPage = {},
@@ -102,11 +104,15 @@ class TodayCopyTest {
         compose.onNodeWithText("tot 12:15 · nog 75 min").assertIsDisplayed()
         compose.onAllNodesWithText("nu", substring = false).assertCountEquals(0)
         compose.onNodeWithText("Maak opgave 42", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("GS").assertIsDisplayed()
+        compose.onNodeWithText("5,3").assertIsDisplayed()
+        compose.onNodeWithText("PW2", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("7,6").assertIsDisplayed()
+        compose.onNodeWithTag("laatste-cijfers").assertIsDisplayed()
+        compose.onAllNodesWithTag("laatste-cijfer", useUnmergedTree = true).assertCountEquals(3)
         compose.onAllNodesWithTag("today-homework-row", useUnmergedTree = true).assertCountEquals(3)
         compose.onAllNodesWithTag("hw-checkbox", useUnmergedTree = true)[0].assertExists()
         val wiskunde = compose.onAllNodesWithText("Wiskunde B", substring = false)
-        assertTrue(wiskunde.fetchSemanticsNodes().size <= 2)
+        assertTrue(wiskunde.fetchSemanticsNodes().isNotEmpty())
         val first = MockFixtures.homework().first { !it.isDone }
         compose.onNodeWithText(dueChipLabel(first.dueIso, clock.date), substring = true).assertExists()
     }

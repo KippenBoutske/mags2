@@ -38,6 +38,7 @@ class CitaViewModel(
     val profile = repo.observeProfile().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     val grades = repo.observeGrades().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val averages = repo.observeAverages().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val latestGrades = repo.observeLatestGrades().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val appointments = repo.observeAppointments().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val homework = repo.observeHomework().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val messages = repo.observeMessages().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())

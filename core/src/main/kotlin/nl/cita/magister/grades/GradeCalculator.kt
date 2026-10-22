@@ -41,6 +41,33 @@ object GradeCalculator {
         }
     }
 
+    /** Losse behaalde cijfers, nieuwste eerst — geen GEM/SE/eind. */
+    fun latestEarnedGrades(grades: List<Grade>, limit: Int = 3): List<Grade> {
+        return grades
+            .filter { it.columnType == GradeColumnType.Grade }
+            .filter { !isHeadlineColumn(it) }
+            .filter { !it.value.isNullOrBlank() }
+            .sortedWith(
+                compareByDescending<Grade> { it.enteredAt.orEmpty() }
+                    .thenByDescending { it.id },
+            )
+            .distinctBy { it.columnId ?: it.id }
+            .take(limit.coerceAtLeast(0))
+    }
+
+    /** GEM / SE / eind — hoort niet in 'laatste cijfers'. */
+    fun isHeadlineColumn(grade: Grade): Boolean {
+        val heading = grade.columnHeading?.trim()?.lowercase().orEmpty()
+        val desc = grade.columnDescription?.trim()?.lowercase().orEmpty()
+        if (heading in setOf("gem", "vg", "se", "eind", "eindc", "rap", "rapp")) return true
+        if (heading.contains("se cijfer")) return true
+        val blob = "$heading $desc"
+        return blob.contains("gemiddelde") ||
+            blob.contains("voortschrijdend") ||
+            blob.contains("eindcijfer") ||
+            blob.contains("rapportcijfer")
+    }
+
     fun weightedAverage(grades: List<Grade>): Double? {
         val usable = countedGrades(grades).mapNotNull { grade ->
             val value = numeric(grade) ?: return@mapNotNull null

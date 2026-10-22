@@ -68,6 +68,7 @@ class ConceptScreenshotTest {
     @Test fun today360() = snap("today", 360) { today() }
     @Test fun rooster412() = snap("rooster", 412) { rooster() }
     @Test fun rooster360() = snap("rooster", 360) { rooster() }
+    @Test fun roosterWoensdag412() = snap("rooster-woensdag", 412) { roosterWed() }
     @Test fun cijfers412() = snap("cijfers", 412) { grades() }
     @Test fun cijfers360() = snap("cijfers", 360) { grades() }
     @Test fun cijfersVak412() = snap("cijfers-vak", 412) { grades(subjectId = 3) }
@@ -132,10 +133,10 @@ class ConceptScreenshotTest {
     private fun outDirs(): List<File> = listOf(
         File("app/build/outputs/self-test/screenshots"),
         File("build/outputs/self-test/screenshots"),
-        File("artifacts/screens-0.1.15"),
-        File("/workspace/artifacts/screens-0.1.15"),
-        File("/cursor/stores/self/artifacts/screens-0.1.15"),
-        File("/opt/cursor/artifacts/0.1.15"),
+        File("artifacts/screens-0.1.16"),
+        File("/workspace/artifacts/screens-0.1.16"),
+        File("/cursor/stores/self/artifacts/screens-0.1.16"),
+        File("/opt/cursor/artifacts/0.1.16"),
     )
 
     @Composable
@@ -175,6 +176,7 @@ class ConceptScreenshotTest {
             appointments = MockFixtures.appointments(),
             homework = MockFixtures.homework(),
             averages = GradeCalculator.averagesBySubject(MockFixtures.grades()),
+            grades = MockFixtures.grades(),
             messages = MockFixtures.messages(),
             contentPadding = PaddingValues(0.dp),
             onOpenPage = {},
@@ -201,6 +203,7 @@ class ConceptScreenshotTest {
             profile = MockFixtures.profile(),
             averages = GradeCalculator.averagesBySubject(grades),
             grades = grades,
+            latestGrades = GradeCalculator.latestEarnedGrades(grades),
             refreshing = false,
             exporting = false,
             contentPadding = PaddingValues(0.dp),
@@ -250,10 +253,22 @@ class ConceptScreenshotTest {
             profile = MockFixtures.profile(),
             averages = GradeCalculator.averagesBySubject(grades),
             grades = grades,
+            latestGrades = GradeCalculator.latestEarnedGrades(grades),
             refreshing = false,
             exporting = false,
             contentPadding = PaddingValues(0.dp),
             onExport = {},
+        )
+    }
+
+    @Composable
+    private fun roosterWed() {
+        ScheduleScreen(
+            appointments = MockFixtures.appointments(),
+            contentPadding = PaddingValues(0.dp),
+            initialDate = LocalDate.of(2026, 10, 21),
+            clockDate = LocalDate.of(2026, 10, 21),
+            clockTime = LocalTime.of(11, 0),
         )
     }
 
@@ -286,6 +301,7 @@ class ConceptScreenshotTest {
             appointments = MockFixtures.appointments(),
             homework = MockFixtures.homework(),
             averages = GradeCalculator.averagesBySubject(MockFixtures.grades()),
+            grades = MockFixtures.grades(),
             messages = MockFixtures.messages(),
             contentPadding = PaddingValues(0.dp),
             onOpenPage = {},
@@ -359,6 +375,7 @@ class ConceptScreenshotTest {
             profile = MockFixtures.profile(),
             grades = grades,
             averages = GradeCalculator.averagesBySubject(grades),
+            latestGrades = GradeCalculator.latestEarnedGrades(grades),
             appointments = MockFixtures.appointments(),
             homework = MockFixtures.homework(),
             messages = MockFixtures.messages(),

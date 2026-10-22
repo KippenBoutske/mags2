@@ -130,20 +130,42 @@ data class GradeColumnInfoDto(
 @Serializable
 data class RecentGradeDto(
     @SerialName("kolomId") val columnId: Int? = null,
+    @SerialName("KolomId") val columnIdAlt: Int? = null,
     @SerialName("waarde") val value: String? = null,
+    @SerialName("Waarde") val valueAlt: String? = null,
     @SerialName("weegfactor") val weight: Double? = null,
+    @SerialName("Weegfactor") val weightAlt: Double? = null,
     @SerialName("isVoldoende") val isSufficient: Boolean? = null,
+    @SerialName("IsVoldoende") val isSufficientAlt: Boolean? = null,
     @SerialName("ingevoerdOp") val enteredAt: String? = null,
+    @SerialName("IngevoerdOp") val enteredAtAlt: String? = null,
     @SerialName("omschrijving") val description: String? = null,
+    @SerialName("Omschrijving") val descriptionAlt: String? = null,
     @SerialName("vak") val subject: RecentSubjectDto? = null,
-)
+    @SerialName("Vak") val subjectAlt: RecentSubjectDto? = null,
+) {
+    val resolvedColumnId: Int? get() = columnId ?: columnIdAlt
+    val resolvedValue: String? get() = value ?: valueAlt
+    val resolvedWeight: Double? get() = weight ?: weightAlt
+    val resolvedSufficient: Boolean? get() = isSufficient ?: isSufficientAlt
+    val resolvedEnteredAt: String? get() = enteredAt ?: enteredAtAlt
+    val resolvedDescription: String? get() = description ?: descriptionAlt
+    val resolvedSubject: RecentSubjectDto? get() = subject ?: subjectAlt
+}
 
 @Serializable
 data class RecentSubjectDto(
     @SerialName("id") val id: Int? = null,
+    @SerialName("Id") val idAlt: Int? = null,
     @SerialName("code") val code: String? = null,
+    @SerialName("Afkorting") val codeAlt: String? = null,
     @SerialName("omschrijving") val name: String? = null,
-)
+    @SerialName("Omschrijving") val nameAlt: String? = null,
+) {
+    val resolvedId: Int? get() = id ?: idAlt
+    val resolvedCode: String? get() = code ?: codeAlt
+    val resolvedName: String? get() = name ?: nameAlt
+}
 
 @Serializable
 data class AppointmentDto(

@@ -142,6 +142,33 @@ class GradeCalculatorTest {
     }
 
     @Test
+    fun latestEarnedGradesAreIndividualNewestFirst() {
+        val latest = GradeCalculator.latestEarnedGrades(MockFixtures.grades())
+        assertEquals(listOf("Wiskunde B", "Engels", "Nederlands"), latest.map { it.subjectName })
+        assertEquals(listOf("5,3", "7,6", "6,8"), latest.map { it.value })
+        assertEquals(listOf("PW2", "WR1", "LT1"), latest.map { it.columnHeading })
+        assertTrue(latest.all { it.columnType == GradeColumnType.Grade })
+        assertFalse(latest.any { it.subjectCode == "gs" || it.subjectCode == "bi" })
+    }
+
+    @Test
+    fun latestEarnedGradesDropsGemSeAndEndEvenIfNewer() {
+        val gem = grade(7.1, 0.0, type = GradeColumnType.Average, id = 19, heading = "GEM")
+            .copy(enteredAt = "2025-10-11T12:00:00.0000000Z", value = "7,1", subjectName = "Nederlands")
+        val se = grade(4.8, 0.0, type = GradeColumnType.Average, id = 202, heading = "SE cijfer")
+            .copy(enteredAt = "2025-10-09T09:00:00.0000000Z", value = "4,8", subjectName = "biologie")
+        val namedGem = grade(6.0, 1.0, type = GradeColumnType.Grade, id = 99, heading = "Voortschrijdend gemiddelde")
+            .copy(enteredAt = "2025-10-12T08:00:00.0000000Z", value = "6,0")
+        val pw2 = grade(5.3, 3.0, id = 32, heading = "PW2")
+            .copy(enteredAt = "2025-10-10T10:00:00.0000000Z", value = "5,3")
+        val writing = grade(7.6, 2.0, id = 22, heading = "Writing")
+            .copy(enteredAt = "2025-10-08T10:00:00.0000000Z", value = "7,6")
+        val latest = GradeCalculator.latestEarnedGrades(listOf(gem, se, namedGem, pw2, writing))
+        assertEquals(listOf("5,3", "7,6"), latest.map { it.value })
+        assertEquals(listOf("PW2", "Writing"), latest.map { it.columnHeading })
+    }
+
+    @Test
     fun formatAverageKeepsOneOrTwoDecimals() {
         assertEquals("6,9", GradeCalculator.formatAverage(6.9, "6,9"))
         assertEquals("5,85", GradeCalculator.formatAverage(5.85))
