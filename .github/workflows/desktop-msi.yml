@@ -78,7 +78,7 @@ jobs:
       - name: Package MSI
         shell: pwsh
         run: |
-          if (Test-Path .\gradlew.bat) {
+          if ((Test-Path .\gradlew.bat) -and (Test-Path .\gradle\wrapper\gradle-wrapper.jar)) {
             .\gradlew.bat :desktop:packageMsi --stacktrace --no-daemon
           } else {
             gradle :desktop:packageMsi --stacktrace --no-daemon
@@ -138,7 +138,7 @@ jobs:
 
       - name: Assemble APKs
         run: |
-          if [ -x ./gradlew ]; then
+          if [ -x ./gradlew ] && [ -f gradle/wrapper/gradle-wrapper.jar ]; then
             ./gradlew :app:assembleDebug :app:assembleRelease --stacktrace --no-daemon
           else
             gradle :app:assembleDebug :app:assembleRelease --stacktrace --no-daemon
