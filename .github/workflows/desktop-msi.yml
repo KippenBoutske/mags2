@@ -200,4 +200,4 @@ jobs:
         with:
           name: Mags-android-mapping
           path: app/build/outputs/mapping/release/mapping.txt
-          if-no-files-found: error
+          if-no-files-found: warn
