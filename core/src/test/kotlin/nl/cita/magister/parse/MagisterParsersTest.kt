@@ -167,4 +167,38 @@ class MagisterParsersTest {
         assertEquals("abc/def", AuthRequestFactory.extractCode(url))
         assertEquals("access_denied: user", AuthRequestFactory.extractError("m6loapp://oauth2redirect/?error=access_denied&error_description=user"))
     }
+
+    @Test
+    fun androidAuthorizeUrlStaysWithoutResponseMode() {
+        val request = AuthRequestFactory.create("citadel.magister.net", Pkce.generate(), state = "s", nonce = "n")
+        assertFalse(request.authorizeUrl.contains("response_mode="))
+    }
+
+    @Test
+    fun desktopAuthorizeUrlAddsQueryResponseMode() {
+        val request = AuthRequestFactory.create("citadel.magister.net", Pkce.generate(), state = "s", nonce = "n")
+        val desktop = AuthRequestFactory.withResponseMode(request.authorizeUrl, "query")
+        assertTrue(desktop.contains("response_mode=query"))
+        assertTrue(desktop.startsWith(request.authorizeUrl))
+        assertEquals(desktop, AuthRequestFactory.withResponseMode(desktop, "query"))
+    }
+
+    @Test
+    fun extractCodeFromQueryRedirect() {
+        assertEquals(
+            "abc/def",
+            AuthRequestFactory.extractCode("m6loapp://oauth2redirect/?code=abc%2Fdef&state=s"),
+        )
+    }
+
+    @Test
+    fun extractCodeFromFormPostBody() {
+        val body = "code=abc%2Fdef&id_token=xyz&state=s&session_state=t"
+        val redirect = AuthRequestFactory.redirectFromFormPost("m6loapp://oauth2redirect/", body)
+        assertEquals("m6loapp://oauth2redirect/?code=abc%2Fdef&id_token=xyz&state=s&session_state=t", redirect)
+        assertEquals("abc/def", AuthRequestFactory.extractCode(redirect!!))
+        assertEquals("abc/def", AuthRequestFactory.extractCode(body))
+        assertNull(AuthRequestFactory.redirectFromFormPost("https://evil.example/", body))
+        assertNull(AuthRequestFactory.redirectFromFormPost("m6loapp://oauth2redirect/", "state=only"))
+    }
 }

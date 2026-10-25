@@ -79,6 +79,16 @@ kotlin {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.kotlinx.coroutines.swing)
+                val classifier = when {
+                    org.gradle.internal.os.OperatingSystem.current().isWindows -> "win"
+                    org.gradle.internal.os.OperatingSystem.current().isMacOsX -> "mac"
+                    else -> "linux"
+                }
+                implementation("org.openjfx:javafx-base:21.0.5:$classifier")
+                implementation("org.openjfx:javafx-graphics:21.0.5:$classifier")
+                implementation("org.openjfx:javafx-controls:21.0.5:$classifier")
+                implementation("org.openjfx:javafx-swing:21.0.5:$classifier")
+                implementation("org.openjfx:javafx-web:21.0.5:$classifier")
             }
         }
 
