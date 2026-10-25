@@ -5,7 +5,7 @@ package nl.cita.magister.api
  * in headers — een ë in de User-Agent liet inloggen meteen falen.
  */
 object CitaHttp {
-    const val USER_AGENT = "Mags/0.2.1 (unofficial Magister client)"
+    const val USER_AGENT = "Mags/0.2.2 (unofficial Magister client)"
     const val ACCEPT_JSON = "application/json"
     const val CONTENT_TYPE_JSON = "application/json"
     const val API_CLIENT_ID = "M6LOAPP"

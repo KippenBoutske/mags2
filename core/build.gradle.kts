@@ -70,13 +70,8 @@ kotlin {
                 implementation(libs.androidx.core.ktx)
                 implementation(libs.androidx.browser)
                 implementation(libs.androidx.activity.compose)
-                implementation(libs.androidx.lifecycle.runtime.compose)
                 implementation(libs.ktor.client.okhttp)
                 implementation(libs.compose.material3)
-                implementation(libs.androidx.camera.camera2)
-                implementation(libs.androidx.camera.lifecycle)
-                implementation(libs.androidx.camera.view)
-                implementation(libs.mlkit.barcode.scanning)
             }
         }
 
