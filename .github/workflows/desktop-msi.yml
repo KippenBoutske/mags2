@@ -1,0 +1,124 @@
+name: Desktop MSI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  JAVA_VERSION: "21"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
+
+jobs:
+  msi:
+    name: Windows MSI
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.3.1
+
+      # :core is a KMP library with an Android target, so the desktop
+      # package task still needs an SDK even on Windows.
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform 37
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-37" "platforms;android-37.0" "build-tools;35.0.0" || \
+            sdkmanager "platforms;android-37" "build-tools;35.0.0"
+
+      - name: Install WiX Toolset
+        shell: pwsh
+        run: |
+          choco install wixtoolset --no-progress -y
+          $wix = Get-ChildItem "C:\Program Files (x86)\WiX Toolset*" -Directory -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+          if (-not $wix) {
+            throw "WiX Toolset not found after chocolatey install"
+          }
+          Add-Content -Path $env:GITHUB_PATH -Value "$($wix.FullName)\bin"
+          Add-Content -Path $env:GITHUB_ENV -Value "WIX=$($wix.FullName)\"
+
+      - name: Package MSI
+        shell: pwsh
+        run: |
+          if (Test-Path .\gradlew.bat) {
+            .\gradlew.bat :desktop:packageMsi --stacktrace --no-daemon
+          } else {
+            gradle :desktop:packageMsi --stacktrace --no-daemon
+          }
+
+      - name: Upload MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mags-windows-msi
+          path: desktop/build/compose/binaries/main/msi/*.msi
+          if-no-files-found: error
+
+      - name: Attach MSI to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: desktop/build/compose/binaries/main/msi/*.msi
+          generate_release_notes: true
+
+  apk:
+    name: Android APKs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.3.1
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform 37
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-37" "platforms;android-37.0" "build-tools;35.0.0" || \
+            sdkmanager "platforms;android-37" "build-tools;35.0.0"
+
+      - name: Assemble APKs
+        run: |
+          if [ -x ./gradlew ]; then
+            ./gradlew :app:assembleDebug :app:assembleRelease --stacktrace --no-daemon
+          else
+            gradle :app:assembleDebug :app:assembleRelease --stacktrace --no-daemon
+          fi
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mags-android-apks
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
