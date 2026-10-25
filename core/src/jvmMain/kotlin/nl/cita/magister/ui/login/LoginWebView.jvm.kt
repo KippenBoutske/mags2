@@ -27,6 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.unit.dp
 import java.awt.BorderLayout
+import java.lang.reflect.InvocationTargetException
+import java.util.logging.Level
+import java.util.logging.Logger
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 import nl.cita.magister.api.MagisterEndpoints
@@ -137,7 +140,12 @@ private fun JavaFxWebPanel(
 ) {
     val panel = remember { JPanel(BorderLayout()) }
     DisposableEffect(url) {
-        val ok = JavaFxBridge.attach(panel, url, onRedirect)
+        val ok = JavaFxBridge.attach(
+            host = panel,
+            url = url,
+            onRedirect = onRedirect,
+            onFailure = onUnavailable,
+        )
         if (!ok) onUnavailable()
         onDispose { JavaFxBridge.detach(panel) }
     }
@@ -145,45 +153,84 @@ private fun JavaFxWebPanel(
 }
 
 private object JavaFxBridge {
+    private val log = Logger.getLogger("nl.cita.magister.ui.login.JavaFxBridge")
+
     fun available(): Boolean = runCatching {
         Class.forName("javafx.scene.web.WebView")
         Class.forName("javafx.embed.swing.JFXPanel")
+        Class.forName("javafx.application.Platform")
         true
     }.getOrDefault(false)
 
-    fun attach(host: JPanel, url: String, onRedirect: (String) -> Unit): Boolean {
+    fun attach(
+        host: JPanel,
+        url: String,
+        onRedirect: (String) -> Unit,
+        onFailure: () -> Unit,
+    ): Boolean {
         return runCatching {
             val jfxPanelClass = Class.forName("javafx.embed.swing.JFXPanel")
             val platformClass = Class.forName("javafx.application.Platform")
-            val panel = jfxPanelClass.getConstructor().newInstance()
-            host.removeAll()
-            host.add(panel as java.awt.Component, BorderLayout.CENTER)
-            val runLater = platformClass.getMethod("runLater", Runnable::class.java)
-            runLater.invoke(null, Runnable {
-                runCatching {
-                    val webViewClass = Class.forName("javafx.scene.web.WebView")
-                    val sceneClass = Class.forName("javafx.scene.Scene")
-                    val webView = webViewClass.getConstructor().newInstance()
-                    val engine = webViewClass.getMethod("getEngine").invoke(webView)
-                    val engineClass = engine.javaClass
-                    val locationProp = engineClass.getMethod("locationProperty").invoke(engine)
-                    val addListener = locationProp.javaClass.methods.first {
-                        it.name == "addListener" && it.parameterCount == 1
+            startJavaFx(platformClass)
+            val createPanel = Runnable {
+                val panel = jfxPanelClass.getConstructor().newInstance()
+                host.removeAll()
+                host.add(panel as java.awt.Component, BorderLayout.CENTER)
+                host.revalidate()
+                host.repaint()
+                val runLater = platformClass.getMethod("runLater", Runnable::class.java)
+                runLater.invoke(null, Runnable {
+                    runCatching {
+                        val webViewClass = Class.forName("javafx.scene.web.WebView")
+                        val sceneClass = Class.forName("javafx.scene.Scene")
+                        val webView = webViewClass.getConstructor().newInstance()
+                        val engine = webViewClass.getMethod("getEngine").invoke(webView)
+                        val engineClass = engine.javaClass
+                        val locationProp = engineClass.getMethod("locationProperty").invoke(engine)
+                        val addListener = locationProp.javaClass.methods.first {
+                            it.name == "addListener" && it.parameterCount == 1
+                        }
+                        addListener.invoke(locationProp, javafxChangeListener(onRedirect))
+                        engineClass.getMethod("load", String::class.java).invoke(engine, url)
+                        val scene = sceneClass.constructors.first { it.parameterCount == 1 }
+                            .newInstance(webView)
+                        jfxPanelClass.getMethod("setScene", sceneClass).invoke(panel, scene)
+                    }.onFailure { error ->
+                        logException("JavaFX WebView scene setup failed", error)
+                        SwingUtilities.invokeLater(onFailure)
                     }
-                    addListener.invoke(locationProp, javafxChangeListener(onRedirect))
-                    engineClass.getMethod("load", String::class.java).invoke(engine, url)
-                    val scene = sceneClass.constructors.first { it.parameterCount == 1 }
-                        .newInstance(webView)
-                    jfxPanelClass.getMethod("setScene", sceneClass).invoke(panel, scene)
-                }
-            })
-            SwingUtilities.invokeLater { host.revalidate(); host.repaint() }
+                })
+            }
+            if (SwingUtilities.isEventDispatchThread()) {
+                createPanel.run()
+            } else {
+                SwingUtilities.invokeAndWait(createPanel)
+            }
             true
+        }.onFailure { error ->
+            logException("JavaFX WebView attach failed", error)
         }.getOrDefault(false)
     }
 
     fun detach(host: JPanel) {
         SwingUtilities.invokeLater { host.removeAll() }
+    }
+
+    private fun startJavaFx(platformClass: Class<*>) {
+        runCatching {
+            platformClass.getMethod("startup", Runnable::class.java).invoke(null, Runnable {})
+        }.onFailure { error ->
+            val cause = (error as? InvocationTargetException)?.targetException ?: error
+            if (cause !is IllegalStateException) throw error
+        }
+        platformClass.getMethod("setImplicitExit", Boolean::class.javaPrimitiveType)
+            .invoke(null, false)
+    }
+
+    private fun logException(message: String, error: Throwable) {
+        log.log(Level.SEVERE, message, error)
+        System.err.println("Mags: $message: ${error.message}")
+        error.printStackTrace()
     }
 
     private fun javafxChangeListener(onRedirect: (String) -> Unit): Any {

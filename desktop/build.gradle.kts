@@ -35,6 +35,11 @@ compose.desktop {
     application {
         mainClass = "nl.cita.magister.desktop.MainKt"
         nativeDistributions {
+            // jpackage's default jlink runtime only kept a handful of JDK modules
+            // (java.base, java.desktop, …). JavaFX WebView needs more
+            // (jdk.jsobject, jdk.xml.dom, java.net.http, jdk.unsupported,
+            // java.scripting, …) or the packaged MSI login screen stays blank.
+            includeAllModules = true
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Mags"
             packageVersion = "0.2.0"
