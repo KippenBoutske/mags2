@@ -12,8 +12,8 @@ android {
         applicationId = "app.mags"
         minSdk = 26
         targetSdk = 37
-        versionCode = 27
-        versionName = "0.2.3"
+        versionCode = 28
+        versionName = "0.2.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
@@ -24,6 +24,9 @@ android {
             storePassword = "mags-dev"
             keyAlias = "mags-dev"
             keyPassword = "mags-dev"
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
         }
     }
 
