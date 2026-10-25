@@ -26,7 +26,9 @@ fi
 
 ALIGNED=$(mktemp --suffix=.apk)
 trap 'rm -f "$ALIGNED"' EXIT
-"$BT/zipalign" -p -f 16 "$APK" "$ALIGNED"
+# -P 16 page-aligns uncompressed .so to 16 KB (Pixel 10). -p is only 4 KB.
+"$BT/zipalign" -P 16 -f 16 "$APK" "$ALIGNED"
+"$BT/zipalign" -c -P 16 -v 16 "$ALIGNED"
 "$BT/apksigner" sign \
   --ks "$KS" \
   --ks-key-alias mags-dev \
@@ -46,5 +48,4 @@ if [[ "$CERT" != "$EXPECTED" ]]; then
   echo "Signing cert mismatch: got $CERT want $EXPECTED" >&2
   exit 1
 fi
-"$BT/zipalign" -c -p 16 "$APK"
-echo "APK aligned and signed with pinned mags-dev cert"
+echo "APK 16 KB-aligned and signed with pinned mags-dev cert"
