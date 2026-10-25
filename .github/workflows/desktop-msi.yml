@@ -36,8 +36,11 @@ jobs:
 
       # :core is a KMP library with an Android target, so packageMsi still
       # configures the Android SDK even on Windows.
+      # Do not install the retired `tools` package (sdkmanager 16+ removed it).
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Install Android platform 37
         shell: bash
@@ -119,6 +122,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Install Android platform 37
         run: |
