@@ -108,7 +108,7 @@ class TodayCopyTest {
         compose.onNodeWithText("PW2", substring = true).assertIsDisplayed()
         compose.onNodeWithText("7,6").assertIsDisplayed()
         compose.onNodeWithTag("laatste-cijfers").assertIsDisplayed()
-        compose.onAllNodesWithTag("laatste-cijfer", useUnmergedTree = true).assertCountEquals(3)
+        compose.onAllNodesWithTag("laatste-cijfer", useUnmergedTree = true).assertCountEquals(5)
         compose.onAllNodesWithTag("today-homework-row", useUnmergedTree = true).assertCountEquals(3)
         compose.onAllNodesWithTag("hw-checkbox", useUnmergedTree = true)[0].assertExists()
         val wiskunde = compose.onAllNodesWithText("Wiskunde B", substring = false)

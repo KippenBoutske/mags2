@@ -70,7 +70,7 @@ class HomeworkGroupTest {
         compose.waitForIdle()
         compose.onNodeWithTag("hw-groep-verlopen").assertIsDisplayed()
         compose.onNodeWithText("Verlopen", substring = true).assertIsDisplayed()
-        compose.onNodeWithTag("hw-toets").assertExists()
+        compose.onNodeWithTag("hw-toets", useUnmergedTree = true).assertExists()
         compose.onNodeWithText("Toets", substring = true).assertExists()
         val toets = MockFixtures.homework().first { isToets(it.infoType) }
         assertEquals("Toets · ${formatWhen(toets.dueIso)}", homeworkMeta(toets))

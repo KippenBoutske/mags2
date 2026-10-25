@@ -14,6 +14,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.splashscreen.SplashScreenViewProvider
@@ -31,7 +33,14 @@ import nl.cita.magister.ui.CitaViewModel
 import nl.cita.magister.ui.theme.CitaTheme
 
 class MainActivity : ComponentActivity() {
-    private val viewModel: CitaViewModel by viewModels { CitaViewModel.factory(application) }
+    private val viewModel: CitaViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return CitaViewModel((application as CitaApp).container) as T
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
