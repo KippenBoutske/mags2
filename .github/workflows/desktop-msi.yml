@@ -46,8 +46,13 @@ jobs:
         shell: bash
         run: |
           yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-37" "platforms;android-37.0" "build-tools;35.0.0" || \
-            sdkmanager "platforms;android-37" "build-tools;35.0.0"
+          sdkmanager "build-tools;35.0.0"
+          sdkmanager "platforms;android-37.0" || sdkmanager "platforms;android-37"
+          sdk_root="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          if [ -d "$sdk_root/platforms/android-37.0" ] && [ ! -e "$sdk_root/platforms/android-37" ]; then
+            ln -sfn "$sdk_root/platforms/android-37.0" "$sdk_root/platforms/android-37"
+          fi
+          ls -la "$sdk_root/platforms"
 
       # jpackage/Compose packageMsi needs WiX 3 (candle/light). windows-latest
       # already ships WiX 3.14. Do not choco-install current wixtoolset (v5),
@@ -128,8 +133,13 @@ jobs:
       - name: Install Android platform 37
         run: |
           yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-37" "platforms;android-37.0" "build-tools;35.0.0" || \
-            sdkmanager "platforms;android-37" "build-tools;35.0.0"
+          sdkmanager "build-tools;35.0.0"
+          sdkmanager "platforms;android-37.0" || sdkmanager "platforms;android-37"
+          sdk_root="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          if [ -d "$sdk_root/platforms/android-37.0" ] && [ ! -e "$sdk_root/platforms/android-37" ]; then
+            ln -sfn "$sdk_root/platforms/android-37.0" "$sdk_root/platforms/android-37"
+          fi
+          ls -la "$sdk_root/platforms"
 
       - name: Ensure release keystore
         run: |
