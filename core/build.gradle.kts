@@ -58,6 +58,7 @@ kotlin {
                 implementation(libs.ktor.serialization.kotlinx.json)
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.zxing.core)
                 api(libs.jetbrains.lifecycle.viewmodel)
                 api(libs.jetbrains.lifecycle.runtime.compose)
             }
@@ -69,8 +70,13 @@ kotlin {
                 implementation(libs.androidx.core.ktx)
                 implementation(libs.androidx.browser)
                 implementation(libs.androidx.activity.compose)
+                implementation(libs.androidx.lifecycle.runtime.compose)
                 implementation(libs.ktor.client.okhttp)
                 implementation(libs.compose.material3)
+                implementation(libs.androidx.camera.camera2)
+                implementation(libs.androidx.camera.lifecycle)
+                implementation(libs.androidx.camera.view)
+                implementation(libs.mlkit.barcode.scanning)
             }
         }
 

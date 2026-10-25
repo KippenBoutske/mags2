@@ -18,6 +18,7 @@ import nl.cita.magister.auth.IdTokenClaims
 import nl.cita.magister.auth.SecretStore
 import nl.cita.magister.auth.StoredSession
 import nl.cita.magister.auth.TokenStore
+import nl.cita.magister.pairing.PairingSession
 import nl.cita.magister.data.api.MagisterApiException
 import nl.cita.magister.data.api.MagisterHttpClient
 import nl.cita.magister.data.api.PlanGoonClient
@@ -149,6 +150,51 @@ class MagisterRepository(
         prefs.setDemo(false)
         if (host.isNotBlank()) {
             prefs.setTenant(host, school, prefs.tenantIdNow().ifBlank { null })
+        }
+        return refreshAll()
+    }
+
+    /**
+     * Phone refreshes first so desktop gets a currently-valid pair.
+     * If Magister rotates refresh tokens, both devices then share one chain —
+     * the next refresh on either side can log the other out.
+     */
+    suspend fun exportPairingSession(): PairingSession {
+        val before = tokenStore.read() ?: error("Niet ingelogd")
+        val refresh = before.refreshToken ?: error("Geen refresh-token")
+        val tokens = http.refresh(refresh)
+        tokenStore.updateTokens(tokens, before)
+        val after = tokenStore.read() ?: error("Sessie verdween na vernieuwen")
+        return PairingSession(
+            accessToken = after.accessToken,
+            refreshToken = after.refreshToken ?: error("Geen refresh-token na vernieuwen"),
+            idToken = after.idToken,
+            expiresAtEpochMs = after.expiresAtEpochMs,
+            tenantHost = after.tenantHost.ifBlank { prefs.tenantHostNow() },
+            schoolName = prefs.schoolNameNow(),
+            personId = after.personId,
+            enrollmentId = after.enrollmentId,
+            displayName = after.displayName,
+        )
+    }
+
+    suspend fun importPairedSession(session: PairingSession): SessionHydration {
+        val host = Tenant.normalize(session.tenantHost)
+        tokenStore.write(
+            StoredSession(
+                accessToken = session.accessToken,
+                refreshToken = session.refreshToken,
+                idToken = session.idToken,
+                expiresAtEpochMs = session.expiresAtEpochMs,
+                tenantHost = host,
+                personId = session.personId,
+                enrollmentId = session.enrollmentId,
+                displayName = session.displayName,
+            ),
+        )
+        prefs.setDemo(false)
+        if (host.isNotBlank()) {
+            prefs.setTenant(host, session.schoolName.ifBlank { schoolNameFor(host) }, null)
         }
         return refreshAll()
     }

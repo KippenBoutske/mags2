@@ -22,6 +22,7 @@
 -keep class nl.cita.magister.dto.** { *; }
 -keep class nl.cita.magister.export.** { *; }
 -keep class nl.cita.magister.auth.** { *; }
+-keep class nl.cita.magister.pairing.** { *; }
 -keep class nl.cita.magister.fixtures.** { *; }
 
 # OkHttp / Okio (tests + optional engines)

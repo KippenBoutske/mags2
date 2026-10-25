@@ -28,7 +28,7 @@ class CitaHttpHeadersTest {
 
     @Test
     fun userAgentIsTheAsciiStringOkHttpMustAccept() {
-        assertEquals("Mags/0.2.0 (unofficial Magister client)", CitaHttp.USER_AGENT)
+        assertEquals("Mags/0.2.1 (unofficial Magister client)", CitaHttp.USER_AGENT)
         assertFalse(CitaHttp.USER_AGENT.contains("ë"))
         assertFalse(CitaHttp.USER_AGENT.contains("officiële"))
     }

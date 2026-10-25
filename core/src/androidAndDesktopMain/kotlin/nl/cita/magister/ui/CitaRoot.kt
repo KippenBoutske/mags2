@@ -76,9 +76,13 @@ import nl.cita.magister.platform.PlatformBackHandler
 import nl.cita.magister.platform.PlatformPredictiveBack
 import nl.cita.magister.ui.grades.GradesScreen
 import nl.cita.magister.ui.homework.HomeworkScreen
+import nl.cita.magister.platform.canHostPhonePairing
+import nl.cita.magister.platform.canScanDesktopPairing
 import nl.cita.magister.ui.login.BootSplash
 import nl.cita.magister.ui.login.LoginScreen
 import nl.cita.magister.ui.login.LoginWebView
+import nl.cita.magister.ui.login.PairingHostScreen
+import nl.cita.magister.ui.login.PairingScanScreen
 import nl.cita.magister.ui.messages.MessagesScreen
 import nl.cita.magister.ui.motion.StaggerScope
 import nl.cita.magister.ui.motion.magsSpring
@@ -125,6 +129,25 @@ fun CitaRoot(viewModel: CitaViewModel) {
         return
     }
 
+    val pairingOffer by viewModel.pairingOffer.collectAsStateWithLifecycle()
+    if (pairingOffer != null) {
+        PairingHostScreen(offer = pairingOffer!!, onClose = viewModel::stopPhonePairing)
+        return
+    }
+
+    val pairingScan by viewModel.pairingScan.collectAsStateWithLifecycle()
+    val pairingBusy by viewModel.pairingBusy.collectAsStateWithLifecycle()
+    if (pairingScan) {
+        val pairError by viewModel.lastError.collectAsStateWithLifecycle()
+        PairingScanScreen(
+            onOffer = viewModel::sendPairingToDesktop,
+            onClose = viewModel::closePairingScan,
+            busy = pairingBusy,
+            error = pairError?.friendly(),
+        )
+        return
+    }
+
     if (!signedIn) {
         val school by viewModel.schoolName.collectAsStateWithLifecycle()
         val tenant by viewModel.tenantHost.collectAsStateWithLifecycle()
@@ -143,6 +166,7 @@ fun CitaRoot(viewModel: CitaViewModel) {
                 onStartLogin = { viewModel.startLogin().authorizeUrl },
                 onWebViewLogin = viewModel::openWebViewLogin,
                 onDemo = viewModel::enterDemo,
+                onPairPhone = if (canHostPhonePairing()) viewModel::startPhonePairing else null,
             )
         }
         return
@@ -211,6 +235,7 @@ fun CitaRoot(viewModel: CitaViewModel) {
         onSwitchSchool = viewModel::switchSchool,
         onSaveWebhook = viewModel::saveWebhook,
         onLogout = viewModel::logout,
+        onPairDesktop = if (canScanDesktopPairing()) viewModel::openPairingScan else null,
         sectionErrors = sectionErrors,
         dynamicColor = dynamic,
         onDynamicColor = viewModel::setDynamicColor,
@@ -266,6 +291,7 @@ fun MagsSignedInScaffold(
     onSwitchSchool: (host: String, name: String, tenantId: String?) -> Unit,
     onSaveWebhook: (url: String, key: String) -> Unit,
     onLogout: () -> Unit,
+    onPairDesktop: (() -> Unit)? = null,
     initialPage: MagsPage = MagsPage.Vandaag,
     sectionErrors: SectionErrors = SectionErrors(),
     dynamicColor: Boolean = false,
@@ -509,6 +535,7 @@ fun MagsSignedInScaffold(
                                     onExport = onExport,
                                     onShareJson = onShareJson,
                                     onLogout = onLogout,
+                                    onPairDesktop = onPairDesktop,
                                     dynamicColor = dynamicColor,
                                     onDynamicColor = onDynamicColor,
                                     notifications = notifications,
