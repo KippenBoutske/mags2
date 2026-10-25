@@ -28,6 +28,7 @@ object AndroidHooks {
     var liveSync: () -> Unit = {}
     var liveCancel: () -> Unit = {}
     var liveTick: () -> Unit = {}
+    var pairingScanResult: ((String) -> Unit)? = null
 }
 
 fun initAndroidPlatform(context: Context) {

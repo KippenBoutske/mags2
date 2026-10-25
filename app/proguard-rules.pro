@@ -23,6 +23,14 @@
 -keep class nl.cita.magister.export.** { *; }
 -keep class nl.cita.magister.auth.** { *; }
 -keep class nl.cita.magister.pairing.** { *; }
+-keep class nl.cita.magister.platform.AndroidHooks { *; }
+
+# CameraX + ML Kit live in PairingCaptureActivity, not Compose.
+-keep class androidx.camera.** { *; }
+-keep class com.google.mlkit.** { *; }
+-keep class com.google.android.gms.internal.mlkit_vision_barcode.** { *; }
+-dontwarn androidx.camera.**
+-dontwarn com.google.mlkit.**
 -keep class nl.cita.magister.fixtures.** { *; }
 
 # OkHttp / Okio (tests + optional engines)
@@ -44,6 +52,7 @@
 # Crash process + splash
 -keep class nl.cita.magister.crash.** { *; }
 -keep class nl.cita.magister.MainActivity { *; }
+-keep class nl.cita.magister.pairing.PairingCaptureActivity { *; }
 -keep class nl.cita.magister.CitaApp { *; }
 
 # Glance / WorkManager / AndroidX Startup (InitializationProvider <init>)

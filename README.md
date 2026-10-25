@@ -68,7 +68,7 @@ Cross-build van een MSI op Linux lukt niet (WiX ontbreekt). Op Linux levert `cre
 
 GitHub Actions (`.github/workflows/desktop-msi.yml`) bouwt het MSI op `windows-latest` bij elke push naar `main`, bij tags `v*` (upload naar een GitHub Release) en via *Run workflow*. Dezelfde workflow bouwt de Android-APKs op Ubuntu.
 
-ApplicationId blijft `app.mags` (debug: `app.mags.debug`) zodat de Android-app in-place update. Versie **0.2.1**.
+ApplicationId blijft `app.mags` (debug: `app.mags.debug`) zodat de Android-app in-place update. Versie **0.2.2**.
 
 Release-APK is getekend met de lokale dev-keystore in `app/keystore/` — **niet** voor Play.
 

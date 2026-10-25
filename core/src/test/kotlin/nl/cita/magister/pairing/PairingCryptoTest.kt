@@ -42,6 +42,8 @@ class PairingCryptoTest {
         assertFalse(parsed.isExpired())
         assertTrue(offer.copy(exp = 1L).isExpired())
         assertNull(PairingOffer.parse("https://example.com"))
+        val pasted = "  ${offer.encode()}  \n"
+        assertEquals(offer.ip, PairingOffer.parse(pasted)!!.ip)
     }
 
     @Test
