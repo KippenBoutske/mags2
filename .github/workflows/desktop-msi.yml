@@ -63,11 +63,7 @@ jobs:
           "$SM" "build-tools;35.0.0"
           "$SM" "platforms;android-37.0" || "$SM" "platforms;android-37"
           if [ -d "$sdk_root/platforms/android-37.0" ] && [ ! -e "$sdk_root/platforms/android-37" ]; then
-            if command -v cmd.exe >/dev/null 2>&1; then
-              cmd.exe //c "mklink /J \"${sdk_root}\\platforms\\android-37\" \"${sdk_root}\\platforms\\android-37.0\""
-            else
-              ln -sfn "$sdk_root/platforms/android-37.0" "$sdk_root/platforms/android-37"
-            fi
+            cp -a "$sdk_root/platforms/android-37.0" "$sdk_root/platforms/android-37"
           fi
           ls -la "$sdk_root/platforms"
 
