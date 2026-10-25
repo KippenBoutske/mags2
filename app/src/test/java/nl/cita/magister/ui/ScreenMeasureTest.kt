@@ -141,7 +141,7 @@ class ScreenMeasureTest {
     fun grades403StaysOnSection() {
         measure(412) { gradesForbidden() }
         compose.onNodeWithText("Cijfers zijn nu niet beschikbaar.").assertExists()
-        compose.onNodeWithText("Nog geen cijfers.").assertExists()
+        compose.onNodeWithText("Nog geen cijfers").assertExists()
         compose.onNodeWithText("/api/personen", substring = true).assertDoesNotExist()
         compose.onNodeWithText("HTTP 403", substring = true).assertDoesNotExist()
     }

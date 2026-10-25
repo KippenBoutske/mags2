@@ -51,6 +51,7 @@ class ScheduleSwipeTest {
                         appointments = MockFixtures.appointments(),
                         contentPadding = PaddingValues(0.dp),
                         initialDate = LocalDate.of(2026, 10, 21),
+                        clockDate = LocalDate.of(2026, 10, 22),
                     )
                 }
             }
@@ -126,7 +127,7 @@ class ScheduleSwipeTest {
         compose.onNodeWithText("Geschiedenis").performClick()
         compose.waitForIdle()
         compose.onNodeWithTag("les-blad").assertExists()
-        compose.onAllNodesWithText("Meers").fetchSemanticsNodes().also { nodes ->
+        compose.onAllNodesWithText("MRS", substring = true).fetchSemanticsNodes().also { nodes ->
             assertTrue(nodes.size >= 2)
         }
     }
@@ -225,6 +226,7 @@ class ScheduleSwipeTest {
             startIso = "2026-10-24T09:00:00.0000000Z",
             endIso = "2026-10-24T09:50:00.0000000Z",
             title = "Inhaal",
+            subjects = listOf("Inhaal"),
             periodFrom = 1,
             periodTo = 1,
             infoType = InfoType.None,

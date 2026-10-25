@@ -1,107 +1,80 @@
 # Mags
 
-Onofficiële Android-app voor [Magister](https://www.magister.nl). Sneller en rustiger dan de officiële app: cijfers, rooster, huiswerk, berichten, een cijfercalculator en export naar een planningsassistent.
+Onofficiële client voor [Magister](https://www.magister.nl). Kotlin Multiplatform + Compose Multiplatform: **één codebase, Android en Windows-desktop**.
 
 Mags is **geen** product van Iddink/Magister. Werkt met elke Magister-school. Alleen de ingelogde leerling ziet de eigen data.
 
+## Schrijven in common, shippen in beide
+
+Toekomstige features en fixes horen in `:core`:
+
+| Source set | Wat erin zit |
+|---|---|
+| `core/src/commonMain` | expect-API’s, haptics-model, gedeelde Compose-hooks |
+| `core/src/androidAndDesktopMain` | Magister-API, DTOs, PKCE, repositories, CacheBlob, ViewModel, alle schermen |
+| `core/src/androidMain` | Keystore-tokens, Custom Tabs, WebView, Material You, Pixel-haptics |
+| `core/src/jvmMain` | Versleutelde bestanden in het user-profiel, desktop-login |
+
+`:app` is de Android-schil (splash, WorkManager, Glance-widget, Live Update, crash-scherm).
+`:desktop` is het Compose Desktop-venster. Beide roepen dezelfde `CitaRoot` / `CitaViewModel` aan.
+
+```text
+                 ┌──────────────────── :core ────────────────────┐
+Android APK  ←── │ commonMain + androidAndDesktopMain + android  │
+Windows exe  ←── │ commonMain + androidAndDesktopMain + jvm      │
+                 └───────────────────────────────────────────────┘
+```
+
 ## Wat zit erin
 
-- **Cijfers** met Magister’s eigen GEM/SE als kopcijfer, weging uit kolom-info, zonder gemiddelde-kolommen of V/G/O; balk t.o.v. 10 met 5,5-streep, grafiek, *Wat moet ik halen?* en cijferblad. **Laatste cijfers** is een compacte lijst (gededupliceerd); **Per vak** zijn de gemiddelde-kaarten
-- **Laatste cijfers** (Vandaag + Cijfers): top ~5 behaalde cijfers op invoerdatum, tekstcijfers (V/G/Vol) als tekst, lege resultaten overgeslagen
-- **Rooster** ma–vr (weekend alleen bij een les), volledige vaknamen i.p.v. Zermelo-codes, Uitval/Gewijzigd-chips, tussenuren alleen bij een ontbrekend lesuur, pauzes als dunne scheiding, nu-lijn en lesblad. Vrije dag: icoon + *Vrij*
-- **Huiswerk** gegroepeerd per dag, *Verlopen* ingeklapt, Toets in de meta-regel, swipe-naar-klaar met herstel; leeg: icoon + *Alles af*
-- **Berichten** (alleen lezen), **afwezigheid**, **studiewijzers** en **opdrachten**
-- Startscherm-snelkoppelingen naar Vandaag, Rooster, Cijfers en Huiswerk
-- **Deel**-icoon rechtsboven op Cijfers: JSON naar Meer → Geavanceerd, anders het Android-deelblad
-- Adaptive icoon + monochrome themed icon (Pixel) + Android 12+ SplashScreen (AVD, themakleuren / Material You `system_accent1_*`)
-- Live schoolzoeken
-- Offline cache, pull-to-refresh, Material 3 Expressive (shared elements, spring-lijst)
-- Tabwissels als fade-through (fade + scale), navbar-pill op spring, rooster-dagindicator volgt de pager
-- Kaarten staggeren bij eerste verschijning; laden via shimmer-skeletons i.p.v. spinner
-- Warm palet (licht/donker volgt de telefoon), Photos-stijl zwevende navbar
-- Material You onder Meer; contrast blijft AA in beide thema’s
-- Pixel-achtige haptics (direct op touch, Trillen + Licht/Normaal/Sterk onder Meer)
-- 48 dp-targets, font-schaal 1.3×
-- Baseline profile + ProfileInstaller
-- Meldingen bij nieuwe cijfers en roosterwijzigingen (WorkManager)
-- **Live Update** (Android 16+): lopende melding voor huidige/volgende les op het Pixel-slot, schakelaar onder Meer
-- Startscherm-widget **Volgende les** (Glance)
-- Crash-scherm met kopieerbare stacktrace
+- **Cijfers** met Magister’s eigen GEM/SE als kopcijfer, weging uit kolom-info, zonder gemiddelde-kolommen of V/G/O; balk t.o.v. 10 met 5,5-streep, grafiek, *Wat moet ik halen?* en cijferblad
+- **Rooster** ma–vr, **Huiswerk**, **Berichten** (alleen lezen), **afwezigheid**, **studiewijzers**, **opdrachten**
+- **Vandaag**-startscherm, cijfercalculator, Plan Goon JSON-export
+- Offline JSON-cache (`CacheBlob`), pull-to-refresh, Material 3 Expressive
+- Android: meldingen (WorkManager), Live Update (Android 16+), Glance-widget **Volgende les**, crash-scherm
 - Nederlandse UI
-
-## Installeren (debug-APK)
-
-1. Zet *Onbekende bronnen* / *Installeren uit deze bron* aan.
-2. Plak de split-parts weer aan elkaar:
-
-```bash
-cat mags-debug.apk.part-aa mags-debug.apk.part-ab > mags-debug.apk
-# of, als de parts 00/01 heten:
-# cat mags-debug.apk.part-00 mags-debug.apk.part-01 > mags-debug.apk
-sha256sum -c mags-debug.apk.sha256
-```
-
-3. Installeer `mags-debug.apk`. ApplicationId: `app.mags.debug`. Versie **0.1.20** (`targetSdk` 37).
-4. Er is ook een **release-APK** (`mags-release.apk`, applicationId `app.mags`) met R8. Die is getekend met de lokale dev-keystore in `app/keystore/` — **niet** voor Play.
-5. Bij een crash: scherm **Mags is gestopt** → *Kopieer stacktrace*.
-
-Zelf bouwen:
-
-```bash
-export ANDROID_HOME=/pad/naar/android-sdk
-./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease
-# of de hele zelftest (unit + screenshots + optionele emulator-smoke):
-./scripts/self-test.sh
-```
-
-Vereist JDK 17+, Android SDK platform 37. Screenshots landden in `app/build/outputs/self-test/screenshots`. Fake Magister (MockWebServer) zit in `:core:test` (`FakeMagisterFlowTest`).
 
 ## Inloggen
 
-1. Zoek je school. **Inloggen** opent een Custom Tab.
-2. **In de app** (menu ⋯) is de WebView-fallback. **Voorbeeld** (onderaan of ⋯) laadt testdata.
-3. Magister stuurt je terug naar `m6loapp://oauth2redirect/`. Tokens gaan versleuteld in Android Keystore.
+1. Zoek je school.
+2. **Android:** *Inloggen* opent een Custom Tab. Magister stuurt je terug naar `m6loapp://oauth2redirect/`. Tokens gaan AES-GCM via Android Keystore. Menu ⋯ → *In de app* is de WebView-fallback. *Voorbeeld* laadt testdata.
+3. **Desktop:** Magister accepteert alleen de officiële redirect `m6loapp://oauth2redirect/` (client `M6LOAPP`). Een `http://127.0.0.1:<port>`-callback werkt daarom niet. De desktop-app opent een ingebedde JavaFX-WebView die die custom scheme onderschept. Als JavaFX ontbreekt: Magister in de systeembrowser + de `m6loapp://…`-URL plakken. Tokens staan AES-GCM in `%APPDATA%/Mags` (Windows) of `~/.mags` (Linux/macOS).
 
-School wisselen kan onder **Meer** (avatar rechtsboven). Dat logt je uit.
+OAuth: client `M6LOAPP`, PKCE S256, `acr_values=tenant:<host>`, scopes `openid profile offline_access magister.mobile magister.ecs`.
 
-OAuth (zelfde stroom als bekende open-source clients):
+## Bouwen
 
-- Client `M6LOAPP`, PKCE S256, `acr_values=tenant:<host>`
-- Scopes: `openid profile offline_access magister.mobile magister.ecs`. Geen extra scopes.
+Vereist JDK 17+ (21 is ok), Android SDK platform 37.
 
-## Berichten
+```bash
+export ANDROID_HOME=/pad/naar/android-sdk
+# Android
+./gradlew :core:jvmTest :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease
 
-Mags probeert eerst `postvakin`, daarna `mappen/1/berichten`, de collectie, en pas daarna de maplijst. Als geen pad werkt, blijft Berichten leeg — paden en HTTP-codes zitten achter **Details**. Alleen lezen: M6LOAPP heeft geen schrijfrechten voor nieuwe berichten.
+# Desktop (runnable distributie voor dit OS)
+./gradlew :desktop:createDistributable :desktop:packageDistributionForCurrentOS
 
-## Cijfers exporteren (Plan Goon)
-
-Op **Cijfers**: deel-icoon naast de avatar. Stuurt JSON naar het adres onder **Meer → Geavanceerd** als dat gezet is; anders het Android-deelblad. Geen adres is hardgecodeerd.
-
-`Content-Type: application/json`  
-`Authorization: Bearer <sleutel>` (alleen als er een sleutel is)
-
-```json
-{
-  "source": "magister-app",
-  "exported_at": "2026-10-21T22:00:00Z",
-  "student": {
-    "name": "Jens de Vries",
-    "class": "5VWO-A",
-    "study": "VWO",
-    "school": "Citadel College",
-    "tenant": "citadel.magister.net"
-  },
-  "subjects": [],
-  "attention": []
-}
+# Alleen runnen
+./gradlew :desktop:run
 ```
 
-Elk vak: `name`, `average`, `grades[]` met `value`, `weight`, `description`, `date`. `attention` bevat vakken onder 6,0 of een dalende trend.
+**Windows-installer (MSI)** — `packageMsi` gebruikt WiX en draait alleen op Windows:
+
+```bat
+gradlew.bat :desktop:packageMsi
+```
+
+Cross-build van een MSI op Linux lukt niet (WiX ontbreekt). Op Linux levert `createDistributable` een runnable map; `packageDeb` heeft `fakeroot` nodig (`sudo apt install fakeroot`). Op macOS: DMG via `packageDistributionForCurrentOS`.
+
+ApplicationId blijft `app.mags` (debug: `app.mags.debug`) zodat de Android-app in-place update. Versie **0.2.0**.
+
+Release-APK is getekend met de lokale dev-keystore in `app/keystore/` — **niet** voor Play.
 
 ## Architectuur
 
-- `:core` — endpoints, PKCE, parsers, calculator, fixtures, export
-- `:app` — Compose UI, JSON-cache, OkHttp, Android Keystore, Plan Goon
+- `:core` — gedeelde Magister-client (Ktor), PKCE, parsers, CacheBlob, repositories, ViewModel, Compose-schermen
+- `:app` — Android-applicationId, splash, widgets, WorkManager, notificaties
+- `:desktop` — Compose Desktop-venster, `packageMsi` / `packageDistributionForCurrentOS`
 
 REST-paden staan in `MagisterEndpoints.kt`.
 

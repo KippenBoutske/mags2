@@ -24,12 +24,17 @@
 -keep class nl.cita.magister.auth.** { *; }
 -keep class nl.cita.magister.fixtures.** { *; }
 
-# OkHttp / Okio (no Retrofit in this app)
+# OkHttp / Okio (tests + optional engines)
 -dontwarn okhttp3.**
 -dontwarn okio.**
 -keep class okhttp3.** { *; }
 -keep interface okhttp3.** { *; }
 -keep class okio.** { *; }
+
+# Ktor
+-dontwarn io.ktor.**
+-keep class io.ktor.** { *; }
+-keep class io.ktor.client.engine.cio.** { *; }
 
 # Coroutines
 -keep class kotlinx.coroutines.** { *; }

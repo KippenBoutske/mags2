@@ -6,6 +6,7 @@
 /app/build
 /app/app/build
 /core/build
+/desktop/build
 **/self-test/
 /local.properties
 /captures
