@@ -25,6 +25,7 @@ kotlin {
                 implementation("org.openjfx:javafx-graphics:21.0.5:$classifier")
                 implementation("org.openjfx:javafx-controls:21.0.5:$classifier")
                 implementation("org.openjfx:javafx-swing:21.0.5:$classifier")
+                implementation("org.openjfx:javafx-media:21.0.5:$classifier")
                 implementation("org.openjfx:javafx-web:21.0.5:$classifier")
             }
         }

@@ -3,8 +3,10 @@ package nl.cita.magister.auth
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FilterOutputStream
 import java.io.InputStream
 import java.io.OutputStream
+import java.net.Proxy
 import java.net.URL
 import java.net.URLConnection
 import java.net.URLStreamHandler
@@ -33,49 +35,81 @@ object M6loappProtocol {
         }
     }
 
-    fun notify(action: String, body: String) {
+    fun notify(action: String, body: String, source: String = "url-handler") {
         val redirect = AuthRequestFactory.redirectFromFormPost(action, body)
             ?: action.takeIf {
                 AuthRequestFactory.extractCode(it) != null || AuthRequestFactory.extractError(it) != null
             }
+            ?: body.takeIf { AuthRequestFactory.extractCode(it) != null }
+        val code = redirect?.let { AuthRequestFactory.extractCode(it) }
+        val error = redirect?.let { AuthRequestFactory.extractError(it) }
         MagsLog.info(
-            "m6loapp hit action=${action.take(80)} bodyChars=${body.length} " +
-                "captured=${redirect != null} hasCode=${redirect?.let { AuthRequestFactory.extractCode(it) != null }}",
+            "m6loapp hit source=$source action=${action.take(96)} bodyChars=${body.length} " +
+                "hasCode=${code != null} hasError=${error != null}",
         )
+        if (code != null) {
+            MagsLog.info("oauth code captured via $source (len=${code.length})")
+        } else if (error != null) {
+            MagsLog.info("oauth error captured via $source: $error")
+        }
         if (redirect != null) listener?.invoke(redirect)
     }
 }
 
 class M6loappUrlStreamHandler : URLStreamHandler() {
     override fun openConnection(url: URL): URLConnection = M6loappUrlConnection(url)
+
+    override fun openConnection(url: URL, proxy: Proxy): URLConnection = M6loappUrlConnection(url)
 }
 
 class M6loappUrlConnection(url: URL) : URLConnection(url) {
     private val posted = ByteArrayOutputStream()
     private var response: ByteArray? = null
+    private var notified = false
 
     override fun connect() {
         connected = true
+    }
+
+    override fun setDoOutput(dooutput: Boolean) {
+        super.setDoOutput(dooutput)
     }
 
     override fun getDoOutput(): Boolean = true
 
     override fun getOutputStream(): OutputStream {
         connect()
-        return posted
+        return object : FilterOutputStream(posted) {
+            override fun close() {
+                super.close()
+                flushNotify("url-handler-post-close")
+            }
+        }
     }
 
     override fun getInputStream(): InputStream {
         connect()
+        flushNotify("url-handler")
         if (response == null) {
-            val body = posted.toString(StandardCharsets.UTF_8)
-            M6loappProtocol.notify(url.toExternalForm(), body)
             response = "<html><body>OK</body></html>".toByteArray(StandardCharsets.UTF_8)
         }
         return ByteArrayInputStream(response)
     }
 
     override fun getContentType(): String = "text/html"
+
+    @Synchronized
+    private fun flushNotify(source: String) {
+        if (notified) return
+        val body = posted.toString(StandardCharsets.UTF_8)
+        if (body.isEmpty() && AuthRequestFactory.extractCode(url.toExternalForm()) == null &&
+            AuthRequestFactory.extractError(url.toExternalForm()) == null
+        ) {
+            return
+        }
+        notified = true
+        M6loappProtocol.notify(url.toExternalForm(), body, source)
+    }
 }
 
 class M6loappUrlStreamHandlerProvider : java.net.spi.URLStreamHandlerProvider() {
