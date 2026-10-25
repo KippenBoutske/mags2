@@ -17,6 +17,7 @@ jobs:
   msi:
     name: Windows MSI
     runs-on: windows-latest
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,13 +28,14 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
+      # Wrapper is used when present; gradle-version covers a missing wrapper JAR.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 9.3.1
 
-      # :core is a KMP library with an Android target, so the desktop
-      # package task still needs an SDK even on Windows.
+      # :core is a KMP library with an Android target, so packageMsi still
+      # configures the Android SDK even on Windows.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
@@ -44,17 +46,34 @@ jobs:
           sdkmanager "platforms;android-37" "platforms;android-37.0" "build-tools;35.0.0" || \
             sdkmanager "platforms;android-37" "build-tools;35.0.0"
 
-      - name: Install WiX Toolset
+      # jpackage/Compose packageMsi needs WiX 3 (candle/light). windows-latest
+      # already ships WiX 3.14. Do not choco-install current wixtoolset (v5),
+      # which drops that CLI. Fall back to the archived WiX 3.14 binaries.
+      - name: Locate WiX 3
         shell: pwsh
         run: |
-          choco install wixtoolset --no-progress -y
-          $wix = Get-ChildItem "C:\Program Files (x86)\WiX Toolset*" -Directory -ErrorAction SilentlyContinue |
-            Select-Object -First 1
-          if (-not $wix) {
-            throw "WiX Toolset not found after chocolatey install"
+          $candle = Get-Command candle -ErrorAction SilentlyContinue
+          if (-not $candle) {
+            $candidates = @(
+              "${env:WIX}bin\candle.exe",
+              "C:\Program Files (x86)\WiX Toolset v3.14\bin\candle.exe",
+              "C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe"
+            )
+            $found = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+            if ($found) {
+              $bin = Split-Path $found
+              Add-Content -Path $env:GITHUB_PATH -Value $bin
+              Add-Content -Path $env:GITHUB_ENV -Value "WIX=$(Split-Path $bin)\"
+            } else {
+              $zip = Join-Path $env:RUNNER_TEMP "wix3.zip"
+              $dest = Join-Path $env:RUNNER_TEMP "wix3"
+              Invoke-WebRequest -Uri "https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip" -OutFile $zip
+              Expand-Archive $zip -DestinationPath $dest -Force
+              Add-Content -Path $env:GITHUB_PATH -Value $dest
+              Add-Content -Path $env:GITHUB_ENV -Value "WIX=$dest\"
+            }
           }
-          Add-Content -Path $env:GITHUB_PATH -Value "$($wix.FullName)\bin"
-          Add-Content -Path $env:GITHUB_ENV -Value "WIX=$($wix.FullName)\"
+          Get-Command candle
 
       - name: Package MSI
         shell: pwsh
@@ -82,6 +101,7 @@ jobs:
   apk:
     name: Android APKs
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -105,6 +125,16 @@ jobs:
           yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platforms;android-37" "platforms;android-37.0" "build-tools;35.0.0" || \
             sdkmanager "platforms;android-37" "build-tools;35.0.0"
+
+      - name: Ensure release keystore
+        run: |
+          if [ ! -f app/keystore/mags-dev.jks ]; then
+            mkdir -p app/keystore
+            keytool -genkeypair -alias mags-dev -keyalg RSA -keysize 2048 -validity 3650 \
+              -keystore app/keystore/mags-dev.jks \
+              -storepass mags-dev -keypass mags-dev \
+              -dname "CN=Mags CI, O=Mags, C=NL"
+          fi
 
       - name: Assemble APKs
         run: |
