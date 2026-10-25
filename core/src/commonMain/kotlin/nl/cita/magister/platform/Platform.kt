@@ -18,6 +18,8 @@ expect fun canHostPhonePairing(): Boolean
 
 expect fun canScanDesktopPairing(): Boolean
 
+expect fun logMags(message: String, error: Throwable? = null)
+
 expect fun platformLiveLessonSync()
 
 expect fun platformLiveLessonCancel()

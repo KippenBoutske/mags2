@@ -71,6 +71,11 @@ actual fun canHostPhonePairing(): Boolean = false
 
 actual fun canScanDesktopPairing(): Boolean = true
 
+actual fun logMags(message: String, error: Throwable?) {
+    if (error != null) android.util.Log.e("Mags", message, error)
+    else android.util.Log.e("Mags", message)
+}
+
 actual fun platformLiveLessonSync() = AndroidHooks.liveSync()
 
 actual fun platformLiveLessonCancel() = AndroidHooks.liveCancel()

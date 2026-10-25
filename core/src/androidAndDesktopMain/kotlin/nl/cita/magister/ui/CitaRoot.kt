@@ -137,13 +137,13 @@ fun CitaRoot(viewModel: CitaViewModel) {
 
     val pairingScan by viewModel.pairingScan.collectAsStateWithLifecycle()
     val pairingBusy by viewModel.pairingBusy.collectAsStateWithLifecycle()
+    val pairingError by viewModel.pairingError.collectAsStateWithLifecycle()
     if (pairingScan) {
-        val pairError by viewModel.lastError.collectAsStateWithLifecycle()
         PairingScanScreen(
             onOffer = viewModel::sendPairingToDesktop,
             onClose = viewModel::closePairingScan,
             busy = pairingBusy,
-            error = pairError?.friendly(),
+            error = pairingError,
         )
         return
     }
