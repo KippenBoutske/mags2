@@ -18,8 +18,10 @@ import nl.cita.magister.pairing.LanAddresses
 import nl.cita.magister.pairing.PairingClient
 import nl.cita.magister.pairing.PairingOffer
 import nl.cita.magister.pairing.PairingSession
+import nl.cita.magister.pairing.pairingErrorMessage
 import nl.cita.magister.pairing.startPairingHost
 import nl.cita.magister.pairing.stopPairingHost
+import nl.cita.magister.platform.logMags
 import nl.cita.magister.data.api.MagisterApiException
 import nl.cita.magister.data.repo.MagisterRepository
 import nl.cita.magister.di.AppContainer
@@ -89,6 +91,9 @@ class CitaViewModel(
 
     private val _pairingBusy = MutableStateFlow(false)
     val pairingBusy = _pairingBusy.asStateFlow()
+
+    private val _pairingError = MutableStateFlow<String?>(null)
+    val pairingError = _pairingError.asStateFlow()
 
     private val _messageDetail = MutableStateFlow<MessageDetail?>(null)
     val messageDetail = _messageDetail.asStateFlow()
@@ -227,18 +232,20 @@ class CitaViewModel(
     }
 
     fun openPairingScan() {
-        _lastError.value = null
+        _pairingError.value = null
         _pairingScan.value = true
     }
 
     fun closePairingScan() {
         _pairingScan.value = false
         _pairingBusy.value = false
+        _pairingError.value = null
     }
 
     fun sendPairingToDesktop(offer: PairingOffer) {
         viewModelScope.launch {
             _pairingBusy.value = true
+            _pairingError.value = null
             runCatching {
                 val session = repo.exportPairingSession()
                 PairingClient.send(offer, session)
@@ -247,9 +254,9 @@ class CitaViewModel(
                 _hapticPulse.tryEmit(HapticEvent.LoginSuccess)
                 _snackbar.emit("Desktop gekoppeld.")
             }.onFailure { error ->
-                rememberFailure(error)
+                logMags("pairing send failed", error)
+                _pairingError.value = pairingErrorMessage(error)
                 _hapticPulse.tryEmit(HapticEvent.LoginError)
-                _snackbar.emit(error.message ?: "Koppelen mislukt.")
             }
             _pairingBusy.value = false
         }

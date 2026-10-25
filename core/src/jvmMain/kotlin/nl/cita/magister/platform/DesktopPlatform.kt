@@ -50,6 +50,8 @@ actual fun canHostPhonePairing(): Boolean = true
 
 actual fun canScanDesktopPairing(): Boolean = false
 
+actual fun logMags(message: String, error: Throwable?) = MagsLog.error(message, error)
+
 actual fun platformLiveLessonSync() = Unit
 
 actual fun platformLiveLessonCancel() = Unit
