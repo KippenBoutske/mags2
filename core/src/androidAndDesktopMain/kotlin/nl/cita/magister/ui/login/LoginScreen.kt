@@ -63,6 +63,7 @@ fun LoginScreen(
     onStartLogin: () -> String,
     onWebViewLogin: () -> Unit,
     onDemo: () -> Unit,
+    onPairPhone: (() -> Unit)? = null,
 ) {
     val focus = LocalFocusManager.current
     var menuOpen by remember { mutableStateOf(false) }
@@ -164,6 +165,18 @@ fun LoginScreen(
             enabled = tenantHost.isNotBlank() || schoolName.isNotBlank(),
         ) {
             Text("Inloggen", style = MaterialTheme.typography.titleMedium)
+        }
+
+        if (onPairPhone != null) {
+            TextButton(
+                onClick = onPairPhone,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .defaultMinSize(minHeight = 48.dp)
+                    .semantics { contentDescription = "Koppel met je telefoon" },
+            ) {
+                Text("Koppel met je telefoon")
+            }
         }
 
         lastError?.let { ErrorDetails(it) }

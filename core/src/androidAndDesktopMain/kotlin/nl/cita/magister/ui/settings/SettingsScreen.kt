@@ -85,6 +85,7 @@ fun SettingsScreen(
     onExport: () -> Unit,
     onShareJson: () -> Unit,
     onLogout: () -> Unit,
+    onPairDesktop: (() -> Unit)? = null,
     dynamicColor: Boolean = false,
     onDynamicColor: (Boolean) -> Unit = {},
     notifications: Boolean = true,
@@ -124,6 +125,7 @@ fun SettingsScreen(
                 onOpen = { section = it },
                 onOpenMessages = onOpenMessages,
                 onLogout = onLogout,
+                onPairDesktop = onPairDesktop,
             )
             MeerSection.Absence -> MeerListPage(
                 title = "Afwezigheid",
@@ -256,6 +258,7 @@ private fun MeerHub(
     onOpen: (MeerSection) -> Unit,
     onOpenMessages: () -> Unit,
     onLogout: () -> Unit,
+    onPairDesktop: (() -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier
@@ -309,11 +312,14 @@ private fun MeerHub(
             ),
         )
         MeerGroup(
-            listOf(
-                MeerItem("Instellingen", testTag = "meer-rij-instellingen") { onOpen(MeerSection.Settings) },
-                MeerItem("Andere school", testTag = "meer-rij-school") { onOpen(MeerSection.School) },
-                MeerItem("Uitloggen", testTag = "meer-rij-uitloggen", chevron = false, onClick = onLogout),
-            ),
+            buildList {
+                add(MeerItem("Instellingen", testTag = "meer-rij-instellingen") { onOpen(MeerSection.Settings) })
+                add(MeerItem("Andere school", testTag = "meer-rij-school") { onOpen(MeerSection.School) })
+                if (onPairDesktop != null) {
+                    add(MeerItem("Koppel desktop", testTag = "meer-rij-koppel-desktop") { onPairDesktop() })
+                }
+                add(MeerItem("Uitloggen", testTag = "meer-rij-uitloggen", chevron = false, onClick = onLogout))
+            },
         )
         Spacer(Modifier.height(24.dp))
     }

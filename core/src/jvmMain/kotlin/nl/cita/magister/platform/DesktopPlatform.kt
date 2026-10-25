@@ -46,6 +46,10 @@ actual fun openSystemBrowser(url: String): Boolean {
 
 actual fun prefersEmbeddedLogin(): Boolean = true
 
+actual fun canHostPhonePairing(): Boolean = true
+
+actual fun canScanDesktopPairing(): Boolean = false
+
 actual fun platformLiveLessonSync() = Unit
 
 actual fun platformLiveLessonCancel() = Unit

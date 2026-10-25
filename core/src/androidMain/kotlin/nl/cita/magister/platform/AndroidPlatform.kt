@@ -66,6 +66,10 @@ actual fun openSystemBrowser(url: String): Boolean {
 
 actual fun prefersEmbeddedLogin(): Boolean = false
 
+actual fun canHostPhonePairing(): Boolean = false
+
+actual fun canScanDesktopPairing(): Boolean = true
+
 actual fun platformLiveLessonSync() = AndroidHooks.liveSync()
 
 actual fun platformLiveLessonCancel() = AndroidHooks.liveCancel()

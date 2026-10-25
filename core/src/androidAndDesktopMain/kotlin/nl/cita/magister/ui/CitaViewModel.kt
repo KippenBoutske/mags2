@@ -14,6 +14,12 @@ import kotlinx.coroutines.launch
 import nl.cita.magister.api.School
 import nl.cita.magister.auth.AuthRequest
 import nl.cita.magister.auth.AuthRequestFactory
+import nl.cita.magister.pairing.LanAddresses
+import nl.cita.magister.pairing.PairingClient
+import nl.cita.magister.pairing.PairingOffer
+import nl.cita.magister.pairing.PairingSession
+import nl.cita.magister.pairing.startPairingHost
+import nl.cita.magister.pairing.stopPairingHost
 import nl.cita.magister.data.api.MagisterApiException
 import nl.cita.magister.data.repo.MagisterRepository
 import nl.cita.magister.di.AppContainer
@@ -74,6 +80,15 @@ class CitaViewModel(
 
     private val _webViewUrl = MutableStateFlow<String?>(null)
     val webViewUrl = _webViewUrl.asStateFlow()
+
+    private val _pairingOffer = MutableStateFlow<PairingOffer?>(null)
+    val pairingOffer = _pairingOffer.asStateFlow()
+
+    private val _pairingScan = MutableStateFlow(false)
+    val pairingScan = _pairingScan.asStateFlow()
+
+    private val _pairingBusy = MutableStateFlow(false)
+    val pairingBusy = _pairingBusy.asStateFlow()
 
     private val _messageDetail = MutableStateFlow<MessageDetail?>(null)
     val messageDetail = _messageDetail.asStateFlow()
@@ -187,6 +202,79 @@ class CitaViewModel(
         _webViewUrl.value = null
     }
 
+    fun startPhonePairing() {
+        viewModelScope.launch {
+            if (LanAddresses.firstLanIpv4() == null) {
+                _snackbar.emit("Geen LAN-IP. Zet wifi aan en verbind met hetzelfde netwerk als je telefoon.")
+                return@launch
+            }
+            runCatching {
+                startPairingHost { session ->
+                    viewModelScope.launch { acceptPairedSession(session) }
+                }
+            }.onSuccess { offer ->
+                _pairingOffer.value = offer
+            }.onFailure { error ->
+                rememberFailure(error)
+                _snackbar.emit(error.message ?: "Kon koppelen niet starten.")
+            }
+        }
+    }
+
+    fun stopPhonePairing() {
+        stopPairingHost()
+        _pairingOffer.value = null
+    }
+
+    fun openPairingScan() {
+        _lastError.value = null
+        _pairingScan.value = true
+    }
+
+    fun closePairingScan() {
+        _pairingScan.value = false
+        _pairingBusy.value = false
+    }
+
+    fun sendPairingToDesktop(offer: PairingOffer) {
+        viewModelScope.launch {
+            _pairingBusy.value = true
+            runCatching {
+                val session = repo.exportPairingSession()
+                PairingClient.send(offer, session)
+            }.onSuccess {
+                _pairingScan.value = false
+                _hapticPulse.tryEmit(HapticEvent.LoginSuccess)
+                _snackbar.emit("Desktop gekoppeld.")
+            }.onFailure { error ->
+                rememberFailure(error)
+                _hapticPulse.tryEmit(HapticEvent.LoginError)
+                _snackbar.emit(error.message ?: "Koppelen mislukt.")
+            }
+            _pairingBusy.value = false
+        }
+    }
+
+    private suspend fun acceptPairedSession(session: PairingSession) {
+        _refreshing.value = true
+        runCatching { repo.importPairedSession(session) }
+            .onSuccess { result ->
+                stopPhonePairing()
+                _signedIn.value = true
+                _hapticPulse.tryEmit(HapticEvent.LoginSuccess)
+                val name = result.profile?.firstName ?: session.displayName
+                _snackbar.emit(if (name != null) "Gekoppeld als $name." else "Desktop gekoppeld.")
+                reportWarnings(result.warnings)
+                platformLiveLessonSync()
+            }
+            .onFailure { error ->
+                rememberFailure(error)
+                _hapticPulse.tryEmit(HapticEvent.LoginError)
+                _snackbar.emit(friendlyOf(error))
+            }
+        _refreshing.value = false
+    }
+
     fun handleRedirect(url: String) {
         viewModelScope.launch {
             val error = AuthRequestFactory.extractError(url)
@@ -285,6 +373,8 @@ class CitaViewModel(
     fun logout() {
         viewModelScope.launch {
             platformLiveLessonCancel()
+            stopPhonePairing()
+            closePairingScan()
             repo.logout()
             _signedIn.value = false
             _lastError.value = null

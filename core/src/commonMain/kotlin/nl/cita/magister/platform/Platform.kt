@@ -14,6 +14,10 @@ expect fun openSystemBrowser(url: String): Boolean
 /** Desktop cannot complete Custom-Tab + `m6loapp://` without a protocol handler. */
 expect fun prefersEmbeddedLogin(): Boolean
 
+expect fun canHostPhonePairing(): Boolean
+
+expect fun canScanDesktopPairing(): Boolean
+
 expect fun platformLiveLessonSync()
 
 expect fun platformLiveLessonCancel()
