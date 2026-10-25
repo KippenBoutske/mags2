@@ -169,18 +169,9 @@ class MagisterParsersTest {
     }
 
     @Test
-    fun androidAuthorizeUrlStaysWithoutResponseMode() {
+    fun authorizeUrlHasNoResponseMode() {
         val request = AuthRequestFactory.create("citadel.magister.net", Pkce.generate(), state = "s", nonce = "n")
         assertFalse(request.authorizeUrl.contains("response_mode="))
-    }
-
-    @Test
-    fun desktopAuthorizeUrlAddsQueryResponseMode() {
-        val request = AuthRequestFactory.create("citadel.magister.net", Pkce.generate(), state = "s", nonce = "n")
-        val desktop = AuthRequestFactory.withResponseMode(request.authorizeUrl, "query")
-        assertTrue(desktop.contains("response_mode=query"))
-        assertTrue(desktop.startsWith(request.authorizeUrl))
-        assertEquals(desktop, AuthRequestFactory.withResponseMode(desktop, "query"))
     }
 
     @Test

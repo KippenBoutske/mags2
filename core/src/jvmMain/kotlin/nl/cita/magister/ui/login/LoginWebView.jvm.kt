@@ -42,7 +42,7 @@ import javax.swing.JPanel
 import javax.swing.SwingUtilities
 import netscape.javascript.JSObject
 import nl.cita.magister.api.MagisterEndpoints
-import nl.cita.magister.auth.AuthRequestFactory
+import nl.cita.magister.auth.M6loappFormHook
 import nl.cita.magister.auth.M6loappProtocol
 import nl.cita.magister.platform.MagsLog
 import nl.cita.magister.platform.appDataDir
@@ -54,7 +54,6 @@ actual fun LoginWebView(
     onRedirect: (String) -> Unit,
     onClose: () -> Unit,
 ) {
-    val authorizeUrl = remember(url) { AuthRequestFactory.withResponseMode(url, "query") }
     var useWebView by remember { mutableStateOf(JavaFxBridge.available()) }
     Scaffold(
         topBar = {
@@ -75,7 +74,7 @@ actual fun LoginWebView(
                     .fillMaxSize(),
             ) {
                 JavaFxWebPanel(
-                    url = authorizeUrl,
+                    url = url,
                     onRedirect = onRedirect,
                     onUnavailable = {
                         MagsLog.error("WebView unavailable; falling back to instructions")
@@ -92,7 +91,7 @@ actual fun LoginWebView(
             }
         } else {
             RedirectPasteLogin(
-                authorizeUrl = authorizeUrl,
+                authorizeUrl = url,
                 onRedirect = onRedirect,
                 modifier = Modifier.padding(padding),
             )
@@ -128,7 +127,7 @@ private fun RedirectPasteLogin(
             onClick = { openSystemBrowser(authorizeUrl) },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Open Magister in de browser (alleen als de URL ?code= heeft)")
+            Text("Open Magister in de browser (werkt niet bij form POST)")
         }
         OutlinedTextField(
             value = pasted,
@@ -169,27 +168,16 @@ private fun JavaFxWebPanel(
     SwingPanel(factory = { panel }, modifier = modifier)
 }
 
-class MagsJsBridge(private val onRedirect: (String) -> Unit) {
+class MagsJsBridge {
     fun onRedirect(url: String?) {
         val next = url.orEmpty()
         if (next.isBlank()) return
-        MagsLog.info("JS onRedirect ${next.take(80)}")
-        emitIfOAuth(next, "", onRedirect)
+        M6loappProtocol.notify(next, "", "js-redirect")
     }
 
     fun onFormPost(action: String?, body: String?) {
-        MagsLog.info("JS onFormPost action=${action.orEmpty().take(80)} bodyChars=${body.orEmpty().length}")
-        emitIfOAuth(action.orEmpty(), body.orEmpty(), onRedirect)
+        M6loappProtocol.notify(action.orEmpty(), body.orEmpty(), "js-form")
     }
-}
-
-private fun emitIfOAuth(action: String, body: String, onRedirect: (String) -> Unit) {
-    val redirect = AuthRequestFactory.redirectFromFormPost(action, body)
-        ?: action.takeIf {
-            AuthRequestFactory.extractCode(it) != null || AuthRequestFactory.extractError(it) != null
-        }
-        ?: body.takeIf { AuthRequestFactory.extractCode(it) != null }
-    if (redirect != null) onRedirect(redirect)
 }
 
 private object JavaFxBridge {
@@ -202,60 +190,6 @@ private object JavaFxBridge {
     private var pollTask: ScheduledFuture<*>? = null
     private val captured = AtomicBoolean(false)
     private var engineRef: WebEngine? = null
-
-    private val injectJs = """
-        (function() {
-          if (window.__magsHooked) return 'already';
-          window.__magsHooked = true;
-          function send(form) {
-            try {
-              var action = (form.getAttribute('action') || form.action || '').toString();
-              if (action.indexOf('m6loapp:') !== 0) return false;
-              var parts = [];
-              var els = form.elements;
-              for (var i = 0; i < els.length; i++) {
-                var el = els[i];
-                if (!el.name) continue;
-                parts.push(encodeURIComponent(el.name) + '=' + encodeURIComponent(el.value || ''));
-              }
-              var body = parts.join('&');
-              if (window.magsBridge && window.magsBridge.onFormPost) {
-                window.magsBridge.onFormPost(action, body);
-              }
-              return true;
-            } catch (e) { return false; }
-          }
-          document.addEventListener('submit', function(e) {
-            if (send(e.target)) {
-              e.preventDefault();
-              e.stopPropagation();
-            }
-          }, true);
-          var forms = document.getElementsByTagName('form');
-          for (var i = 0; i < forms.length; i++) {
-            if (send(forms[i])) break;
-          }
-          return 'hooked';
-        })();
-    """.trimIndent()
-
-    private val captureJs = """
-        (function() {
-          var forms = document.getElementsByTagName('form');
-          for (var i = 0; i < forms.length; i++) {
-            var a = (forms[i].getAttribute('action') || forms[i].action || '').toString();
-            if (a.indexOf('m6loapp:') !== 0) continue;
-            var parts = [];
-            var els = forms[i].elements;
-            for (var j = 0; j < els.length; j++) {
-              if (!els[j].name) continue;
-              parts.push(encodeURIComponent(els[j].name) + '=' + encodeURIComponent(els[j].value || ''));
-            }
-            return a + '\n' + parts.join('&');
-          }
-          return null;
-        })();
-    """.trimIndent()
 
     fun available(): Boolean = runCatching {
         Class.forName("javafx.scene.web.WebView")
@@ -271,13 +205,11 @@ private object JavaFxBridge {
         onFailure: () -> Unit,
     ): Boolean {
         captured.set(false)
-        val emit = { next: String ->
-            if (captured.compareAndSet(false, true) || AuthRequestFactory.extractCode(next) != null) {
-                MagsLog.info("oauth redirect captured")
+        M6loappProtocol.listener = { next ->
+            if (captured.compareAndSet(false, true)) {
                 onRedirect(next)
             }
         }
-        M6loappProtocol.listener = emit
         return runCatching {
             startJavaFx()
             val createPanel = Runnable {
@@ -293,20 +225,23 @@ private object JavaFxBridge {
                         engineRef = engine
                         applyUserAgent(engine)
                         engine.isJavaScriptEnabled = true
+                        engine.documentProperty().addListener { _, _, doc ->
+                            if (doc != null) hookDocument(engine)
+                        }
                         engine.locationProperty().addListener { _, _, next ->
                             MagsLog.info("WebView location=$next")
                             if (!next.isNullOrBlank() &&
                                 next.startsWith(MagisterEndpoints.REDIRECT_URI.trimEnd('/'))
                             ) {
-                                emitIfOAuth(next, "", emit)
+                                M6loappProtocol.notify(next, "", "location")
                             }
-                            hookDocument(engine, emit)
+                            hookDocument(engine)
                         }
                         engine.loadWorker.stateProperty().addListener { _, _, state ->
                             val ex = engine.loadWorker.exception
                             MagsLog.info("WebView worker=$state loc=${engine.location} err=${ex?.message}")
                             if (state == Worker.State.SUCCEEDED || state == Worker.State.RUNNING) {
-                                hookDocument(engine, emit)
+                                hookDocument(engine)
                             }
                             if (state == Worker.State.FAILED) {
                                 MagsLog.error("WebView load failed loc=${engine.location}", ex)
@@ -343,37 +278,44 @@ private object JavaFxBridge {
         SwingUtilities.invokeLater { host.removeAll() }
     }
 
-    private fun hookDocument(engine: WebEngine, onRedirect: (String) -> Unit) {
+    private fun hookDocument(engine: WebEngine) {
         runCatching {
             val window = engine.executeScript("window") as? JSObject
-            window?.setMember("magsBridge", MagsJsBridge(onRedirect))
-            val hooked = engine.executeScript(injectJs)
+            window?.setMember("magsBridge", MagsJsBridge())
+            val hooked = engine.executeScript(M6loappFormHook.INJECT_JS)
             MagsLog.info("WebView JS hook=$hooked loc=${engine.location}")
-            captureForm(engine, onRedirect)
+            captureForm(engine)
         }.onFailure { error ->
             MagsLog.info("JS hook not ready: ${error.message}")
         }
-        pollTask?.cancel(false)
+        ensurePoller(engine)
+    }
+
+    private fun ensurePoller(engine: WebEngine) {
+        val running = pollTask
+        if (running != null && !running.isCancelled) return
         var ticks = 0
         pollTask = poller.scheduleAtFixedRate({
             Platform.runLater {
-                if (captureForm(engine, onRedirect) || ++ticks > 40) {
+                if (captured.get() || ++ticks > 1500) {
                     pollTask?.cancel(false)
+                    return@runLater
+                }
+                runCatching {
+                    val window = engine.executeScript("window") as? JSObject
+                    window?.setMember("magsBridge", MagsJsBridge())
+                    engine.executeScript(M6loappFormHook.INJECT_JS)
+                    captureForm(engine)
                 }
             }
-        }, 50, 250, TimeUnit.MILLISECONDS)
+        }, 30, 80, TimeUnit.MILLISECONDS)
     }
 
-    private fun captureForm(engine: WebEngine, onRedirect: (String) -> Unit): Boolean {
-        val result = runCatching { engine.executeScript(captureJs) }.getOrNull() ?: return false
-        val text = result.toString()
-        if (text.isBlank() || text == "null" || text == "undefined") return false
-        val nl = text.indexOf('\n')
-        val action = if (nl >= 0) text.substring(0, nl) else text
-        val body = if (nl >= 0) text.substring(nl + 1) else ""
-        val redirect = AuthRequestFactory.redirectFromFormPost(action, body) ?: return false
-        MagsLog.info("captured form_post hasCode=${AuthRequestFactory.extractCode(redirect) != null}")
-        onRedirect(redirect)
+    private fun captureForm(engine: WebEngine): Boolean {
+        val parsed = M6loappFormHook.parseCaptureResult(
+            runCatching { engine.executeScript(M6loappFormHook.CAPTURE_JS) }.getOrNull(),
+        ) ?: return false
+        M6loappProtocol.notify(parsed.first, parsed.second, "js-scan")
         return true
     }
 

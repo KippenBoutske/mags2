@@ -52,19 +52,6 @@ object AuthRequestFactory {
         )
     }
 
-    /**
-     * Magister IdentityServer advertises query/fragment/form_post. Hybrid
-     * (`id_token code`) defaults to form_post, which POSTs `code`/`state` to
-     * `m6loapp://` with no query string. Desktop asks for query so a GET
-     * `?code=` can be caught by the WebView or a protocol handler.
-     * Android keeps the factory URL unchanged.
-     */
-    fun withResponseMode(authorizeUrl: String, mode: String): String {
-        if (authorizeUrl.contains("response_mode=")) return authorizeUrl
-        val sep = if (authorizeUrl.contains('?')) '&' else '?'
-        return "$authorizeUrl${sep}response_mode=${enc(mode)}"
-    }
-
     fun parseOAuthParams(source: String): Map<String, String> {
         val trimmed = source.trim()
         if (trimmed.isEmpty()) return emptyMap()
