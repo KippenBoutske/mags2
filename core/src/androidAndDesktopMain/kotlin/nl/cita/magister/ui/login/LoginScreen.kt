@@ -149,9 +149,11 @@ fun LoginScreen(
 
         Button(
             onClick = {
-                val url = onStartLogin()
-                if (prefersEmbeddedLogin() || !openSystemBrowser(url)) {
+                if (prefersEmbeddedLogin()) {
                     onWebViewLogin()
+                } else {
+                    val url = onStartLogin()
+                    if (!openSystemBrowser(url)) onWebViewLogin()
                 }
             },
             modifier = Modifier

@@ -28,11 +28,24 @@ import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.unit.dp
 import java.awt.BorderLayout
 import java.lang.reflect.InvocationTargetException
-import java.util.logging.Level
-import java.util.logging.Logger
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import javafx.application.Platform
+import javafx.concurrent.Worker
+import javafx.embed.swing.JFXPanel
+import javafx.scene.Scene
+import javafx.scene.web.WebEngine
+import javafx.scene.web.WebView
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
+import netscape.javascript.JSObject
 import nl.cita.magister.api.MagisterEndpoints
+import nl.cita.magister.auth.AuthRequestFactory
+import nl.cita.magister.auth.M6loappProtocol
+import nl.cita.magister.platform.MagsLog
+import nl.cita.magister.platform.appDataDir
 import nl.cita.magister.platform.openSystemBrowser
 
 @Composable
@@ -41,6 +54,7 @@ actual fun LoginWebView(
     onRedirect: (String) -> Unit,
     onClose: () -> Unit,
 ) {
+    val authorizeUrl = remember(url) { AuthRequestFactory.withResponseMode(url, "query") }
     var useWebView by remember { mutableStateOf(JavaFxBridge.available()) }
     Scaffold(
         topBar = {
@@ -61,21 +75,24 @@ actual fun LoginWebView(
                     .fillMaxSize(),
             ) {
                 JavaFxWebPanel(
-                    url = url,
+                    url = authorizeUrl,
                     onRedirect = onRedirect,
-                    onUnavailable = { useWebView = false },
+                    onUnavailable = {
+                        MagsLog.error("WebView unavailable; falling back to instructions")
+                        useWebView = false
+                    },
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                 )
                 TextButton(
                     onClick = { useWebView = false },
                     modifier = Modifier.padding(8.dp),
                 ) {
-                    Text("WebView lukt niet? Plak de redirect-URL")
+                    Text("WebView lukt niet? Andere manier")
                 }
             }
         } else {
             RedirectPasteLogin(
-                authorizeUrl = url,
+                authorizeUrl = authorizeUrl,
                 onRedirect = onRedirect,
                 modifier = Modifier.padding(padding),
             )
@@ -97,21 +114,27 @@ private fun RedirectPasteLogin(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
-            "Magister stuurt je terug naar m6loapp://oauth2redirect/ — geen localhost. " +
-                "Open de login in je browser of plak die URL hier als de browser hem toont.",
+            "Magister sluit de login vaak af met een form POST naar m6loapp://oauth2redirect/ " +
+                "(code zit in de body, niet in de URL). Chrome kan die body niet tonen, " +
+                "dus plakken werkt dan niet. Blijf bij voorkeur in de in-app WebView.",
             style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            "Logbestand: ${appDataDir().resolve("logs/mags.log").absolutePath}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Button(
             onClick = { openSystemBrowser(authorizeUrl) },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Open Magister in de browser")
+            Text("Open Magister in de browser (alleen als de URL ?code= heeft)")
         }
         OutlinedTextField(
             value = pasted,
             onValueChange = { pasted = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Redirect-URL (m6loapp://…)") },
+            label = { Text("Redirect-URL of form-body (code=…)") },
             minLines = 3,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -122,12 +145,6 @@ private fun RedirectPasteLogin(
                 Text("Doorgaan")
             }
         }
-        Text(
-            "Op Windows kan het MSI-installatieprogramma later het schema m6loapp:// registreren, " +
-                "zodat de browser de app terugroept. Tot die tijd: WebView of plakken.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -152,8 +169,93 @@ private fun JavaFxWebPanel(
     SwingPanel(factory = { panel }, modifier = modifier)
 }
 
+class MagsJsBridge(private val onRedirect: (String) -> Unit) {
+    fun onRedirect(url: String?) {
+        val next = url.orEmpty()
+        if (next.isBlank()) return
+        MagsLog.info("JS onRedirect ${next.take(80)}")
+        emitIfOAuth(next, "", onRedirect)
+    }
+
+    fun onFormPost(action: String?, body: String?) {
+        MagsLog.info("JS onFormPost action=${action.orEmpty().take(80)} bodyChars=${body.orEmpty().length}")
+        emitIfOAuth(action.orEmpty(), body.orEmpty(), onRedirect)
+    }
+}
+
+private fun emitIfOAuth(action: String, body: String, onRedirect: (String) -> Unit) {
+    val redirect = AuthRequestFactory.redirectFromFormPost(action, body)
+        ?: action.takeIf {
+            AuthRequestFactory.extractCode(it) != null || AuthRequestFactory.extractError(it) != null
+        }
+        ?: body.takeIf { AuthRequestFactory.extractCode(it) != null }
+    if (redirect != null) onRedirect(redirect)
+}
+
 private object JavaFxBridge {
-    private val log = Logger.getLogger("nl.cita.magister.ui.login.JavaFxBridge")
+    private const val CHROME_UA =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " +
+            "Chrome/131.0.0.0 Safari/537.36"
+    private val poller = Executors.newSingleThreadScheduledExecutor { runnable ->
+        Thread(runnable, "mags-webview-poll").apply { isDaemon = true }
+    }
+    private var pollTask: ScheduledFuture<*>? = null
+    private val captured = AtomicBoolean(false)
+    private var engineRef: WebEngine? = null
+
+    private val injectJs = """
+        (function() {
+          if (window.__magsHooked) return 'already';
+          window.__magsHooked = true;
+          function send(form) {
+            try {
+              var action = (form.getAttribute('action') || form.action || '').toString();
+              if (action.indexOf('m6loapp:') !== 0) return false;
+              var parts = [];
+              var els = form.elements;
+              for (var i = 0; i < els.length; i++) {
+                var el = els[i];
+                if (!el.name) continue;
+                parts.push(encodeURIComponent(el.name) + '=' + encodeURIComponent(el.value || ''));
+              }
+              var body = parts.join('&');
+              if (window.magsBridge && window.magsBridge.onFormPost) {
+                window.magsBridge.onFormPost(action, body);
+              }
+              return true;
+            } catch (e) { return false; }
+          }
+          document.addEventListener('submit', function(e) {
+            if (send(e.target)) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }, true);
+          var forms = document.getElementsByTagName('form');
+          for (var i = 0; i < forms.length; i++) {
+            if (send(forms[i])) break;
+          }
+          return 'hooked';
+        })();
+    """.trimIndent()
+
+    private val captureJs = """
+        (function() {
+          var forms = document.getElementsByTagName('form');
+          for (var i = 0; i < forms.length; i++) {
+            var a = (forms[i].getAttribute('action') || forms[i].action || '').toString();
+            if (a.indexOf('m6loapp:') !== 0) continue;
+            var parts = [];
+            var els = forms[i].elements;
+            for (var j = 0; j < els.length; j++) {
+              if (!els[j].name) continue;
+              parts.push(encodeURIComponent(els[j].name) + '=' + encodeURIComponent(els[j].value || ''));
+            }
+            return a + '\n' + parts.join('&');
+          }
+          return null;
+        })();
+    """.trimIndent()
 
     fun available(): Boolean = runCatching {
         Class.forName("javafx.scene.web.WebView")
@@ -168,38 +270,59 @@ private object JavaFxBridge {
         onRedirect: (String) -> Unit,
         onFailure: () -> Unit,
     ): Boolean {
+        captured.set(false)
+        val emit = { next: String ->
+            if (captured.compareAndSet(false, true) || AuthRequestFactory.extractCode(next) != null) {
+                MagsLog.info("oauth redirect captured")
+                onRedirect(next)
+            }
+        }
+        M6loappProtocol.listener = emit
         return runCatching {
-            val jfxPanelClass = Class.forName("javafx.embed.swing.JFXPanel")
-            val platformClass = Class.forName("javafx.application.Platform")
-            startJavaFx(platformClass)
+            startJavaFx()
             val createPanel = Runnable {
-                val panel = jfxPanelClass.getConstructor().newInstance()
+                val panel = JFXPanel()
                 host.removeAll()
-                host.add(panel as java.awt.Component, BorderLayout.CENTER)
+                host.add(panel, BorderLayout.CENTER)
                 host.revalidate()
                 host.repaint()
-                val runLater = platformClass.getMethod("runLater", Runnable::class.java)
-                runLater.invoke(null, Runnable {
+                Platform.runLater {
                     runCatching {
-                        val webViewClass = Class.forName("javafx.scene.web.WebView")
-                        val sceneClass = Class.forName("javafx.scene.Scene")
-                        val webView = webViewClass.getConstructor().newInstance()
-                        val engine = webViewClass.getMethod("getEngine").invoke(webView)
-                        val engineClass = engine.javaClass
-                        val locationProp = engineClass.getMethod("locationProperty").invoke(engine)
-                        val addListener = locationProp.javaClass.methods.first {
-                            it.name == "addListener" && it.parameterCount == 1
+                        val webView = WebView()
+                        val engine = webView.engine
+                        engineRef = engine
+                        applyUserAgent(engine)
+                        engine.isJavaScriptEnabled = true
+                        engine.locationProperty().addListener { _, _, next ->
+                            MagsLog.info("WebView location=$next")
+                            if (!next.isNullOrBlank() &&
+                                next.startsWith(MagisterEndpoints.REDIRECT_URI.trimEnd('/'))
+                            ) {
+                                emitIfOAuth(next, "", emit)
+                            }
+                            hookDocument(engine, emit)
                         }
-                        addListener.invoke(locationProp, javafxChangeListener(onRedirect))
-                        engineClass.getMethod("load", String::class.java).invoke(engine, url)
-                        val scene = sceneClass.constructors.first { it.parameterCount == 1 }
-                            .newInstance(webView)
-                        jfxPanelClass.getMethod("setScene", sceneClass).invoke(panel, scene)
+                        engine.loadWorker.stateProperty().addListener { _, _, state ->
+                            val ex = engine.loadWorker.exception
+                            MagsLog.info("WebView worker=$state loc=${engine.location} err=${ex?.message}")
+                            if (state == Worker.State.SUCCEEDED || state == Worker.State.RUNNING) {
+                                hookDocument(engine, emit)
+                            }
+                            if (state == Worker.State.FAILED) {
+                                MagsLog.error("WebView load failed loc=${engine.location}", ex)
+                            }
+                        }
+                        engine.loadWorker.exceptionProperty().addListener { _, _, error ->
+                            if (error != null) MagsLog.error("WebView exception", error)
+                        }
+                        engine.load(url)
+                        panel.scene = Scene(webView)
+                        MagsLog.info("WebView started url=${url.take(120)}")
                     }.onFailure { error ->
-                        logException("JavaFX WebView scene setup failed", error)
+                        MagsLog.error("JavaFX WebView scene setup failed", error)
                         SwingUtilities.invokeLater(onFailure)
                     }
-                })
+                }
             }
             if (SwingUtilities.isEventDispatchThread()) {
                 createPanel.run()
@@ -208,44 +331,74 @@ private object JavaFxBridge {
             }
             true
         }.onFailure { error ->
-            logException("JavaFX WebView attach failed", error)
+            MagsLog.error("JavaFX WebView attach failed", error)
         }.getOrDefault(false)
     }
 
     fun detach(host: JPanel) {
+        pollTask?.cancel(false)
+        pollTask = null
+        engineRef = null
+        M6loappProtocol.listener = null
         SwingUtilities.invokeLater { host.removeAll() }
     }
 
-    private fun startJavaFx(platformClass: Class<*>) {
+    private fun hookDocument(engine: WebEngine, onRedirect: (String) -> Unit) {
         runCatching {
-            platformClass.getMethod("startup", Runnable::class.java).invoke(null, Runnable {})
+            val window = engine.executeScript("window") as? JSObject
+            window?.setMember("magsBridge", MagsJsBridge(onRedirect))
+            val hooked = engine.executeScript(injectJs)
+            MagsLog.info("WebView JS hook=$hooked loc=${engine.location}")
+            captureForm(engine, onRedirect)
+        }.onFailure { error ->
+            MagsLog.info("JS hook not ready: ${error.message}")
+        }
+        pollTask?.cancel(false)
+        var ticks = 0
+        pollTask = poller.scheduleAtFixedRate({
+            Platform.runLater {
+                if (captureForm(engine, onRedirect) || ++ticks > 40) {
+                    pollTask?.cancel(false)
+                }
+            }
+        }, 50, 250, TimeUnit.MILLISECONDS)
+    }
+
+    private fun captureForm(engine: WebEngine, onRedirect: (String) -> Unit): Boolean {
+        val result = runCatching { engine.executeScript(captureJs) }.getOrNull() ?: return false
+        val text = result.toString()
+        if (text.isBlank() || text == "null" || text == "undefined") return false
+        val nl = text.indexOf('\n')
+        val action = if (nl >= 0) text.substring(0, nl) else text
+        val body = if (nl >= 0) text.substring(nl + 1) else ""
+        val redirect = AuthRequestFactory.redirectFromFormPost(action, body) ?: return false
+        MagsLog.info("captured form_post hasCode=${AuthRequestFactory.extractCode(redirect) != null}")
+        onRedirect(redirect)
+        return true
+    }
+
+    private fun startJavaFx() {
+        runCatching {
+            Platform.startup {}
         }.onFailure { error ->
             val cause = (error as? InvocationTargetException)?.targetException ?: error
             if (cause !is IllegalStateException) throw error
         }
-        platformClass.getMethod("setImplicitExit", Boolean::class.javaPrimitiveType)
-            .invoke(null, false)
+        Platform.setImplicitExit(false)
     }
 
-    private fun logException(message: String, error: Throwable) {
-        log.log(Level.SEVERE, message, error)
-        System.err.println("Mags: $message: ${error.message}")
-        error.printStackTrace()
-    }
-
-    private fun javafxChangeListener(onRedirect: (String) -> Unit): Any {
-        val listenerClass = Class.forName("javafx.beans.value.ChangeListener")
-        return java.lang.reflect.Proxy.newProxyInstance(
-            listenerClass.classLoader,
-            arrayOf(listenerClass),
-        ) { _, method, args ->
-            if (method.name == "changed" && args != null && args.size >= 3) {
-                val next = args[2]?.toString().orEmpty()
-                if (next.startsWith(MagisterEndpoints.REDIRECT_URI.trimEnd('/'))) {
-                    onRedirect(next)
-                }
+    private fun applyUserAgent(engine: WebEngine) {
+        runCatching {
+            val pageField = engine.javaClass.declaredFields.first {
+                it.name == "page" || it.type.name.contains("WebPage")
             }
-            null
+            pageField.isAccessible = true
+            val page = pageField.get(engine) ?: return
+            page.javaClass.methods.first { it.name == "setUserAgent" && it.parameterCount == 1 }
+                .invoke(page, CHROME_UA)
+            MagsLog.info("WebView user-agent set")
+        }.onFailure { error ->
+            MagsLog.info("WebView user-agent unchanged: ${error.message}")
         }
     }
 }
