@@ -43,7 +43,7 @@ compose.desktop {
             includeAllModules = true
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Mags"
-            packageVersion = "0.2.3"
+            packageVersion = "0.2.4"
             description = "Mags — onofficiële Magister-client"
             vendor = "Jens"
             copyright = "Unofficial"

@@ -167,14 +167,11 @@ jobs:
           fi
           ls -la "$sdk_root/platforms"
 
-      - name: Ensure release keystore
+      - name: Require committed release keystore
         run: |
           if [ ! -f app/keystore/mags-dev.jks ]; then
-            mkdir -p app/keystore
-            keytool -genkeypair -alias mags-dev -keyalg RSA -keysize 2048 -validity 3650 \
-              -keystore app/keystore/mags-dev.jks \
-              -storepass mags-dev -keypass mags-dev \
-              -dname "CN=Mags CI, O=Mags, C=NL"
+            echo "app/keystore/mags-dev.jks is missing; refusing to generate a new key" >&2
+            exit 1
           fi
 
       - name: Assemble APKs
@@ -184,6 +181,11 @@ jobs:
           else
             gradle :app:assembleDebug :app:assembleRelease --stacktrace --no-daemon
           fi
+
+      - name: Align and re-sign release APK with pinned cert
+        run: |
+          chmod +x scripts/align-and-sign-release-apk.sh
+          scripts/align-and-sign-release-apk.sh app/build/outputs/apk/release/app-release.apk
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
