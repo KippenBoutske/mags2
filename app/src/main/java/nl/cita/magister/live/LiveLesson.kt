@@ -23,6 +23,7 @@ data class LiveSnapshot(
 
 object LiveLesson {
     const val LeadMinutes = 40L
+    const val NextLessonLeadMinutes = 5L
     private val zone: ZoneId = ZoneId.of("Europe/Amsterdam")
 
     private const val ColorLesson = 0xFFC4A36A.toInt()
@@ -39,13 +40,23 @@ object LiveLesson {
 
         val current = day.firstOrNull { it.contains(now) }
         val upcoming = day.firstOrNull { it.start?.isAfter(now) == true }
-        val focus = current ?: upcoming ?: return null
+        val upcomingStartsSoon = upcoming?.start?.let { nextStart ->
+            !now.isBefore(nextStart.minus(Duration.ofMinutes(NextLessonLeadMinutes)))
+        } == true
+        val showingUpcoming = upcoming != null && (upcomingStartsSoon || current == null)
+        val focus = when {
+            showingUpcoming -> upcoming
+            current != null -> current
+            now.isBefore(firstStart) -> upcoming
+            else -> null
+        } ?: return null
+        val showingCurrent = current != null && !showingUpcoming
         val title: String
         val text: String
         val target: Instant
         val countdown: Boolean
-        if (current != null) {
-            title = if (current.item.isCancelled) "Uitval: ${current.name}" else "Nu: ${current.name}"
+        if (showingCurrent) {
+            title = if (current!!.item.isCancelled) "Uitval: ${current.name}" else "Nu: ${current.name}"
             text = buildString {
                 append("tot ${current.endLabel}")
                 current.room?.let { append(" · $it") }
@@ -74,7 +85,7 @@ object LiveLesson {
 
         val segments = segmentsOf(day)
         val elapsed = Duration.between(firstStart, now).toMinutes().toInt().coerceAtLeast(0)
-        val nextAlarm = nextBoundary(day, now, lastEnd) ?: lastEnd
+        val nextAlarm = nextWakeForDay(day, now, lastEnd) ?: lastEnd
         return LiveSnapshot(
             title = title,
             text = text,
@@ -95,7 +106,7 @@ object LiveLesson {
             val lastEnd = todayDay.last().end ?: return null
             val showFrom = firstStart.minus(Duration.ofMinutes(LeadMinutes))
             if (now.isBefore(showFrom)) return showFrom
-            if (now.isBefore(lastEnd)) return nextBoundary(todayDay, now, lastEnd) ?: lastEnd
+            if (now.isBefore(lastEnd)) return nextWakeForDay(todayDay, now, lastEnd) ?: lastEnd
         }
         var cursor = today.plusDays(1)
         repeat(10) {
@@ -117,6 +128,18 @@ object LiveLesson {
             .filter { it.date == date }
             .sortedBy { it.start }
         return day.takeIf { it.isNotEmpty() }
+    }
+
+    private fun nextWakeForDay(day: List<TimedLesson>, now: Instant, lastEnd: Instant): Instant? {
+        val nextStart = day.asSequence()
+            .mapNotNull { it.start }
+            .firstOrNull { it.isAfter(now) }
+        val nextLessonWake = nextStart?.minus(Duration.ofMinutes(NextLessonLeadMinutes))
+            ?.takeIf { it.isAfter(now) }
+        return listOfNotNull(
+            nextBoundary(day, now, lastEnd),
+            nextLessonWake,
+        ).minOrNull()
     }
 
     private fun nextBoundary(day: List<TimedLesson>, now: Instant, lastEnd: Instant): Instant? {
