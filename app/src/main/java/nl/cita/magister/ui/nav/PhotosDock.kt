@@ -66,13 +66,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-/**
- * Photos-stijl dock: één spring-pill (LowBouncy / MediumLow) over de tabs.
- *
- * Breedte en X gaan via Animatable + `Modifier.layout`, dus geen per-frame
- * recompose. Label/tint-alpha volgt de overlap met die pill in `graphicsLayer`.
- * FontWeight blijft Medium (geen breedte-pop). Press: bounded ripple + 0.96.
- */
+/** A spring-tracked active pill moves and resizes across the dock tabs. */
 @Composable
 fun PhotosDock(
     selected: MagsPage?,
@@ -230,9 +224,7 @@ private fun DockPill(
                         .clickable(
                             interactionSource = interaction,
                             indication = ripple(bounded = true),
-                        ) {
-                            onSelect(tab.page)
-                        }
+                        ) { onSelect(tab.page) }
                         .graphicsLayer {
                             scaleX = pressScale
                             scaleY = pressScale
@@ -253,47 +245,54 @@ private fun DockPill(
                                 .testTag("dock-indicator"),
                         )
                     }
-                    Column(
-                        modifier = Modifier
-                            .widthIn(min = 52.dp, max = 64.dp)
-                            .padding(horizontal = 4.dp)
-                            .graphicsLayer {
-                                val cover = if (sliding && bounds != null && bounds.width > 0f) {
-                                    val left = max(bounds.left, indicatorX.value)
-                                    val right = min(bounds.right, indicatorX.value + indicatorW.value)
-                                    ((right - left) / bounds.width).coerceIn(0f, 1f)
-                                } else {
-                                    if (isSelected) 1f else 0f
-                                }
-                                alpha = 0.72f + 0.28f * cover
-                                colorFilter = ColorFilter.tint(
-                                    lerp(onPill, onIndicator, cover),
-                                    BlendMode.SrcIn,
-                                )
-                            },
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(1.dp),
-                    ) {
-                        Icon(
-                            tab.icon,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                            tint = Color.White,
-                        )
-                        Text(
-                            tab.label,
-                            color = Color.White,
-                            fontSize = 9.sp,
-                            lineHeight = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Clip,
-                            softWrap = false,
-                        )
-                    }
+                    val cover = if (sliding && bounds != null && bounds.width > 0f) {
+                        val left = max(bounds.left, indicatorX.value)
+                        val right = min(bounds.right, indicatorX.value + indicatorW.value)
+                        ((right - left) / bounds.width).coerceIn(0f, 1f)
+                    } else if (isSelected) 1f else 0f
+                    DockTabContent(
+                        tab = tab,
+                        selectedFraction = cover,
+                        onPill = onPill,
+                        onIndicator = onIndicator,
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DockTabContent(
+    tab: DockTab,
+    selectedFraction: Float,
+    onPill: Color,
+    onIndicator: Color,
+) {
+    Column(
+        modifier = Modifier
+            .widthIn(min = 56.dp, max = 68.dp)
+            .padding(horizontal = 4.dp)
+            .graphicsLayer { alpha = 0.72f + 0.28f * selectedFraction },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(1.dp),
+    ) {
+        Icon(
+            tab.icon,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = lerp(onPill, onIndicator, selectedFraction),
+        )
+        Text(
+            tab.label,
+            color = lerp(onPill, onIndicator, selectedFraction),
+            fontSize = 11.sp,
+            lineHeight = 13.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Clip,
+            softWrap = false,
+        )
     }
 }
 
@@ -325,9 +324,7 @@ private fun SearchFab(
             .clickable(
                 interactionSource = interaction,
                 indication = ripple(bounded = true, radius = size / 2),
-            ) {
-                onClick()
-            }
+            ) { onClick() }
             .testTag("dock-search")
             .semantics { contentDescription = "Zoeken" },
         contentAlignment = Alignment.Center,

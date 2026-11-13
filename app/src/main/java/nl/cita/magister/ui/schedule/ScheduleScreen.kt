@@ -404,14 +404,14 @@ private fun WeekChips(
                 ) {
                     Text(
                         day.dayOfWeek.getDisplayName(TextStyle.SHORT, nl).replaceFirstChar { it.titlecase(nl) },
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Medium,
                         color = if (selectedDay) MaterialTheme.colorScheme.onSecondaryContainer
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         day.dayOfMonth.toString(),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         color = if (selectedDay) MaterialTheme.colorScheme.onSecondaryContainer
                         else MaterialTheme.colorScheme.onSurface,
                     )
@@ -507,7 +507,7 @@ private fun DayTimeline(
 }
 
 @Composable
-private fun NowLine(modifier: Modifier = Modifier) {
+private fun NowLine(modifier: Modifier = Modifier, time: String = "") {
     Row(
         modifier
             .fillMaxWidth()
@@ -529,7 +529,7 @@ private fun NowLine(modifier: Modifier = Modifier) {
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary),
         )
-        Text("nu", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+        Text("nu $time", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
     }
 }
 
@@ -593,7 +593,6 @@ private fun LessonCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var cardHeight by remember { mutableIntStateOf(0) }
     val dimmed = item.isCancelled
     PressScaleCard(
         colors = CardDefaults.cardColors(
@@ -608,15 +607,11 @@ private fun LessonCard(
             .testTag(if (current) "les-kaart-nu" else "les-kaart"),
         onClick = onClick,
     ) {
-        Box(Modifier.onSizeChanged { cardHeight = it.height }) {
+        Box {
             if (current && !dimmed) {
-                CookieFlower(
-                    Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 4.dp, end = 4.dp)
-                        .testTag("les-nu-vorm"),
-                    size = 72.dp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                CurrentLessonBadge(
+                    modifier = Modifier.align(Alignment.TopEnd).padding(14.dp),
+                    startTime = formatTime(item.startIso),
                 )
             }
             Column(Modifier.padding(if (current) 18.dp else 14.dp)) {
@@ -632,7 +627,7 @@ private fun LessonCard(
                     Column(
                         Modifier
                             .weight(1f)
-                            .padding(end = if (current && !dimmed) 68.dp else 0.dp),
+                            .padding(end = if (current && !dimmed) 94.dp else 0.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Text(
@@ -689,20 +684,23 @@ private fun LessonCard(
                     }
                 }
             }
-            if (current) {
-                val progress = lessonProgress(item, now)
-                NowLine(
-                    Modifier
-                        .align(Alignment.TopStart)
-                        .padding(end = 84.dp)
-                        .zIndex(2f)
-                        .offset {
-                            val y = ((cardHeight - 16) * progress).roundToInt().coerceAtLeast(0)
-                            IntOffset(0, y)
-                        },
-                )
-            }
         }
+    }
+}
+
+@Composable
+private fun CurrentLessonBadge(modifier: Modifier, startTime: String) {
+    Row(
+        modifier
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f))
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .testTag("les-nu-vorm"),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(7.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+        Text("NU · $startTime", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
     }
 }
 

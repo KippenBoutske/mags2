@@ -30,32 +30,32 @@ import kotlin.math.min
 val LocalSafeMode = staticCompositionLocalOf { false }
 val LocalDynamicColor = staticCompositionLocalOf { false }
 
-/** Concept 1 — Donker warm */
-val WarmSand = Color(0xFFE8D3A0)
-val WarmInk = Color(0xFF1A1712)
-val WarmBg = Color(0xFF16130F)
-val WarmSurface = Color(0xFF221C16)
-val WarmSurfaceHigh = Color(0xFF2C241C)
-val WarmSurfaceHighest = Color(0xFF352C22)
-val WarmOn = Color(0xFFF4E8D0)
-val WarmMuted = Color(0xFFD8C9AE)
+/** Night ink, warm paper, and a clay accent — Cita's visual backbone. */
+val WarmSand = Color(0xFFD8835D)
+val WarmInk = Color(0xFF17191D)
+val WarmBg = Color(0xFF14171B)
+val WarmSurface = Color(0xFF1C2025)
+val WarmSurfaceHigh = Color(0xFF252A30)
+val WarmSurfaceHighest = Color(0xFF2F353D)
+val WarmOn = Color(0xFFF1F0EB)
+val WarmMuted = Color(0xFFC7C5BD)
 val GradeGold = Color(0xFFC4A36A)
 val GradeSage = Color(0xFF7E8B6A)
 val GradeSlate = Color(0xFF6B7C96)
-val WarmOnTile = Color(0xFF1A1712)
+val WarmOnTile = Color(0xFF17191D)
 val ToetsAmber = Color(0xFFC47A4A)
-val ToetsOnAmber = Color(0xFF1A1712)
+val ToetsOnAmber = Color(0xFF17191D)
 
-private val LightPaper = Color(0xFFF4EDE3)
-private val LightSurface = Color(0xFFFAF6EF)
-private val LightSurfaceLow = Color(0xFFF7F1E8)
-private val LightSurfaceContainer = Color(0xFFEDE4D4)
-private val LightSurfaceHigh = Color(0xFFE8DCC8)
-private val LightSurfaceHighest = Color(0xFFDFD2BC)
-private val LightMuted = Color(0xFF4F473E)
-private val LightPrimary = Color(0xFF5C4A24)
-private val LightOnPrimary = Color(0xFFFFF8EC)
-private val LightTertiary = Color(0xFF3F4A32)
+private val LightPaper = Color(0xFFF3EFE7)
+private val LightSurface = Color(0xFFFBF9F4)
+private val LightSurfaceLow = Color(0xFFF6F3EC)
+private val LightSurfaceContainer = Color(0xFFEAE5DB)
+private val LightSurfaceHigh = Color(0xFFE3DDD2)
+private val LightSurfaceHighest = Color(0xFFDAD3C7)
+private val LightMuted = Color(0xFF504A43)
+private val LightPrimary = Color(0xFF9E432B)
+private val LightOnPrimary = Color(0xFFFFF8F3)
+private val LightTertiary = Color(0xFF365649)
 private val LightError = Color(0xFF9B3B32)
 private val LightOutline = Color(0xFF6F6558)
 
@@ -147,22 +147,25 @@ private val WarmTypography = Typography(
         letterSpacing = 0.sp,
     ),
     headlineLarge = TextStyle(
-        fontFamily = FontFamily.Serif,
-        fontWeight = FontWeight.Normal,
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
         fontSize = 34.sp,
         lineHeight = 40.sp,
+        letterSpacing = (-0.6).sp,
     ),
     headlineMedium = TextStyle(
-        fontFamily = FontFamily.Serif,
-        fontWeight = FontWeight.Normal,
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
         fontSize = 28.sp,
         lineHeight = 34.sp,
+        letterSpacing = (-0.35).sp,
     ),
     headlineSmall = TextStyle(
-        fontFamily = FontFamily.Serif,
-        fontWeight = FontWeight.Medium,
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 22.sp,
         lineHeight = 28.sp,
+        letterSpacing = (-0.15).sp,
     ),
     titleLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,

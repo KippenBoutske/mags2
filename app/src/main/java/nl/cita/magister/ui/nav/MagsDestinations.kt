@@ -36,14 +36,28 @@ fun defaultDockTabs(): List<DockTab> = listOf(
 
 object MagsChrome {
     val TopBarHeight = 56.dp
-    /** Pill + 16.dp onder de dock + ruimte zodat het laatste item boven pill én scrim eindigt. */
+    const val DISPLAY_SMALL = 28
+    const val DISPLAY_MEDIUM = 36
+    const val DISPLAY_LARGE = 52
+    const val HEADLINE_SMALL = 24
+    const val HEADLINE_MEDIUM = 30
+    const val HEADLINE_LARGE = 38
+    const val TITLE_LARGE = 24
+    const val TITLE_MEDIUM = 18
+    const val BODY_LARGE = 16
+    const val BODY_MEDIUM = 14
+    const val LABEL_LARGE = 14
+    const val LABEL_MEDIUM = 12
+    const val LABEL_SMALL = 11
+
     val DockClearance = 200.dp
+    /** Pill + 16.dp onder de dock + ruimte zodat het laatste item boven pill én scrim eindigt. */
     val DockGap = 10.dp
     val DockSide = 16.dp
-    val PageGutter = 16.dp
-    val CardGap = 12.dp
-    val PillHeight = 62.dp
-    val FabSize = 56.dp
+    val PageGutter = 18.dp
+    val CardGap = 14.dp
+    val PillHeight = 66.dp
+    val FabSize = 58.dp
     val CompactFabSize = 48.dp
     val ScrimHeight = 148.dp
     val ListBottomGap = 16.dp

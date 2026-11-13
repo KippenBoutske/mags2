@@ -1,6 +1,11 @@
 package nl.cita.magister.ui.today
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -85,7 +90,8 @@ fun TodayScreen(
     }
     val current = ofDay.firstOrNull { !it.isCancelled && lessonStart(it) <= now && lessonEnd(it) > now }
     val next = ofDay.firstOrNull { !it.isCancelled && lessonStart(it) > now }
-    val hero = current ?: next
+    val hero = if (showUpcomingLesson(current, next, now)) next else current ?: next
+    val heroIsCurrent = current != null && hero?.id == current.id
     val openHw = remember(homework) { homework.filter { !it.isDone }.sortedBy { it.dueIso } }
     val latest = remember(grades) { GradeCalculator.latestEarnedGrades(grades, 5) }
     val unread = remember(messages) { messages.filter { !it.isRead } }
@@ -165,23 +171,32 @@ fun TodayScreen(
                         )
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
-                                if (current != null) "NU" else "VOLGENDE LES",
+                                if (heroIsCurrent) "NU" else "VOLGENDE LES",
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            Text(
-                                hero.displaySubject(),
-                                style = MaterialTheme.typography.headlineSmall,
-                                maxLines = 2,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            )
+                            AnimatedContent(
+                                targetState = hero.displaySubject(),
+                                transitionSpec = {
+                                    (fadeIn(pageFadeSpring()) + scaleIn(initialScale = 0.94f, animationSpec = pageFadeSpring())) togetherWith fadeOut(pageFadeSpring())
+                                },
+                                label = "today-next-lesson",
+                            ) { subject ->
+                                Text(
+                                    subject,
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    maxLines = 2,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                    modifier = Modifier.testTag("today-hero-subject"),
+                                )
+                            }
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Outlined.Place, null, Modifier, MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(hero.classroom ?: hero.location ?: "–", style = MaterialTheme.typography.bodyMedium)
                             }
                             Text(
                                 heroTimingLabel(
-                                    current = current != null,
+                                    current = heroIsCurrent,
                                     startIso = hero.startIso,
                                     endIso = hero.endIso,
                                     nowMillis = AppClock(today, now).millis(),
@@ -319,6 +334,15 @@ private fun HomeworkRow(
         }
     }
 }
+
+internal fun showUpcomingLesson(
+    current: Appointment?,
+    next: Appointment?,
+    now: LocalTime,
+): Boolean = next != null && current != null && !now.isBefore(next.startLocalTime().minusMinutes(5))
+
+private fun Appointment.startLocalTime(): LocalTime =
+    parseInstant(startIso)?.atZone(AppClock.zone)?.toLocalTime() ?: LocalTime.MIDNIGHT
 
 private fun lessonStart(item: Appointment): LocalTime = lessonLocalTime(item.startIso)
 

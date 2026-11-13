@@ -36,7 +36,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import nl.cita.magister.haptics.HapticEvent
@@ -211,10 +210,8 @@ fun CookieFlower(
         animationSpec = infiniteRepeatable(tween(28_000, easing = LinearEasing), RepeatMode.Restart),
         label = "cookie-spin",
     )
-    Canvas(modifier.size(size)) {
-        rotate(spin) {
-            drawPath(cookiePath(this.size.minDimension / 2f, center), color)
-        }
+    Canvas(modifier.size(size).graphicsLayer { rotationZ = spin }) {
+        drawPath(cookiePath(this.size.minDimension / 2f, center), color)
     }
 }
 
