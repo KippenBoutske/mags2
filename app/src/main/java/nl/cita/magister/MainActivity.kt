@@ -88,13 +88,7 @@ class MainActivity : ComponentActivity() {
 
     private fun playSplashExit(provider: SplashScreenViewProvider, content: View) {
         val spring = PathInterpolator(0.22f, 1f, 0.36f, 1f)
-        provider.iconView.animate()
-            .scaleX(0.72f)
-            .scaleY(0.72f)
-            .alpha(0f)
-            .setDuration(240)
-            .setInterpolator(spring)
-            .start()
+        animateSplashIcon({ provider.iconView }, spring)
         provider.view.animate()
             .alpha(0f)
             .setDuration(280)
