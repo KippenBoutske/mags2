@@ -169,6 +169,21 @@ class GradeCalculatorTest {
     }
 
     @Test
+    fun filtersGradesToCurrentSchoolYear() {
+        val grades = listOf(
+            grade(6.0, 1.0, id = 1).copy(enteredAt = "2025-07-31T23:59:00Z"),
+            grade(7.0, 1.0, id = 2).copy(enteredAt = "2025-08-01T00:00:00Z"),
+            grade(8.0, 1.0, id = 3).copy(enteredAt = "2026-07-31T23:59:00Z"),
+            grade(9.0, 1.0, id = 4).copy(enteredAt = "2026-08-01T00:00:00Z"),
+            grade(5.0, 1.0, id = 5).copy(enteredAt = null),
+        )
+
+        val currentYear = GradeCalculator.currentSchoolYearGrades(grades, java.time.LocalDate.of(2026, 11, 15))
+
+        assertEquals(listOf(4), currentYear.map { it.id })
+    }
+
+    @Test
     fun formatAverageKeepsOneOrTwoDecimals() {
         assertEquals("6,9", GradeCalculator.formatAverage(6.9, "6,9"))
         assertEquals("5,85", GradeCalculator.formatAverage(5.85))

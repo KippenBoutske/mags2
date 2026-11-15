@@ -83,6 +83,7 @@ import nl.cita.magister.ui.profileLine
 import nl.cita.magister.ui.theme.CitaAction
 import nl.cita.magister.ui.theme.CitaActionRow
 import nl.cita.magister.ui.theme.GradeSage
+import java.time.LocalDate
 
 private enum class GradeFilter { All, Weak, Pta }
 
@@ -101,16 +102,23 @@ fun GradesScreen(
     gradesError: ApiFailure? = null,
     initialSubjectId: Int? = null,
 ) {
+    val today = LocalDate.now()
+    val currentYearGrades = GradeCalculator.currentSchoolYearGrades(grades, today)
+    val currentYearAverages = GradeCalculator.averagesBySubject(currentYearGrades)
+    val currentYearLatest = GradeCalculator.latestEarnedGrades(
+        GradeCalculator.currentSchoolYearGrades(latestGrades, today),
+        5,
+    )
     var filter by remember { mutableStateOf(GradeFilter.All) }
     var openSubject by remember {
-        mutableStateOf(averages.firstOrNull { it.subjectId == initialSubjectId })
+        mutableStateOf(currentYearAverages.firstOrNull { it.subjectId == initialSubjectId })
     }
     var openGrade by remember { mutableStateOf<Grade?>(null) }
     val visible = when (filter) {
-        GradeFilter.All -> averages
-        GradeFilter.Weak -> averages.filter { (it.average ?: 10.0) < 6.0 }
-        GradeFilter.Pta -> averages.filter { subject ->
-            grades.any { it.subjectId == subject.subjectId && it.isPta }
+        GradeFilter.All -> currentYearAverages
+        GradeFilter.Weak -> currentYearAverages.filter { (it.average ?: 10.0) < 6.0 }
+        GradeFilter.Pta -> currentYearAverages.filter { subject ->
+            currentYearGrades.any { it.subjectId == subject.subjectId && it.isPta }
         }
     }
 
@@ -124,7 +132,7 @@ fun GradesScreen(
         ) { subject ->
             if (subject == null) {
                 Crossfade(
-                    targetState = refreshing && averages.isEmpty(),
+                    targetState = refreshing && currentYearAverages.isEmpty(),
                     animationSpec = pageFadeSpring(),
                     label = "cijfers-load",
                     modifier = Modifier.fillMaxSize(),
@@ -181,7 +189,7 @@ fun GradesScreen(
                         }
                         item {
                             LatestGradesStrip(
-                                grades = GradeCalculator.latestEarnedGrades(latestGrades, 5),
+                                grades = currentYearLatest,
                                 onOpen = { openGrade = it },
                             )
                         }
@@ -200,7 +208,7 @@ fun GradesScreen(
                     itemsIndexed(visible, key = { _, it -> it.subjectId }) { index, item ->
                         SubjectCard(
                             subject = item,
-                            grades = grades.filter { it.subjectId == item.subjectId && it.columnType == GradeColumnType.Grade },
+                            grades = currentYearGrades.filter { it.subjectId == item.subjectId && it.columnType == GradeColumnType.Grade },
                             onOpen = { openSubject = item },
                             modifier = Modifier
                                 .staggerEnter(index, key = item.subjectId)
@@ -220,7 +228,7 @@ fun GradesScreen(
             } else {
                 SubjectPage(
                     subject = subject,
-                    grades = grades.filter { it.subjectId == subject.subjectId },
+                    grades = currentYearGrades.filter { it.subjectId == subject.subjectId },
                     contentPadding = contentPadding,
                     onBack = { openSubject = null },
                     onGrade = { openGrade = it },

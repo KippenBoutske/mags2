@@ -4,12 +4,12 @@ import nl.cita.magister.model.Grade
 import nl.cita.magister.model.GradeColumnType
 import nl.cita.magister.model.SubjectAverage
 import nl.cita.magister.subject.SubjectNames
-import java.util.Locale
+import java.time.LocalDate
 import kotlin.math.abs
 import kotlin.math.round
 
 object GradeCalculator {
-    private val nl = Locale("nl", "NL")
+    private val nl = java.util.Locale("nl", "NL")
 
     fun parseDutchNumber(raw: String?): Double? {
         if (raw.isNullOrBlank()) return null
@@ -39,6 +39,20 @@ object GradeCalculator {
             val weight = grade.weight
             if (weight != null && weight <= 0.0) return@filter false
             true
+        }
+    }
+
+    fun currentSchoolYearStart(today: LocalDate, schoolYearStartMonth: Int = 8): LocalDate {
+        val startYear = if (today.monthValue >= schoolYearStartMonth) today.year else today.year - 1
+        return LocalDate.of(startYear, schoolYearStartMonth, 1)
+    }
+
+    fun currentSchoolYearGrades(grades: List<Grade>, today: LocalDate, schoolYearStartMonth: Int = 8): List<Grade> {
+        val start = currentSchoolYearStart(today, schoolYearStartMonth)
+        val end = start.plusYears(1)
+        return grades.filter { grade ->
+            val date = grade.enteredAt?.take(10)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            date != null && !date.isBefore(start) && date.isBefore(end)
         }
     }
 
