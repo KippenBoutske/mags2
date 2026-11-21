@@ -31,16 +31,28 @@ jobs:
       - name: Run core unit tests
         run: ./gradlew :core:test --stacktrace
 
-      - name: Build Phone & Wear OS Debug APKs
-        run: ./gradlew :app:assembleDebug :wear:assembleDebug --stacktrace
+      - name: Build Phone & Wear OS APKs (Release & Debug)
+        run: ./gradlew :app:assembleRelease :wear:assembleRelease :app:assembleDebug :wear:assembleDebug --stacktrace
 
-      - name: Upload Phone APK
+      - name: Upload Phone Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mags-phone-release
+          path: app/build/outputs/apk/release/*.apk
+
+      - name: Upload Wear OS Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mags-wear-release
+          path: wear/build/outputs/apk/release/*.apk
+
+      - name: Upload Phone Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: mags-phone-debug
           path: app/build/outputs/apk/debug/*.apk
 
-      - name: Upload Wear OS APK
+      - name: Upload Wear OS Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: mags-wear-debug

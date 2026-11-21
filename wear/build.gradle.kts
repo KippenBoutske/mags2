@@ -12,8 +12,8 @@ android {
         applicationId = "app.mags"
         minSdk = 30
         targetSdk = 37
-        versionCode = 23
-        versionName = "0.1.20"
+        versionCode = 24
+        versionName = "0.1.21"
     }
 
     signingConfigs {
@@ -30,6 +30,7 @@ android {
             isMinifyEnabled = false
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            signingConfig = signingConfigs.getByName("devRelease")
         }
         release {
             isMinifyEnabled = true
