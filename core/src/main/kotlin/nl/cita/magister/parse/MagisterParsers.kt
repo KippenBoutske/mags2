@@ -319,7 +319,13 @@ object MagisterParsers {
             val info = extra[columnId]
             val weight = extraWeights[columnId] ?: info?.resolvedWeight ?: grade.weight
             val type = if (info != null) {
-                columnType(info.type, info.name ?: grade.columnHeading, info.heading ?: grade.columnHeading, info.description)
+                val inferred = columnType(
+                    info.type,
+                    info.name ?: grade.columnHeading,
+                    info.heading ?: grade.columnHeading,
+                    info.description ?: grade.columnDescription,
+                )
+                if (info.type == null && inferred == GradeColumnType.Other) grade.columnType else inferred
             } else {
                 grade.columnType
             }

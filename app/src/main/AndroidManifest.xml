@@ -69,6 +69,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
             </intent-filter>
         </receiver>
 
@@ -83,5 +84,17 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/next_lesson_widget_info" />
         </receiver>
+
+        <service
+            android:name=".wear.WearSyncListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:scheme="wear"
+                    android:host="*"
+                    android:pathPrefix="/mags/request-sync" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>

@@ -222,6 +222,7 @@ class CitaViewModel(
                     }
                     reportWarnings(result.warnings)
                     nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
+                    nl.cita.magister.wear.WearSyncPublisher.syncAsync(getApplication())
                 }
                 .onFailure { error ->
                     rememberFailure(error)
@@ -244,6 +245,7 @@ class CitaViewModel(
             _hapticPulse.tryEmit(HapticEvent.LoginSuccess)
             _snackbar.emit(if (offline) "Offline · cache." else "Voorbeeld.")
             nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
+            nl.cita.magister.wear.WearSyncPublisher.syncAsync(getApplication())
         }
     }
 
@@ -273,6 +275,7 @@ class CitaViewModel(
                     _offline.value = false
                     _hapticPulse.tryEmit(HapticEvent.RefreshDone)
                     nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
+                    nl.cita.magister.wear.WearSyncPublisher.syncAsync(getApplication())
                 }
                 .onFailure { error ->
                     rememberFailure(error)
@@ -287,6 +290,7 @@ class CitaViewModel(
     fun logout() {
         viewModelScope.launch {
             nl.cita.magister.live.LiveLessonScheduler.cancel(getApplication())
+            nl.cita.magister.wear.WearSyncPublisher.clearAsync(getApplication())
             repo.logout()
             _signedIn.value = false
             _lastError.value = null
@@ -295,7 +299,10 @@ class CitaViewModel(
     }
 
     fun toggleHomework(item: HomeworkItem, done: Boolean) {
-        viewModelScope.launch { repo.markHomeworkDone(item, done) }
+        viewModelScope.launch {
+            repo.markHomeworkDone(item, done)
+            nl.cita.magister.wear.WearSyncPublisher.syncAsync(getApplication())
+        }
     }
 
     fun openMessage(id: Int) {

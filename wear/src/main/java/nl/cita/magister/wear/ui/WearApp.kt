@@ -1,0 +1,705 @@
+package nl.cita.magister.wear.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.Grade
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
+import androidx.wear.compose.foundation.lazy.items
+import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
+import androidx.wear.compose.material.Chip
+import androidx.wear.compose.material.ChipDefaults
+import androidx.wear.compose.material.Icon
+import androidx.wear.compose.material.ListHeader
+import androidx.wear.compose.material.MaterialTheme
+import androidx.wear.compose.material.PositionIndicator
+import androidx.wear.compose.material.Scaffold
+import androidx.wear.compose.material.Text
+import androidx.wear.compose.material.TimeText
+import androidx.wear.compose.material.TitleCard
+import androidx.wear.compose.material.Vignette
+import androidx.wear.compose.material.VignettePosition
+import androidx.wear.compose.navigation.SwipeDismissableNavHost
+import androidx.wear.compose.navigation.composable
+import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import kotlinx.coroutines.delay
+import nl.cita.magister.grades.GradeCalculator
+import nl.cita.magister.model.Appointment
+import nl.cita.magister.model.Grade
+import nl.cita.magister.model.HomeworkItem
+import nl.cita.magister.model.SubjectAverage
+import nl.cita.magister.subject.displaySubject
+import nl.cita.magister.wear.WearLessonFocus
+import nl.cita.magister.wear.WearScheduleHelper
+import nl.cita.magister.wear.WearSyncPayload
+import java.time.Instant
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+private object WearRoute {
+    const val Home = "home"
+    const val Schedule = "schedule"
+    const val Grades = "grades"
+    const val Homework = "homework"
+}
+
+private val nlLocale = Locale("nl", "NL")
+private val shortDateFmt = DateTimeFormatter.ofPattern("EEE d MMM", nlLocale)
+
+@Composable
+fun MagsWearApp(
+    payload: WearSyncPayload?,
+    syncing: Boolean,
+    onRequestSync: () -> Unit,
+    onLoadDemo: () -> Unit,
+) {
+    MagsWearTheme {
+        var now by remember { mutableStateOf(Instant.now()) }
+        LaunchedEffect(Unit) {
+            while (true) {
+                delay(30_000L)
+                now = Instant.now()
+            }
+        }
+        val navController = rememberSwipeDismissableNavController()
+        SwipeDismissableNavHost(
+            navController = navController,
+            startDestination = WearRoute.Home,
+        ) {
+            composable(WearRoute.Home) {
+                WearHomeScreen(
+                    payload = payload,
+                    now = now,
+                    syncing = syncing,
+                    onOpenSchedule = { navController.navigate(WearRoute.Schedule) },
+                    onOpenGrades = { navController.navigate(WearRoute.Grades) },
+                    onOpenHomework = { navController.navigate(WearRoute.Homework) },
+                    onRequestSync = onRequestSync,
+                    onLoadDemo = onLoadDemo,
+                )
+            }
+            composable(WearRoute.Schedule) {
+                WearScheduleScreen(
+                    appointments = payload?.appointments.orEmpty(),
+                    now = now,
+                )
+            }
+            composable(WearRoute.Grades) {
+                WearGradesScreen(
+                    latestGrades = payload?.latestGrades.orEmpty(),
+                    averages = payload?.averages.orEmpty(),
+                )
+            }
+            composable(WearRoute.Homework) {
+                WearHomeworkScreen(
+                    homework = payload?.openHomework.orEmpty(),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WearHomeScreen(
+    payload: WearSyncPayload?,
+    now: Instant,
+    syncing: Boolean,
+    onOpenSchedule: () -> Unit,
+    onOpenGrades: () -> Unit,
+    onOpenHomework: () -> Unit,
+    onRequestSync: () -> Unit,
+    onLoadDemo: () -> Unit,
+) {
+    val listState = rememberScalingLazyListState()
+    val focus = remember(payload, now) {
+        payload?.let { WearScheduleHelper.currentOrNextLesson(it.appointments, now) }
+    }
+    val today = remember(now) { now.atZone(WearScheduleHelper.defaultZone).toLocalDate() }
+    val todayCount = remember(payload, today) {
+        payload?.let { WearScheduleHelper.lessonsForDate(it.appointments, today).size } ?: 0
+    }
+
+    Scaffold(
+        timeText = { TimeText() },
+        vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) },
+        positionIndicator = { PositionIndicator(scalingLazyListState = listState) },
+    ) {
+        ScalingLazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(WearBg),
+            state = listState,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            item {
+                ListHeader {
+                    Text(
+                        text = payload?.studentName?.let { "Hoi $it" } ?: "Mags",
+                        style = MaterialTheme.typography.title3,
+                        color = WearOn,
+                    )
+                }
+            }
+            if (payload == null) {
+                item {
+                    TitleCard(
+                        onClick = onRequestSync,
+                        title = { Text("Wachten op telefoon", color = WearOn) },
+                        backgroundPainter = androidx.wear.compose.material.CardDefaults.cardBackgroundPainter(
+                            startBackgroundColor = WearSurfaceHigh,
+                            endBackgroundColor = WearSurface,
+                        ),
+                    ) {
+                        Text(
+                            "Open Mags op je telefoon om rooster en cijfers te synchroniseren.",
+                            style = MaterialTheme.typography.caption2,
+                            color = WearMuted,
+                        )
+                    }
+                }
+                item {
+                    WearNavChip(
+                        label = if (syncing) "Synchroniseren…" else "Vernieuw",
+                        icon = Icons.Outlined.Refresh,
+                        onClick = onRequestSync,
+                    )
+                }
+                item {
+                    Chip(
+                        onClick = onLoadDemo,
+                        label = { Text("Voorbeelddata", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        colors = ChipDefaults.secondaryChipColors(backgroundColor = WearSurface),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            } else {
+                item {
+                    HeroLessonCard(
+                        focus = focus,
+                        todayCount = todayCount,
+                        onClick = onOpenSchedule,
+                    )
+                }
+                item {
+                    WearNavChip(
+                        label = "Rooster",
+                        secondaryLabel = if (todayCount == 1) "1 les vandaag" else "$todayCount lessen vandaag",
+                        icon = Icons.Outlined.CalendarToday,
+                        onClick = onOpenSchedule,
+                    )
+                }
+                item {
+                    val latest = payload.latestGrades.firstOrNull()
+                    WearNavChip(
+                        label = "Cijfers",
+                        secondaryLabel = latest?.let {
+                            "${it.displaySubject()} · ${GradeCalculator.formatGradeValue(it.numericValue, it.value)}"
+                        } ?: "${payload.averages.size} vakken",
+                        icon = Icons.Outlined.Grade,
+                        onClick = onOpenGrades,
+                    )
+                }
+                item {
+                    val openCount = payload.openHomework.size
+                    WearNavChip(
+                        label = "Huiswerk",
+                        secondaryLabel = if (openCount == 0) "Alles af" else "$openCount open",
+                        icon = Icons.Outlined.Checklist,
+                        onClick = onOpenHomework,
+                    )
+                }
+                item {
+                    WearNavChip(
+                        label = if (syncing) "Synchroniseren…" else "Vernieuw",
+                        icon = Icons.Outlined.Refresh,
+                        onClick = onRequestSync,
+                        subtle = true,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeroLessonCard(
+    focus: WearLessonFocus?,
+    todayCount: Int,
+    onClick: () -> Unit,
+) {
+    if (focus == null) {
+        TitleCard(
+            onClick = onClick,
+            title = { Text(if (todayCount == 0) "Vrij vandaag" else "Klaar voor vandaag", color = WearOn) },
+            backgroundPainter = androidx.wear.compose.material.CardDefaults.cardBackgroundPainter(
+                startBackgroundColor = WearSurfaceHigh,
+                endBackgroundColor = WearSurface,
+            ),
+        ) {
+            Text(
+                "Tik om je rooster te bekijken",
+                style = MaterialTheme.typography.caption2,
+                color = WearMuted,
+            )
+        }
+        return
+    }
+    val room = focus.lesson.classroom ?: focus.lesson.location
+    val countdown = WearScheduleHelper.countdownLabel(focus)
+    TitleCard(
+        onClick = onClick,
+        time = {
+            Text(
+                countdown,
+                style = MaterialTheme.typography.caption2.copy(fontWeight = FontWeight.SemiBold),
+                color = WearSand,
+            )
+        },
+        title = {
+            Text(
+                focus.lesson.displaySubject(),
+                color = WearOn,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        backgroundPainter = androidx.wear.compose.material.CardDefaults.cardBackgroundPainter(
+            startBackgroundColor = WearSurfaceHigh,
+            endBackgroundColor = WearSurface,
+        ),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                if (focus.isCurrent) {
+                    Box(Modifier.size(6.dp).clip(CircleShape).background(WearSand))
+                }
+                Text(
+                    if (focus.isCurrent) "NU · tot ${focus.endLabel}" else "VOLGENDE · ${focus.startLabel}",
+                    style = MaterialTheme.typography.caption3.copy(fontWeight = FontWeight.SemiBold),
+                    color = WearSand,
+                )
+            }
+            if (!room.isNullOrBlank()) {
+                Text(
+                    "Lokaal $room",
+                    style = MaterialTheme.typography.caption2,
+                    color = WearMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WearScheduleScreen(
+    appointments: List<Appointment>,
+    now: Instant,
+) {
+    val listState = rememberScalingLazyListState()
+    val today = remember(now) { now.atZone(WearScheduleHelper.defaultZone).toLocalDate() }
+    val tomorrow = remember(today) { today.plusDays(1) }
+    val todayLessons = remember(appointments, today) { WearScheduleHelper.lessonsForDate(appointments, today) }
+    val tomorrowLessons = remember(appointments, tomorrow) { WearScheduleHelper.lessonsForDate(appointments, tomorrow) }
+    val currentId = remember(appointments, now) {
+        WearScheduleHelper.currentOrNextLesson(appointments, now)?.takeIf { it.isCurrent }?.lesson?.id
+    }
+
+    Scaffold(
+        timeText = { TimeText() },
+        vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) },
+        positionIndicator = { PositionIndicator(scalingLazyListState = listState) },
+    ) {
+        ScalingLazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(WearBg),
+            state = listState,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            item {
+                ListHeader {
+                    Text("Vandaag", style = MaterialTheme.typography.title3, color = WearOn)
+                }
+            }
+            if (todayLessons.isEmpty()) {
+                item {
+                    Text(
+                        "Geen lessen vandaag",
+                        style = MaterialTheme.typography.caption1,
+                        color = WearMuted,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                    )
+                }
+            } else {
+                items(todayLessons, key = { "today-${it.id}" }) { lesson ->
+                    WearLessonRow(lesson = lesson, isCurrent = lesson.id == currentId)
+                }
+            }
+            if (tomorrowLessons.isNotEmpty()) {
+                item {
+                    ListHeader {
+                        Text(
+                            "Morgen · ${tomorrow.format(shortDateFmt)}",
+                            style = MaterialTheme.typography.caption1,
+                            color = WearMuted,
+                        )
+                    }
+                }
+                items(tomorrowLessons, key = { "tomorrow-${it.id}" }) { lesson ->
+                    WearLessonRow(lesson = lesson, isCurrent = false)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WearLessonRow(lesson: Appointment, isCurrent: Boolean) {
+    val start = WearScheduleHelper.formatTime(lesson.startIso)
+    val end = WearScheduleHelper.formatTime(lesson.endIso)
+    val room = lesson.classroom ?: lesson.location
+    val bg = when {
+        lesson.isCancelled -> WearErrorContainer
+        isCurrent -> Color(0xFF3A2B22)
+        else -> WearSurface
+    }
+    val subtitle = listOfNotNull(
+        "$start–$end".takeIf { start.isNotBlank() },
+        room,
+        if (lesson.isCancelled) "Uitval" else if (lesson.isChanged) "Gewijzigd" else null,
+    ).joinToString(" · ")
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(bg)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (isCurrent) WearSand else WearSurfaceHigh),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    lesson.periodFrom?.toString() ?: "–",
+                    style = MaterialTheme.typography.caption2.copy(fontWeight = FontWeight.Bold),
+                    color = if (isCurrent) WearInk else WearOn,
+                )
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    lesson.displaySubject(),
+                    style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.SemiBold),
+                    color = if (lesson.isCancelled) WearError else WearOn,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.caption3,
+                    color = if (lesson.isCancelled) WearError.copy(alpha = 0.85f) else WearMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WearGradesScreen(
+    latestGrades: List<Grade>,
+    averages: List<SubjectAverage>,
+) {
+    val listState = rememberScalingLazyListState()
+    Scaffold(
+        timeText = { TimeText() },
+        vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) },
+        positionIndicator = { PositionIndicator(scalingLazyListState = listState) },
+    ) {
+        ScalingLazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(WearBg),
+            state = listState,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            item {
+                ListHeader {
+                    Text("Laatste cijfers", style = MaterialTheme.typography.title3, color = WearOn)
+                }
+            }
+            if (latestGrades.isEmpty()) {
+                item {
+                    Text(
+                        "Nog geen cijfers",
+                        style = MaterialTheme.typography.caption1,
+                        color = WearMuted,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                    )
+                }
+            } else {
+                items(latestGrades, key = { "g-${it.id}-${it.columnId}" }) { grade ->
+                    WearGradeRow(
+                        title = grade.displaySubject(),
+                        subtitle = listOfNotNull(
+                            grade.columnHeading?.takeIf { it.isNotBlank() },
+                            GradeCalculator.formatWeight(grade.weight),
+                        ).joinToString(" · "),
+                        value = grade.numericValue,
+                        label = grade.value,
+                    )
+                }
+            }
+            if (averages.isNotEmpty()) {
+                item {
+                    ListHeader {
+                        Text("Per vak", style = MaterialTheme.typography.caption1, color = WearMuted)
+                    }
+                }
+                items(averages, key = { "avg-${it.subjectId}" }) { avg ->
+                    WearGradeRow(
+                        title = avg.displaySubject(),
+                        subtitle = if (avg.gradesCounted == 1) "1 cijfer" else "${avg.gradesCounted} cijfers",
+                        value = avg.average,
+                        label = avg.averageLabel,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WearGradeRow(
+    title: String,
+    subtitle: String,
+    value: Double?,
+    label: String?,
+) {
+    val numeric = value ?: GradeCalculator.parseDutchNumber(label)
+    val pillBg = when {
+        numeric != null && numeric < 5.5 -> WearErrorContainer
+        numeric != null && numeric >= 7.0 -> WearSageContainer
+        else -> WearSurfaceHigh
+    }
+    val pillFg = when {
+        numeric != null && numeric < 5.5 -> WearError
+        numeric != null && numeric >= 7.0 -> WearSage
+        else -> WearOn
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(WearSurface)
+            .padding(horizontal = 12.dp, vertical = 9.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.Medium),
+                    color = WearOn,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (subtitle.isNotBlank()) {
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.caption3,
+                        color = WearMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(pillBg)
+                    .padding(horizontal = 8.dp, vertical = 5.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    GradeCalculator.formatGradeValue(value, label),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = pillFg,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WearHomeworkScreen(homework: List<HomeworkItem>) {
+    val listState = rememberScalingLazyListState()
+    Scaffold(
+        timeText = { TimeText() },
+        vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) },
+        positionIndicator = { PositionIndicator(scalingLazyListState = listState) },
+    ) {
+        ScalingLazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(WearBg),
+            state = listState,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            item {
+                ListHeader {
+                    Text("Huiswerk", style = MaterialTheme.typography.title3, color = WearOn)
+                }
+            }
+            if (homework.isEmpty()) {
+                item {
+                    Text(
+                        "Alles af!",
+                        style = MaterialTheme.typography.caption1,
+                        color = WearSage,
+                        modifier = Modifier.padding(vertical = 12.dp),
+                    )
+                }
+            } else {
+                items(homework, key = { "hw-${it.id}" }) { item ->
+                    val due = WearScheduleHelper.localDateOf(item.dueIso)?.format(shortDateFmt).orEmpty()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(WearSurface)
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    item.displaySubject(),
+                                    style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.SemiBold),
+                                    color = WearOn,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                if (due.isNotBlank()) {
+                                    Text(
+                                        due,
+                                        style = MaterialTheme.typography.caption3,
+                                        color = WearSand,
+                                    )
+                                }
+                            }
+                            val body = item.description?.takeIf { it.isNotBlank() } ?: item.title
+                            Text(
+                                body,
+                                style = MaterialTheme.typography.caption2,
+                                color = WearMuted,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+            }
+            item { Spacer(Modifier.height(12.dp)) }
+        }
+    }
+}
+
+@Composable
+private fun WearNavChip(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    secondaryLabel: String? = null,
+    subtle: Boolean = false,
+) {
+    Chip(
+        onClick = onClick,
+        label = {
+            Text(
+                label,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        secondaryLabel = secondaryLabel?.let {
+            {
+                Text(
+                    it,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = WearMuted,
+                )
+            }
+        },
+        icon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (subtle) WearMuted else WearSand,
+            )
+        },
+        colors = ChipDefaults.secondaryChipColors(
+            backgroundColor = if (subtle) WearSurface else WearSurfaceHigh,
+            contentColor = WearOn,
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    )
+}

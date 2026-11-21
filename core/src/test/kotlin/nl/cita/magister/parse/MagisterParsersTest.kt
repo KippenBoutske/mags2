@@ -73,7 +73,7 @@ class MagisterParsersTest {
         val latest = nl.cita.magister.grades.GradeCalculator.latestEarnedGrades(parsed)
         assertEquals(listOf("5,3", "7,6", "6,8"), latest.map { it.value })
         assertEquals(listOf("PW2", "Writing", "Literatuur"), latest.map { it.columnHeading })
-        assertEquals(listOf("Wiskunde B", "Engels", "Nederlands"), latest.map { it.subjectName })
+        assertEquals(listOf("Wiskunde", "Engels", "Nederlands"), latest.map { it.subjectName })
         assertEquals(3.0, latest.first().weight!!, 0.0001)
         assertEquals("2025-10-10T10:00:00.0000000Z", latest.first().enteredAt)
     }
@@ -166,5 +166,18 @@ class MagisterParsersTest {
         val url = "m6loapp://oauth2redirect/#code=abc%2Fdef&id_token=xyz&state=s"
         assertEquals("abc/def", AuthRequestFactory.extractCode(url))
         assertEquals("access_denied: user", AuthRequestFactory.extractError("m6loapp://oauth2redirect/?error=access_denied&error_description=user"))
+    }
+
+    @Test
+    fun applyColumnInfoKeepsGradeTypeWhenKolomSoortMissing() {
+        val recent = MagisterParsers.parseRecentGrades(MockFixtures.recentGradesJson)
+        val pw2 = recent.first { it.columnId == 32 }
+        val infoWithoutType = MagisterParsers.parseColumnInfo(
+            """{"KolomKop":"PW2","KolomOmschrijving":"Proefwerk 2","Weging":3.0}""",
+        )
+        val enriched = MagisterParsers.applyColumnInfo(listOf(pw2), mapOf(32 to infoWithoutType)).single()
+        assertEquals(nl.cita.magister.model.GradeColumnType.Grade, enriched.columnType)
+        assertTrue(enriched.counts)
+        assertEquals(3.0, enriched.weight!!, 0.0001)
     }
 }

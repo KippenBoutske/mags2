@@ -70,7 +70,7 @@ object LiveLessonScheduler {
 
     private fun schedule(context: Context, at: Instant) {
         val am = context.getSystemService(AlarmManager::class.java) ?: return
-        val millis = at.toEpochMilli().coerceAtLeast(System.currentTimeMillis() + 5_000L)
+        val millis = at.toEpochMilli().coerceAtLeast(System.currentTimeMillis() + 1_000L)
         val pi = alarmIntent(context)
         if (Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms()) {
             am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi)

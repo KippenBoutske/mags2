@@ -475,8 +475,9 @@ private fun DayTimeline(
                 )
             }
         }
+        val nowLabel = now.format(DateTimeFormatter.ofPattern("HH:mm"))
         if (isToday && nowLineBefore(slots, now)) {
-            item { NowLine() }
+            item { NowLine(time = nowLabel) }
         }
         itemsIndexed(slots, key = { _, slot -> slotKey(slot) }) { index, slot ->
             when (slot) {
@@ -484,7 +485,7 @@ private fun DayTimeline(
                     Box(Modifier.staggerEnter(index, key = slotKey(slot))) {
                         if (slot.kind == GapKind.FreePeriod) GapRow(slot) else BreakMark()
                         if (isToday && nowInsideGap(slot, now)) {
-                            NowLine(Modifier.align(Alignment.Center))
+                            NowLine(Modifier.align(Alignment.Center), time = nowLabel)
                         }
                     }
                 }
@@ -501,7 +502,7 @@ private fun DayTimeline(
             }
         }
         if (isToday && nowLineAfter(slots, now)) {
-            item { NowLine() }
+            item { NowLine(time = nowLabel) }
         }
     }
 }
@@ -529,7 +530,13 @@ private fun NowLine(modifier: Modifier = Modifier, time: String = "") {
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary),
         )
-        Text("nu $time", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+        Text(
+            if (time.isBlank()) "nu" else "nu · $time",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+            softWrap = false,
+        )
     }
 }
 
@@ -594,11 +601,26 @@ private fun LessonCard(
     modifier: Modifier = Modifier,
 ) {
     val dimmed = item.isCancelled
+    val active = current && !dimmed
+    val titleColor = when {
+        dimmed -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f)
+        active -> MaterialTheme.colorScheme.onPrimaryContainer
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+    val metaColor = when {
+        active -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.78f)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val periodBg = if (active) {
+        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.14f)
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHighest
+    }
     PressScaleCard(
         colors = CardDefaults.cardColors(
             when {
                 dimmed -> MaterialTheme.colorScheme.surfaceContainerLow
-                current -> MaterialTheme.colorScheme.primaryContainer
+                active -> MaterialTheme.colorScheme.primaryContainer
                 else -> MaterialTheme.colorScheme.surfaceContainerHigh
             },
         ),
@@ -607,79 +629,92 @@ private fun LessonCard(
             .testTag(if (current) "les-kaart-nu" else "les-kaart"),
         onClick = onClick,
     ) {
-        Box {
-            if (current && !dimmed) {
-                CurrentLessonBadge(
-                    modifier = Modifier.align(Alignment.TopEnd).padding(14.dp),
-                    startTime = formatTime(item.startIso),
-                )
-            }
-            Column(Modifier.padding(if (current) 18.dp else 14.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(
-                        Modifier
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
-                    ) {
-                        Text(item.periodFrom?.toString() ?: "–", style = MaterialTheme.typography.titleMedium)
-                    }
-                    Column(
-                        Modifier
-                            .weight(1f)
-                            .padding(end = if (current && !dimmed) 94.dp else 0.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+        Column(Modifier.padding(if (active) 16.dp else 14.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
+                Box(
+                    Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(periodBg),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        item.periodFrom?.toString() ?: "–",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = titleColor,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                }
+                Column(
+                    Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             item.displaySubject(),
-                            style = if (current) MaterialTheme.typography.headlineSmall
+                            style = if (active) MaterialTheme.typography.headlineSmall
                             else MaterialTheme.typography.titleLarge,
-                            color = if (dimmed) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f)
-                            else MaterialTheme.colorScheme.onSurface,
+                            color = titleColor,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
                         )
-                        if (item.isCancelled || item.isChanged) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                if (item.isCancelled) {
-                                    LessonBadge(
-                                        text = "Uitval",
-                                        container = MaterialTheme.colorScheme.errorContainer,
-                                        content = MaterialTheme.colorScheme.onErrorContainer,
-                                    )
-                                } else if (item.isChanged) {
-                                    LessonBadge(
-                                        text = "Gewijzigd",
-                                        container = MaterialTheme.colorScheme.tertiaryContainer,
-                                        content = MaterialTheme.colorScheme.onTertiaryContainer,
-                                    )
-                                }
-                            }
-                        }
-                        val meta = listOfNotNull(
-                            item.teacherCode(),
-                            item.classroom ?: item.location,
-                            listOfNotNull(formatTime(item.startIso), formatTime(item.endIso))
-                                .filter { it.isNotBlank() }
-                                .joinToString("–")
-                                .takeIf { it.isNotBlank() },
-                        ).joinToString("  ·  ")
-                        if (meta.isNotBlank()) {
-                            Text(
-                                meta,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        if (active) {
+                            CurrentLessonBadge(
+                                startTime = formatTime(item.startIso),
                             )
                         }
-                        if (current && !dimmed) {
-                            item.content?.takeIf { it.isNotBlank() }?.let { body ->
-                                Text(
-                                    body,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    maxLines = 2,
-                                    modifier = Modifier.padding(top = 6.dp),
+                    }
+                    if (item.isCancelled || item.isChanged) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            if (item.isCancelled) {
+                                LessonBadge(
+                                    text = "Uitval",
+                                    container = MaterialTheme.colorScheme.errorContainer,
+                                    content = MaterialTheme.colorScheme.onErrorContainer,
+                                )
+                            } else if (item.isChanged) {
+                                LessonBadge(
+                                    text = "Gewijzigd",
+                                    container = MaterialTheme.colorScheme.tertiaryContainer,
+                                    content = MaterialTheme.colorScheme.onTertiaryContainer,
                                 )
                             }
+                        }
+                    }
+                    val meta = listOfNotNull(
+                        item.teacherCode(),
+                        item.classroom ?: item.location,
+                        listOfNotNull(formatTime(item.startIso), formatTime(item.endIso))
+                            .filter { it.isNotBlank() }
+                            .joinToString("–")
+                            .takeIf { it.isNotBlank() },
+                    ).joinToString("  ·  ")
+                    if (meta.isNotBlank()) {
+                        Text(
+                            meta,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = metaColor,
+                        )
+                    }
+                    if (active) {
+                        item.content?.takeIf { it.isNotBlank() }?.let { body ->
+                            Text(
+                                body,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = titleColor,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
                         }
                     }
                 }
@@ -689,18 +724,29 @@ private fun LessonCard(
 }
 
 @Composable
-private fun CurrentLessonBadge(modifier: Modifier, startTime: String) {
+private fun CurrentLessonBadge(startTime: String, modifier: Modifier = Modifier) {
     Row(
         modifier
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f))
-            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.14f))
+            .padding(horizontal = 10.dp, vertical = 5.dp)
             .testTag("les-nu-vorm"),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(7.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
-        Text("NU · $startTime", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+        Box(
+            Modifier
+                .size(7.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.onPrimaryContainer),
+        )
+        Text(
+            if (startTime.isBlank()) "NU" else "NU · $startTime",
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            maxLines = 1,
+            softWrap = false,
+        )
     }
 }
 
