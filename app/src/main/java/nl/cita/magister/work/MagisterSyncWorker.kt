@@ -36,8 +36,7 @@ class MagisterSyncWorker(
             MagsNotifier.schedule(applicationContext, ChangeDetector.scheduleDiff(prefs.seenAppointmentKeys(), lessons))
         }
         prefs.rememberSnapshot(gradeIds, lessonKeys)
-        NextLessonStore.write(applicationContext, NextLesson.pick(lessons))
-        NextLessonWidgetReceiver.updateAll(applicationContext)
+        nl.cita.magister.widget.MagsWidgetUpdater.sync(applicationContext)
         nl.cita.magister.live.LiveLessonScheduler.sync(applicationContext)
         nl.cita.magister.wear.WearSyncPublisher.syncAsync(applicationContext)
         return Result.success()

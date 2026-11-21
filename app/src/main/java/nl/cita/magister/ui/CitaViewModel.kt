@@ -52,7 +52,7 @@ class CitaViewModel(
     val tenantId = container.prefs.tenantId.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     val webhookUrl = container.prefs.webhookUrl.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     val demoMode = container.prefs.demoMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
-    val dynamicColor = container.prefs.dynamicColor.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    val dynamicColor = container.prefs.dynamicColor.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     val notifications = container.prefs.notifications.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     val liveUpdate = container.prefs.liveUpdate.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     val haptics = container.prefs.haptics.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
@@ -150,6 +150,7 @@ class CitaViewModel(
                             _offline.value = true
                         }
                     nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
+                    nl.cita.magister.widget.MagsWidgetUpdater.syncAsync(getApplication())
                 }
             }
         }
@@ -272,6 +273,7 @@ class CitaViewModel(
                     }
                 nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
                 nl.cita.magister.wear.WearSyncPublisher.syncAsync(getApplication())
+            nl.cita.magister.widget.MagsWidgetUpdater.syncAsync(getApplication())
             }.onFailure { err ->
                 _booting.value = false
                 rememberFailure(err)
@@ -295,6 +297,7 @@ class CitaViewModel(
             _snackbar.emit(if (offline) "Offline · cache." else "Voorbeeld.")
             nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
             nl.cita.magister.wear.WearSyncPublisher.syncAsync(getApplication())
+            nl.cita.magister.widget.MagsWidgetUpdater.syncAsync(getApplication())
         }
     }
 
@@ -325,6 +328,7 @@ class CitaViewModel(
                     _hapticPulse.tryEmit(HapticEvent.RefreshDone)
                     nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
                     nl.cita.magister.wear.WearSyncPublisher.syncAsync(getApplication())
+            nl.cita.magister.widget.MagsWidgetUpdater.syncAsync(getApplication())
                 }
                 .onFailure { error ->
                     rememberFailure(error)
@@ -351,6 +355,7 @@ class CitaViewModel(
         viewModelScope.launch {
             repo.markHomeworkDone(item, done)
             nl.cita.magister.wear.WearSyncPublisher.syncAsync(getApplication())
+            nl.cita.magister.widget.MagsWidgetUpdater.syncAsync(getApplication())
         }
     }
 

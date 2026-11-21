@@ -290,7 +290,7 @@ fun MagsSignedInScaffold(
     onLogout: () -> Unit,
     initialPage: MagsPage = MagsPage.Vandaag,
     sectionErrors: SectionErrors = SectionErrors(),
-    dynamicColor: Boolean = false,
+    dynamicColor: Boolean = true,
     onDynamicColor: (Boolean) -> Unit = {},
     notifications: Boolean = true,
     onNotifications: (Boolean) -> Unit = {},

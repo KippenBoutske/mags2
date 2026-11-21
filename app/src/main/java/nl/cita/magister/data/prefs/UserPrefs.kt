@@ -30,7 +30,7 @@ class UserPrefs(context: Context) {
     private val _webhookUrl = MutableStateFlow(prefs.getString(KEY_WEBHOOK_URL, null).orEmpty())
     val webhookUrl: Flow<String> = _webhookUrl.asStateFlow()
 
-    private val _dynamicColor = MutableStateFlow(prefs.getBoolean(KEY_DYNAMIC, false))
+    private val _dynamicColor = MutableStateFlow(prefs.getBoolean(KEY_DYNAMIC, true))
     val dynamicColor: Flow<Boolean> = _dynamicColor.asStateFlow()
 
     private val _notifications = MutableStateFlow(prefs.getBoolean(KEY_NOTIFY, true))

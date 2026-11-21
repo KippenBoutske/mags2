@@ -205,7 +205,7 @@ private val WarmTypography = Typography(
 @Composable
 fun CitaTheme(
     safeMode: Boolean = false,
-    dynamicColor: Boolean = false,
+    dynamicColor: Boolean = true,
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {

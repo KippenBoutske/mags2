@@ -191,10 +191,10 @@ fun MagsWelcomeTour(
                     0 -> WelcomeSlide(firstName = firstName)
                     1 -> LiveScheduleSlide()
                     2 -> GradesCalculatorSlide()
-                    else -> HapticsFeelSlide(
-                        onTryHaptic = {
+                    else -> HomeworkMessagesSlide(
+                        onCheckDemo = {
                             confettiTick += 1
-                            haptics.play(HapticEvent.GradeCelebrate)
+                            haptics.play(HapticEvent.HomeworkDone)
                         },
                     )
                 }
@@ -352,7 +352,7 @@ private fun WelcomeSlide(firstName: String?) {
         Spacer(Modifier.height(14.dp))
 
         Text(
-            text = "Jouw rooster, cijfers en huiswerk in één supervloeiende Material You-app.",
+            text = "Al je schoolzaken op één plek: je rooster, cijfers, huiswerk en berichten.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -421,7 +421,7 @@ private fun LiveScheduleSlide() {
                             tint = MaterialTheme.colorScheme.primary,
                         )
                         Text(
-                            "Live op telefoon & Wear OS",
+                            "Live melding, widgets & Wear OS",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
@@ -433,14 +433,14 @@ private fun LiveScheduleSlide() {
         Spacer(Modifier.height(32.dp))
 
         Text(
-            "Altijd live bij",
+            "Altijd je rooster bij de hand",
             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(10.dp))
         Text(
-            "Zie direct in welk lokaal je moet zijn en hoeveel minuten je les nog duurt — ook als live melding en op je smartwatch.",
+            "Zie meteen welke les je nu hebt, in welk lokaal je moet zijn en wanneer er iets uitvalt of wijzigt — ook op je startscherm en horloge.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -509,7 +509,7 @@ private fun GradesCalculatorSlide() {
         )
         Spacer(Modifier.height(10.dp))
         Text(
-            "Bekijk al je cijfers per vak en reken met de schuifbalk meteen uit wat je op je volgende toets moet halen.",
+            "Bekijk je laatste cijfers en gemiddelden per vak, en reken met de schuifbalk meteen uit wat je op je volgende toets moet halen.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -519,8 +519,8 @@ private fun GradesCalculatorSlide() {
 }
 
 @Composable
-private fun HapticsFeelSlide(onTryHaptic: () -> Unit) {
-    var tapped by remember { mutableStateOf(false) }
+private fun HomeworkMessagesSlide(onCheckDemo: () -> Unit) {
+    var checked by remember { mutableStateOf(false) }
     val pulse = remember { Animatable(1f) }
     val scope = rememberCoroutineScope()
 
@@ -530,55 +530,74 @@ private fun HapticsFeelSlide(onTryHaptic: () -> Unit) {
         verticalArrangement = Arrangement.Center,
     ) {
         Surface(
-            shape = ExpressiveScallopShape(lobes = 12, depth = 0.09f),
-            color = if (tapped) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.secondaryContainer,
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
             modifier = Modifier
-                .size(138.dp)
+                .fillMaxWidth()
                 .graphicsLayer {
                     scaleX = pulse.value
                     scaleY = pulse.value
                 }
-                .clip(ExpressiveScallopShape(lobes = 12, depth = 0.09f))
+                .clip(RoundedCornerShape(28.dp))
                 .clickable {
-                    tapped = !tapped
-                    onTryHaptic()
+                    checked = !checked
+                    if (checked) onCheckDemo()
                     scope.launch {
-                        pulse.snapTo(0.86f)
-                        pulse.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = Spring.StiffnessMedium))
+                        pulse.snapTo(0.95f)
+                        pulse.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMedium))
                     }
                 },
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(16.dp),
+            Row(
+                modifier = Modifier.padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.TouchApp,
-                    contentDescription = null,
-                    modifier = Modifier.size(38.dp),
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    if (tapped) "Lekker!" else "Tik eens!",
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (checked) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.surfaceContainerHighest,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (checked) {
+                        Icon(
+                            imageVector = Icons.Outlined.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(
+                        "Nederlands",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        if (checked) "Afgevinkt — klaar voor morgen!" else "Tik om dit voorbeeld-huiswerk af te vinken",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
 
         Spacer(Modifier.height(32.dp))
 
         Text(
-            "Gemaakt om te voelen",
+            "Huiswerk, toetsen & berichten",
             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(10.dp))
         Text(
-            "Swipe huiswerk af, voel het ratelende scrollwiel door je lijsten en laat Mags meekleuren met Material You.",
+            "Vink afgerond huiswerk af met een swipe, houd aankomende toetsen bij en lees je Magister-berichten direct in de app.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

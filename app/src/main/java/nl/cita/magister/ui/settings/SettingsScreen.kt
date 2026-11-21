@@ -92,7 +92,7 @@ fun SettingsScreen(
     onExport: () -> Unit,
     onShareJson: () -> Unit,
     onLogout: () -> Unit,
-    dynamicColor: Boolean = false,
+    dynamicColor: Boolean = true,
     onDynamicColor: (Boolean) -> Unit = {},
     notifications: Boolean = true,
     onNotifications: (Boolean) -> Unit = {},
