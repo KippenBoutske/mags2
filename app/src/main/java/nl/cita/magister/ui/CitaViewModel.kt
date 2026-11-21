@@ -147,7 +147,7 @@ class CitaViewModel(
     }
 
     fun syncSignedInState() {
-        if (!_signedIn.value && (repo.isLoggedIn() || repo.isDemo())) {
+        if (!_signedIn.value && (repo.isLoggedIn() || demoMode.value)) {
             _signedIn.value = true
             _booting.value = false
         }
