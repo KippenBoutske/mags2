@@ -547,17 +547,17 @@ private fun GapRow(slot: DaySlot.Gap) {
     Row(
         Modifier
             .fillMaxWidth()
-            .height(36.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .padding(horizontal = 14.dp)
+            .height(42.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.55f))
+            .padding(horizontal = 16.dp)
             .testTag("tussenuur"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("Tussenuur", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("Tussenuur", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onTertiaryContainer)
         Spacer(Modifier.weight(1f))
-        Text("$from–$to", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("$from–$to", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f))
     }
 }
 
@@ -608,15 +608,27 @@ private fun LessonCard(
         else -> MaterialTheme.colorScheme.onSurface
     }
     val metaColor = when {
-        active -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.78f)
+        active -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
-    val periodBg = if (active) {
-        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.14f)
+    val periodBg = when {
+        active -> MaterialTheme.colorScheme.primary
+        dimmed -> MaterialTheme.colorScheme.errorContainer
+        else -> MaterialTheme.colorScheme.secondaryContainer
+    }
+    val periodFg = when {
+        active -> MaterialTheme.colorScheme.onPrimary
+        dimmed -> MaterialTheme.colorScheme.onErrorContainer
+        else -> MaterialTheme.colorScheme.onSecondaryContainer
+    }
+    val periodShape = if (active) {
+        nl.cita.magister.ui.components.ExpressiveScallopShape(lobes = 8, depth = 0.1f)
     } else {
-        MaterialTheme.colorScheme.surfaceContainerHighest
+        RoundedCornerShape(16.dp)
     }
     PressScaleCard(
+        cornerRadius = if (active) 36.dp else 28.dp,
+        pressedCornerRadius = 18.dp,
         colors = CardDefaults.cardColors(
             when {
                 dimmed -> MaterialTheme.colorScheme.surfaceContainerLow
@@ -629,29 +641,29 @@ private fun LessonCard(
             .testTag(if (current) "les-kaart-nu" else "les-kaart"),
         onClick = onClick,
     ) {
-        Column(Modifier.padding(if (active) 16.dp else 14.dp)) {
+        Column(Modifier.padding(if (active) 18.dp else 16.dp)) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.Top,
             ) {
                 Box(
                     Modifier
-                        .size(38.dp)
-                        .clip(RoundedCornerShape(14.dp))
+                        .size(if (active) 46.dp else 42.dp)
+                        .clip(periodShape)
                         .background(periodBg),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         item.periodFrom?.toString() ?: "–",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = titleColor,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                        color = periodFg,
                         maxLines = 1,
                         softWrap = false,
                     )
                 }
                 Column(
                     Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),

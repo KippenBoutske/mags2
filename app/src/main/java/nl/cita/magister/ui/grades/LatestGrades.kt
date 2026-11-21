@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +23,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import nl.cita.magister.grades.GradeCalculator
 import nl.cita.magister.haptics.hapticForGrade
 import nl.cita.magister.haptics.hapticOnDown
@@ -47,24 +49,25 @@ internal fun GradeValuePill(
     val container = when {
         numeric != null && numeric < 5.5 -> MaterialTheme.colorScheme.errorContainer
         numeric != null && numeric >= 7.0 -> MaterialTheme.colorScheme.tertiaryContainer
-        else -> MaterialTheme.colorScheme.surfaceContainerHighest
+        else -> MaterialTheme.colorScheme.secondaryContainer
     }
     val content = when {
         numeric != null && numeric < 5.5 -> MaterialTheme.colorScheme.onErrorContainer
         numeric != null && numeric >= 7.0 -> MaterialTheme.colorScheme.onTertiaryContainer
-        else -> MaterialTheme.colorScheme.onSurface
+        else -> MaterialTheme.colorScheme.onSecondaryContainer
     }
     Box(
         modifier = modifier
-            .defaultMinSize(minWidth = 52.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .defaultMinSize(minWidth = 56.dp, minHeight = 42.dp)
+            .clip(RoundedCornerShape(18.dp))
             .background(container)
-            .padding(horizontal = 10.dp, vertical = 7.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = formatGrade(value, label),
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            fontSize = 17.sp,
+            fontWeight = FontWeight.ExtraBold,
             color = content,
             maxLines = 1,
             softWrap = false,
@@ -91,21 +94,21 @@ fun LatestGradesStrip(
         modifier = modifier
             .fillMaxWidth()
             .testTag("laatste-cijfers"),
-        shape = MaterialTheme.shapes.large,
+        shape = RoundedCornerShape(32.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
+                .padding(vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp),
         ) {
             grades.forEachIndexed { index, grade ->
                 val day = localDateOf(grade.enteredAt)?.let { formatDayShort(it) }
                 if (index > 0) {
                     HorizontalDivider(
-                        modifier = Modifier.padding(start = 78.dp, end = 16.dp),
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
+                        modifier = Modifier.padding(start = 84.dp, end = 16.dp),
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
                     )
                 }
                 Row(
@@ -114,15 +117,15 @@ fun LatestGradesStrip(
                         .testTag("laatste-cijfer")
                         .hapticOnDown(hapticForGrade(grade.isSufficient))
                         .clickable { onOpen(grade) }
-                        .padding(horizontal = 14.dp, vertical = 11.dp),
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
                     GradeValuePill(
                         value = grade.numericValue,
                         label = grade.value,
                     )
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text(
                             grade.displaySubject(),
                             style = MaterialTheme.typography.titleMedium,
@@ -141,13 +144,20 @@ fun LatestGradesStrip(
                         }
                     }
                     if (!day.isNullOrBlank()) {
-                        Text(
-                            day,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            softWrap = false,
-                        )
+                        Box(
+                            Modifier
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                                .padding(horizontal = 9.dp, vertical = 4.dp),
+                        ) {
+                            Text(
+                                day,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                softWrap = false,
+                            )
+                        }
                     }
                 }
             }

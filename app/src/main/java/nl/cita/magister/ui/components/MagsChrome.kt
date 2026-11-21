@@ -46,11 +46,42 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.ui.today.subjectChipLabel
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+
+/** Material 3 Expressive scalloped flower/cookie shape usable with Modifier.clip / Surface. */
+class ExpressiveScallopShape(
+    private val lobes: Int = 10,
+    private val depth: Float = 0.12f,
+) : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+        val radius = size.minDimension / 2f
+        val center = Offset(size.width / 2f, size.height / 2f)
+        val path = Path()
+        val steps = lobes * 18
+        for (i in 0..steps) {
+            val t = i / steps.toFloat() * 2f * PI.toFloat()
+            val wobble = depth * cos(lobes * t)
+            val r = radius * (1f - depth + wobble)
+            val x = center.x + r * cos(t)
+            val y = center.y + r * sin(t)
+            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        path.close()
+        return Outline.Generic(path)
+    }
+}
+
+/** Material 3 Expressive soft 4-lobe clover squircle shape. */
+val ExpressiveCloverShape: Shape = ExpressiveScallopShape(lobes = 4, depth = 0.08f)
 
 @Composable
 fun PageTitle(
@@ -58,14 +89,27 @@ fun PageTitle(
     subtitle: String?,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(title, style = MaterialTheme.typography.displayMedium)
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            title,
+            style = MaterialTheme.typography.displayMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
         if (!subtitle.isNullOrBlank()) {
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Box(
+                Modifier
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .padding(horizontal = 12.dp, vertical = 5.dp),
+            ) {
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

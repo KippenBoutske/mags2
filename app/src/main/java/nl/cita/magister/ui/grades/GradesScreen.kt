@@ -48,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -68,6 +69,7 @@ import nl.cita.magister.model.StudentProfile
 import nl.cita.magister.model.SubjectAverage
 import nl.cita.magister.subject.displaySubject
 import nl.cita.magister.ui.components.EmptyState
+import nl.cita.magister.ui.components.ExpressiveScallopShape
 import nl.cita.magister.ui.components.ListSkeleton
 import nl.cita.magister.ui.components.PageTitle
 import nl.cita.magister.ui.components.SectionError
@@ -189,6 +191,17 @@ fun GradesScreen(
                         )
                     }
                     if (filter == GradeFilter.All) {
+                        val validAverages = currentYearAverages.mapNotNull { it.average }
+                        if (validAverages.isNotEmpty()) {
+                            item {
+                                GradesOverviewHero(
+                                    overallAverage = validAverages.average(),
+                                    passingCount = validAverages.count { it >= 5.5 },
+                                    weakCount = validAverages.count { it < 5.5 },
+                                    totalSubjects = validAverages.size,
+                                )
+                            }
+                        }
                         item {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -269,6 +282,61 @@ fun GradesScreen(
 }
 
 @Composable
+private fun GradesOverviewHero(
+    overallAverage: Double,
+    passingCount: Int,
+    weakCount: Int,
+    totalSubjects: Int,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(36.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(84.dp)
+                    .clip(ExpressiveScallopShape(lobes = 10, depth = 0.09f))
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    formatGrade(overallAverage),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    "SCHOOLJAAR GEMIDDELDE",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                )
+                Text(
+                    "$passingCount van $totalSubjects voldoende",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                if (weakCount > 0) {
+                    Text(
+                        "$weakCount vak${if (weakCount == 1) "" else "ken"} onder 5,5",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun SubjectCard(
     subject: SubjectAverage,
     grades: List<Grade>,
@@ -282,10 +350,15 @@ private fun SubjectCard(
         label = "grade",
     )
     val fail = isFailing(avg)
-    val numberColor = when {
-        fail -> MaterialTheme.colorScheme.error
-        avg != null && avg >= 7.0 -> MaterialTheme.colorScheme.tertiary
-        else -> MaterialTheme.colorScheme.onSurface
+    val badgeBg = when {
+        fail -> MaterialTheme.colorScheme.errorContainer
+        avg != null && avg >= 7.0 -> MaterialTheme.colorScheme.tertiaryContainer
+        else -> MaterialTheme.colorScheme.secondaryContainer
+    }
+    val badgeFg = when {
+        fail -> MaterialTheme.colorScheme.onErrorContainer
+        avg != null && avg >= 7.0 -> MaterialTheme.colorScheme.onTertiaryContainer
+        else -> MaterialTheme.colorScheme.onSecondaryContainer
     }
     val recent = remember(grades) { GradeCalculator.latestEarnedGrades(grades, limit = 4) }
     val countLabel = when (subject.gradesCounted) {
@@ -295,11 +368,13 @@ private fun SubjectCard(
     }
     PressScaleCard(
         modifier = modifier.fillMaxWidth().testTag("cijfers-vak"),
+        cornerRadius = 30.dp,
+        pressedCornerRadius = 18.dp,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         onClick = onOpen,
         haptic = HapticEvent.GradeOpen,
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -307,7 +382,7 @@ private fun SubjectCard(
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
                         subject.displaySubject(),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -319,18 +394,26 @@ private fun SubjectCard(
                         )
                     }
                 }
-                Text(
-                    if (avg == null) "–" else formatGrade(animated.toDouble(), subject.averageLabel),
-                    style = MaterialTheme.typography.displaySmall,
-                    color = numberColor,
-                    modifier = Modifier.testTag("cijfers-gemiddelde"),
-                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(badgeBg)
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        if (avg == null) "–" else formatGrade(animated.toDouble(), subject.averageLabel),
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = badgeFg,
+                        modifier = Modifier.testTag("cijfers-gemiddelde"),
+                    )
+                }
             }
             if (avg != null) {
                 AverageBar(average = avg.toFloat(), modifier = Modifier.fillMaxWidth().testTag("cijfers-balk"))
             }
             if (recent.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     recent.forEach { grade ->
                         val gradeFail = isFailing(grade.numericValue ?: GradeCalculator.parseDutchNumber(grade.value))
                         val weightBit = GradeCalculator.formatWeight(grade.weight)?.let { " · $it" }.orEmpty()
@@ -349,7 +432,7 @@ private fun SubjectCard(
                             )
                             Text(
                                 "${formatGrade(grade.numericValue, grade.value)}$weightBit",
-                                style = MaterialTheme.typography.labelMedium,
+                                style = MaterialTheme.typography.labelLarge,
                                 color = if (gradeFail) MaterialTheme.colorScheme.error
                                 else MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
@@ -370,9 +453,9 @@ internal fun AverageBar(average: Float, modifier: Modifier = Modifier) {
         average >= 7.0f -> MaterialTheme.colorScheme.tertiary
         else -> MaterialTheme.colorScheme.primary
     }
-    val track = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
-    val marker = MaterialTheme.colorScheme.error.copy(alpha = 0.75f)
-    Canvas(modifier.height(10.dp)) {
+    val track = MaterialTheme.colorScheme.outline.copy(alpha = 0.22f)
+    val marker = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+    Canvas(modifier.height(14.dp)) {
         val h = size.height
         val radius = CornerRadius(h / 2f, h / 2f)
         drawRoundRect(track, size = size, cornerRadius = radius)
@@ -381,7 +464,7 @@ internal fun AverageBar(average: Float, modifier: Modifier = Modifier) {
             drawRoundRect(fill, size = Size(width, h), cornerRadius = radius)
         }
         val x = size.width * 0.55f
-        drawLine(marker, Offset(x, -2f), Offset(x, h + 2f), strokeWidth = 2.5f, cap = StrokeCap.Round)
+        drawLine(marker, Offset(x, -2f), Offset(x, h + 2f), strokeWidth = 3f, cap = StrokeCap.Round)
     }
 }
 
