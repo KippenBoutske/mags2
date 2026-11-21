@@ -553,7 +553,7 @@ private fun SubjectPage(
                     .testTag("cijfers-cijfer"),
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
                 onClick = { onGrade(grade) },
-                haptic = hapticForGrade(grade.isSufficient),
+                haptic = hapticForGrade(grade.isSufficient, grade.numericValue ?: GradeCalculator.parseDutchNumber(grade.value)),
             ) {
                 Row(
                     Modifier.padding(14.dp),

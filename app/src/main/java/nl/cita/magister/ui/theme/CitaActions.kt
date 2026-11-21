@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import nl.cita.magister.haptics.HapticEvent
+import nl.cita.magister.haptics.hapticOnDown
 
 data class CitaAction(val label: String, val selected: Boolean = false, val onClick: () -> Unit)
 
@@ -89,6 +91,7 @@ fun CitaActionRow(
                         }
                         .clip(RoundedCornerShape(radius))
                         .background(bg)
+                        .hapticOnDown(HapticEvent.FilterSelect, enabled = !action.selected)
                         .clickable(
                             interactionSource = interaction,
                             indication = null,

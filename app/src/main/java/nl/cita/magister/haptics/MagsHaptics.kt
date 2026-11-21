@@ -15,11 +15,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToDown
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import nl.cita.magister.BuildConfig
 
 interface MagsHaptics {
@@ -115,7 +117,7 @@ class AndroidMagsHaptics(
         if (Build.VERSION.SDK_INT < 30 || !hasVibrator) return null
         val composer = VibrationEffect.startComposition()
         play.steps.forEach { step ->
-            composer.addPrimitive(step.id, step.scale, 0)
+            composer.addPrimitive(step.id, step.scale, step.delayMs)
         }
         return composer.compose()
     }
@@ -168,6 +170,56 @@ fun Modifier.hapticOnDown(event: HapticEvent, enabled: Boolean = true): Modifier
             }
         }
     }
+}
+
+/**
+ * Mechanical scroll-wheel ratchet ("ratelen") on scroll + soft edge thud when hitting top/bottom.
+ */
+fun Modifier.hapticScrollRatchet(
+    stepDp: Float = 44f,
+    minIntervalMs: Long = 28L,
+    includeEdgeBump: Boolean = true,
+): Modifier = composed {
+    val haptics = LocalMagsHaptics.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val stepPx = with(density) { stepDp.dp.toPx() }.coerceAtLeast(16f)
+    val connection = remember(haptics, stepPx, minIntervalMs, includeEdgeBump) {
+        object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+            private var accumulated = 0f
+            private var lastTickMs = 0L
+            private var edgeArmed = true
+
+            override fun onPostScroll(
+                consumed: androidx.compose.ui.geometry.Offset,
+                available: androidx.compose.ui.geometry.Offset,
+                source: androidx.compose.ui.input.nestedscroll.NestedScrollSource,
+            ): androidx.compose.ui.geometry.Offset {
+                val delta = kotlin.math.abs(consumed.y) + kotlin.math.abs(consumed.x)
+                val now = android.os.SystemClock.uptimeMillis()
+                if (delta > 0.5f) {
+                    edgeArmed = true
+                    accumulated += delta
+                    if (accumulated >= stepPx) {
+                        accumulated %= stepPx
+                        if (now - lastTickMs >= minIntervalMs) {
+                            lastTickMs = now
+                            haptics.play(HapticEvent.ScrollTick)
+                        }
+                    }
+                } else if (includeEdgeBump && edgeArmed &&
+                    (kotlin.math.abs(available.y) > 24f || kotlin.math.abs(available.x) > 24f)
+                ) {
+                    edgeArmed = false
+                    if (now - lastTickMs >= 90L) {
+                        lastTickMs = now
+                        haptics.play(HapticEvent.EdgeBump)
+                    }
+                }
+                return androidx.compose.ui.geometry.Offset.Zero
+            }
+        }
+    }
+    nestedScroll(connection)
 }
 
 internal fun vibratorOf(context: Context): Vibrator? =

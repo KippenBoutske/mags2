@@ -15,11 +15,17 @@ enum class HapticEvent {
     RefreshDone,
     RefreshError,
     GradeOpen,
+    GradeCelebrate,
     GradeFail,
     CalculatorStep,
     LongPress,
     LoginSuccess,
     LoginError,
+    ScrollTick,
+    EdgeBump,
+    CardPress,
+    FilterSelect,
+    SheetOpen,
 }
 
 enum class HapticStrength(val id: String, val label: String, val scale: Float) {
@@ -34,5 +40,8 @@ enum class HapticStrength(val id: String, val label: String, val scale: Float) {
     }
 }
 
-fun hapticForGrade(sufficient: Boolean): HapticEvent =
-    if (sufficient) HapticEvent.GradeOpen else HapticEvent.GradeFail
+fun hapticForGrade(sufficient: Boolean, numericValue: Double? = null): HapticEvent = when {
+    numericValue != null && numericValue >= 7.5 -> HapticEvent.GradeCelebrate
+    sufficient -> HapticEvent.GradeOpen
+    else -> HapticEvent.GradeFail
+}

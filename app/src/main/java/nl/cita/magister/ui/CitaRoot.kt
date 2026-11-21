@@ -76,6 +76,7 @@ import nl.cita.magister.model.SubjectAverage
 import nl.cita.magister.haptics.HapticEvent
 import nl.cita.magister.haptics.HapticStrength
 import nl.cita.magister.haptics.LocalMagsHaptics
+import nl.cita.magister.haptics.hapticScrollRatchet
 import nl.cita.magister.ui.grades.GradesScreen
 import nl.cita.magister.ui.homework.HomeworkScreen
 import nl.cita.magister.ui.login.BootSplash
@@ -367,8 +368,20 @@ fun MagsSignedInScaffold(
     val ptr = rememberPullToRefreshState()
     val haptics = LocalMagsHaptics.current
     val refreshArmed = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
+    val pullStep = remember { java.util.concurrent.atomic.AtomicInteger(0) }
     val ptrFraction = ptr.distanceFraction
     SideEffect {
+        val bucket = when {
+            ptrFraction >= 1f -> 4
+            ptrFraction >= 0.75f -> 3
+            ptrFraction >= 0.50f -> 2
+            ptrFraction >= 0.25f -> 1
+            else -> 0
+        }
+        val prevBucket = pullStep.getAndSet(bucket)
+        if (bucket in 1..3 && bucket > prevBucket) {
+            haptics.play(HapticEvent.ScrollTick)
+        }
         if (ptrFraction >= 1f) {
             if (refreshArmed.compareAndSet(false, true)) haptics.play(HapticEvent.RefreshThreshold)
         } else if (ptrFraction < 0.45f) {
@@ -389,7 +402,8 @@ fun MagsSignedInScaffold(
         Box(
             Modifier
                 .fillMaxSize()
-                .nestedScroll(scroll),
+                .nestedScroll(scroll)
+                .hapticScrollRatchet(),
         ) {
             PullToRefreshBox(
                 isRefreshing = refreshing,

@@ -166,6 +166,14 @@ object HapticResolver {
             viewStrong = HapticFeedbackConstants.CONFIRM,
             effect = predefinedClick(),
         )
+        HapticEvent.GradeCelebrate -> EventPlan(
+            primitives = listOf(quickRise(0.75f), click(1f, delayMs = 35)),
+            viewLight = HapticFeedbackConstants.CONTEXT_CLICK,
+            viewNormal = HapticFeedbackConstants.CONFIRM,
+            viewStrong = HapticFeedbackConstants.CONFIRM,
+            effect = predefinedClick(),
+            preferComposition = true,
+        )
         HapticEvent.GradeFail -> EventPlan(
             primitives = listOf(thud(0.9f)),
             viewLight = HapticFeedbackConstants.CONTEXT_CLICK,
@@ -180,6 +188,7 @@ object HapticResolver {
             viewNormal = HapticFeedbackConstants.KEYBOARD_TAP,
             viewStrong = HapticFeedbackConstants.CONTEXT_CLICK,
             effect = predefinedTick(),
+            preferComposition = true,
         )
         HapticEvent.LongPress -> EventPlan(
             primitives = listOf(slowRise(0.9f)),
@@ -203,6 +212,46 @@ object HapticResolver {
             viewStrong = HapticFeedbackConstants.REJECT,
             effect = predefinedHeavy(),
         )
+        HapticEvent.ScrollTick -> EventPlan(
+            primitives = listOf(lowTick(0.42f)),
+            viewLight = HapticFeedbackConstants.CLOCK_TICK,
+            viewNormal = HapticFeedbackConstants.SEGMENT_FREQUENT_TICK,
+            viewStrong = HapticFeedbackConstants.SEGMENT_FREQUENT_TICK,
+            effect = predefinedTick(),
+            preferComposition = true,
+        )
+        HapticEvent.EdgeBump -> EventPlan(
+            primitives = listOf(thud(0.55f)),
+            viewLight = HapticFeedbackConstants.CLOCK_TICK,
+            viewNormal = HapticFeedbackConstants.GESTURE_END,
+            viewStrong = HapticFeedbackConstants.GESTURE_END,
+            effect = predefinedClick(),
+            preferComposition = true,
+        )
+        HapticEvent.CardPress -> EventPlan(
+            primitives = listOf(lowTick(0.5f)),
+            viewLight = HapticFeedbackConstants.CLOCK_TICK,
+            viewNormal = HapticFeedbackConstants.SEGMENT_TICK,
+            viewStrong = HapticFeedbackConstants.SEGMENT_TICK,
+            effect = predefinedTick(),
+            preferComposition = true,
+        )
+        HapticEvent.FilterSelect -> EventPlan(
+            primitives = listOf(tick(0.78f)),
+            viewLight = HapticFeedbackConstants.CLOCK_TICK,
+            viewNormal = HapticFeedbackConstants.SEGMENT_TICK,
+            viewStrong = HapticFeedbackConstants.CONTEXT_CLICK,
+            effect = predefinedClick(),
+            preferComposition = true,
+        )
+        HapticEvent.SheetOpen -> EventPlan(
+            primitives = listOf(quickRise(0.68f)),
+            viewLight = HapticFeedbackConstants.CLOCK_TICK,
+            viewNormal = HapticFeedbackConstants.GESTURE_START,
+            viewStrong = HapticFeedbackConstants.GESTURE_START,
+            effect = predefinedTick(),
+            preferComposition = true,
+        )
     }
 
     fun viewChoices(plan: EventPlan, strength: HapticStrength): List<Int> {
@@ -225,15 +274,15 @@ object HapticResolver {
 }
 
 private fun PrimitiveStep.scaled(strength: HapticStrength): PrimitiveStep =
-    copy(scale = (scale * strength.scale).coerceIn(0.15f, 1f), delayMs = 0)
+    copy(scale = (scale * strength.scale).coerceIn(0.15f, 1f), delayMs = delayMs)
 
-private fun tick(scale: Float) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_TICK, scale)
-private fun lowTick(scale: Float) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_LOW_TICK, scale)
-private fun click(scale: Float) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_CLICK, scale)
-private fun thud(scale: Float) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_THUD, scale)
-private fun quickRise(scale: Float) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_QUICK_RISE, scale)
-private fun quickFall(scale: Float) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_QUICK_FALL, scale)
-private fun slowRise(scale: Float) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_SLOW_RISE, scale)
+private fun tick(scale: Float, delayMs: Int = 0) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_TICK, scale, delayMs)
+private fun lowTick(scale: Float, delayMs: Int = 0) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_LOW_TICK, scale, delayMs)
+private fun click(scale: Float, delayMs: Int = 0) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_CLICK, scale, delayMs)
+private fun thud(scale: Float, delayMs: Int = 0) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_THUD, scale, delayMs)
+private fun quickRise(scale: Float, delayMs: Int = 0) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_QUICK_RISE, scale, delayMs)
+private fun quickFall(scale: Float, delayMs: Int = 0) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_QUICK_FALL, scale, delayMs)
+private fun slowRise(scale: Float, delayMs: Int = 0) = PrimitiveStep(VibrationEffect.Composition.PRIMITIVE_SLOW_RISE, scale, delayMs)
 
 internal fun minSdkForView(constant: Int): Int = when (constant) {
     HapticFeedbackConstants.LONG_PRESS,

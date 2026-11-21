@@ -115,7 +115,7 @@ fun LatestGradesStrip(
                     Modifier
                         .fillMaxWidth()
                         .testTag("laatste-cijfer")
-                        .hapticOnDown(hapticForGrade(grade.isSufficient))
+                        .hapticOnDown(hapticForGrade(grade.isSufficient, grade.numericValue ?: GradeCalculator.parseDutchNumber(grade.value)))
                         .clickable { onOpen(grade) }
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,

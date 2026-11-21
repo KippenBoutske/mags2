@@ -123,7 +123,7 @@ fun PressScaleCard(
     cornerRadius: Dp = 32.dp,
     pressedCornerRadius: Dp = 18.dp,
     onClick: (() -> Unit)? = null,
-    haptic: HapticEvent? = null,
+    haptic: HapticEvent? = HapticEvent.CardPress,
     content: @Composable () -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
