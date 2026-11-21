@@ -82,7 +82,9 @@ import nl.cita.magister.ui.formatDayShort
 import nl.cita.magister.ui.formatGrade
 import nl.cita.magister.ui.formatWhen
 import nl.cita.magister.ui.localDateOf
+import nl.cita.magister.ui.motion.GradeConfettiBurst
 import nl.cita.magister.ui.motion.PressScaleCard
+import nl.cita.magister.ui.motion.expressiveSheen
 import nl.cita.magister.ui.motion.magsFloatSpring
 import nl.cita.magister.ui.motion.magsSharedBounds
 import nl.cita.magister.ui.motion.magsSpring
@@ -293,13 +295,23 @@ private fun GradesOverviewHero(
     weakCount: Int,
     totalSubjects: Int,
 ) {
+    val animatedAvg = remember { Animatable(0f) }
+    LaunchedEffect(overallAverage) {
+        animatedAvg.animateTo(
+            targetValue = overallAverage.toFloat(),
+            animationSpec = magsFloatSpring(dampingRatio = 0.72f, stiffness = 200f),
+        )
+    }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(36.dp),
         color = MaterialTheme.colorScheme.primaryContainer,
     ) {
         Row(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .expressiveSheen(alpha = 0.12f)
+                .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -311,7 +323,7 @@ private fun GradesOverviewHero(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    formatGrade(overallAverage),
+                    formatGrade(animatedAvg.value.toDouble()),
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onPrimary,
                     maxLines = 1,
@@ -453,6 +465,13 @@ private fun SubjectCard(
 
 @Composable
 internal fun AverageBar(average: Float, modifier: Modifier = Modifier) {
+    val fillProgress = remember { Animatable(0f) }
+    LaunchedEffect(average) {
+        fillProgress.animateTo(
+            targetValue = (average / 10f).coerceIn(0f, 1f),
+            animationSpec = magsFloatSpring(dampingRatio = 0.68f, stiffness = 220f),
+        )
+    }
     val fill = when {
         average < 5.5f -> MaterialTheme.colorScheme.error
         average >= 7.0f -> MaterialTheme.colorScheme.tertiary
@@ -464,7 +483,7 @@ internal fun AverageBar(average: Float, modifier: Modifier = Modifier) {
         val h = size.height
         val radius = CornerRadius(h / 2f, h / 2f)
         drawRoundRect(track, size = size, cornerRadius = radius)
-        val width = size.width * (average / 10f).coerceIn(0f, 1f)
+        val width = size.width * fillProgress.value.coerceIn(0f, 1f)
         if (width > 0f) {
             drawRoundRect(fill, size = Size(width, h), cornerRadius = radius)
         }
@@ -660,28 +679,38 @@ private fun GradeDetailSheet(
     grade: Grade,
     onDismiss: () -> Unit,
 ) {
+    val numeric = grade.numericValue ?: GradeCalculator.parseDutchNumber(grade.value)
+    val celebrate = numeric != null && numeric >= 7.5
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         modifier = Modifier.testTag("cijfer-blad"),
     ) {
-        Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(grade.displaySubject(), style = MaterialTheme.typography.headlineSmall)
-            Text(grade.value ?: "–", style = MaterialTheme.typography.displaySmall)
-            GradeCalculator.formatWeight(grade.weight)?.let {
-                Text(it, style = MaterialTheme.typography.titleMedium)
+        Box(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(grade.displaySubject(), style = MaterialTheme.typography.headlineSmall)
+                Text(grade.value ?: "–", style = MaterialTheme.typography.displaySmall)
+                GradeCalculator.formatWeight(grade.weight)?.let {
+                    Text(it, style = MaterialTheme.typography.titleMedium)
+                }
+                formatWhen(grade.enteredAt).takeIf { it.isNotBlank() }?.let {
+                    Text(it, style = MaterialTheme.typography.bodyLarge)
+                }
+                grade.columnHeading?.let { Text(it, style = MaterialTheme.typography.titleSmall) }
+                grade.columnDescription?.takeIf { it.isNotBlank() }?.let {
+                    Text(it, style = MaterialTheme.typography.bodyMedium)
+                }
+                grade.teacher?.takeIf { it.isNotBlank() }?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Spacer(Modifier.height(24.dp))
             }
-            formatWhen(grade.enteredAt).takeIf { it.isNotBlank() }?.let {
-                Text(it, style = MaterialTheme.typography.bodyLarge)
+            if (celebrate) {
+                GradeConfettiBurst(
+                    triggerKey = grade.id,
+                    modifier = Modifier.matchParentSize(),
+                )
             }
-            grade.columnHeading?.let { Text(it, style = MaterialTheme.typography.titleSmall) }
-            grade.columnDescription?.takeIf { it.isNotBlank() }?.let {
-                Text(it, style = MaterialTheme.typography.bodyMedium)
-            }
-            grade.teacher?.takeIf { it.isNotBlank() }?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Spacer(Modifier.height(24.dp))
         }
     }
 }

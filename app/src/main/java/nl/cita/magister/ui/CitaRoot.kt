@@ -413,6 +413,9 @@ fun MagsSignedInScaffold(
                 .nestedScroll(scroll)
                 .hapticScrollRatchet(),
         ) {
+            if (!safe) {
+                nl.cita.magister.ui.motion.ExpressiveAuraBackground()
+            }
             PullToRefreshBox(
                 isRefreshing = refreshing,
                 onRefresh = onRefresh,
@@ -438,10 +441,21 @@ fun MagsSignedInScaffold(
                     AnimatedContent(
                         targetState = page,
                         transitionSpec = {
+                            val dir = if (targetState.ordinal >= initialState.ordinal) 1 else -1
                             (
                                 fadeIn(animationSpec = pageFadeSpring()) +
-                                    scaleIn(initialScale = 0.92f, animationSpec = pageFadeSpring())
-                                ) togetherWith fadeOut(animationSpec = pageFadeSpring())
+                                    androidx.compose.animation.slideInHorizontally(
+                                        animationSpec = magsSpring(),
+                                        initialOffsetX = { dir * (it / 14) },
+                                    ) +
+                                    scaleIn(initialScale = 0.95f, animationSpec = pageFadeSpring())
+                                ) togetherWith (
+                                fadeOut(animationSpec = pageFadeSpring()) +
+                                    androidx.compose.animation.slideOutHorizontally(
+                                        animationSpec = magsSpring(),
+                                        targetOffsetX = { -dir * (it / 16) },
+                                    )
+                                )
                         },
                         label = "page",
                     ) { dest ->

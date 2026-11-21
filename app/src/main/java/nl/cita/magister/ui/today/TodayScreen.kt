@@ -59,7 +59,9 @@ import nl.cita.magister.ui.components.TodaySkeleton
 import nl.cita.magister.ui.formatGrade
 import nl.cita.magister.ui.grades.LatestGradesStrip
 import nl.cita.magister.ui.localDateOf
+import nl.cita.magister.ui.motion.LivePulseDot
 import nl.cita.magister.ui.motion.PressScaleCard
+import nl.cita.magister.ui.motion.expressiveSheen
 import nl.cita.magister.ui.motion.pageFadeSpring
 import nl.cita.magister.ui.motion.staggerEnter
 import nl.cita.magister.ui.nav.MagsChrome
@@ -395,7 +397,10 @@ private fun ExpressiveHeroLessonCard(
         onClick = onClick,
     ) {
         Row(
-            Modifier.padding(20.dp),
+            Modifier
+                .fillMaxWidth()
+                .expressiveSheen(alpha = 0.12f)
+                .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -417,14 +422,12 @@ private fun ExpressiveHeroLessonCard(
                         .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.14f))
                         .padding(horizontal = 10.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     if (heroIsCurrent) {
-                        Box(
-                            Modifier
-                                .size(7.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary),
+                        LivePulseDot(
+                            color = MaterialTheme.colorScheme.primary,
+                            size = 7.dp,
                         )
                     }
                     Text(

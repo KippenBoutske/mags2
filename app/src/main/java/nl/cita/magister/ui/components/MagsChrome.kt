@@ -200,14 +200,22 @@ fun CircleCheck(
     val next = !checked
     val progress by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (checked) 1f else 0f,
-        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.7f, stiffness = 380f),
+        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.58f, stiffness = 420f),
         label = "hw-check",
     )
+    val burst = remember { androidx.compose.animation.core.Animatable(1f) }
+    androidx.compose.runtime.LaunchedEffect(checked) {
+        if (checked) {
+            burst.snapTo(0f)
+            burst.animateTo(1f, tween(420))
+        }
+    }
     val ring = androidx.compose.ui.graphics.lerp(
         MaterialTheme.colorScheme.outline,
         MaterialTheme.colorScheme.primary,
-        progress,
+        progress.coerceIn(0f, 1f),
     )
+    val sparkColor = MaterialTheme.colorScheme.primary
     Box(
         modifier
             .size(48.dp)
@@ -217,18 +225,42 @@ fun CircleCheck(
             .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center,
     ) {
+        if (burst.value < 0.98f) {
+            Canvas(Modifier.size(44.dp)) {
+                val t = burst.value
+                val fade = (1f - t).coerceIn(0f, 1f)
+                val maxR = size.minDimension / 2f
+                repeat(6) { i ->
+                    val angle = (i / 6f) * (2f * PI.toFloat())
+                    val r = maxR * (0.45f + 0.55f * t)
+                    drawCircle(
+                        color = sparkColor.copy(alpha = fade),
+                        radius = 3.5f * (1f - 0.5f * t),
+                        center = Offset(
+                            x = center.x + cos(angle) * r,
+                            y = center.y + sin(angle) * r,
+                        ),
+                    )
+                }
+            }
+        }
         Box(
             Modifier
                 .size(24.dp)
+                .graphicsLayer {
+                    val bounce = 1f + 0.14f * sin(progress.coerceIn(0f, 1f) * PI.toFloat())
+                    scaleX = bounce
+                    scaleY = bounce
+                }
                 .clip(CircleShape)
                 .border(2.dp, ring, CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = progress), CircleShape),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = progress.coerceIn(0f, 1f)), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             if (progress > 0.15f) {
                 Text(
                     "✓",
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = progress),
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = progress.coerceIn(0f, 1f)),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.graphicsLayer {

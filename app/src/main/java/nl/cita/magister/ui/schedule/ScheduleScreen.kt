@@ -84,6 +84,7 @@ import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatTime
 import nl.cita.magister.ui.localDateOf
 import nl.cita.magister.ui.nav.MagsPage
+import nl.cita.magister.ui.motion.LivePulseDot
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.StaggerScope
 import nl.cita.magister.ui.motion.pageFadeSpring
@@ -742,16 +743,14 @@ private fun CurrentLessonBadge(startTime: String, modifier: Modifier = Modifier)
         modifier
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.14f))
-            .padding(horizontal = 10.dp, vertical = 5.dp)
+            .padding(horizontal = 10.dp, vertical = 4.dp)
             .testTag("les-nu-vorm"),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            Modifier
-                .size(7.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.onPrimaryContainer),
+        LivePulseDot(
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            size = 7.dp,
         )
         Text(
             if (startTime.isBlank()) "NU" else "NU · $startTime",
