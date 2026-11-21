@@ -127,13 +127,14 @@ class MagisterRepository(
         blob?.json?.let { MagisterJson.instance.decodeFromString(ListSerializerHomework, it) } ?: emptyList()
     }
 
-    suspend fun completeLogin(code: String, verifier: String, tenantHost: String): SessionHydration {
+    suspend fun exchangeLoginCode(code: String, verifier: String, tenantHost: String): String? {
         val tokens = http.exchangeCode(code, verifier)
         val fromToken = tokens.idToken?.let { IdTokenClaims.tenantHost(it) }.orEmpty()
         val host = listOf(fromToken, Tenant.normalize(tenantHost))
             .firstOrNull { it.isNotBlank() }
             .orEmpty()
         val school = prefs.schoolNameNow().ifBlank { schoolNameFor(host) }
+        val displayName = tokens.idToken?.let { IdTokenClaims.givenName(it) }
         tokenStore.write(
             StoredSession(
                 accessToken = tokens.accessToken,
@@ -143,13 +144,18 @@ class MagisterRepository(
                 tenantHost = host,
                 personId = null,
                 enrollmentId = null,
-                displayName = tokens.idToken?.let { IdTokenClaims.givenName(it) },
+                displayName = displayName,
             ),
         )
         prefs.setDemo(false)
         if (host.isNotBlank()) {
             prefs.setTenant(host, school, prefs.tenantIdNow().ifBlank { null })
         }
+        return displayName
+    }
+
+    suspend fun completeLogin(code: String, verifier: String, tenantHost: String): SessionHydration {
+        exchangeLoginCode(code, verifier, tenantHost)
         return refreshAll()
     }
 

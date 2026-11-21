@@ -12,8 +12,8 @@ android {
         applicationId = "app.mags"
         minSdk = 26
         targetSdk = 37
-        versionCode = 32
-        versionName = "0.1.29"
+        versionCode = 33
+        versionName = "0.1.30"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }

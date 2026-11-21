@@ -105,6 +105,11 @@ class MainActivity : ComponentActivity() {
             .start()
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.syncSignedInState()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -130,6 +135,7 @@ class MainActivity : ComponentActivity() {
         val uri = intent?.data ?: return
         val raw = uri.toString()
         if (raw.startsWith(MagisterEndpoints.REDIRECT_URI.trimEnd('/'))) {
+            intent.data = null
             viewModel.handleRedirect(raw)
         }
     }
