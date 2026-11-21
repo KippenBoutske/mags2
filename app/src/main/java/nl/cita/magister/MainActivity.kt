@@ -40,8 +40,8 @@ class MainActivity : ComponentActivity() {
         val shownAt = SystemClock.elapsedRealtime()
         splash.setKeepOnScreenCondition {
             val elapsed = SystemClock.elapsedRealtime() - shownAt
-            if (elapsed >= 1_000L) return@setKeepOnScreenCondition false
-            viewModel.booting.value || elapsed < 820L
+            if (elapsed >= 600L) return@setKeepOnScreenCondition false
+            viewModel.booting.value || elapsed < 220L
         }
         try {
             runCatching { enableEdgeToEdge() }

@@ -83,6 +83,7 @@ import nl.cita.magister.ui.login.BootSplash
 import nl.cita.magister.ui.login.LoginScreen
 import nl.cita.magister.ui.login.LoginWebView
 import nl.cita.magister.ui.messages.MessagesScreen
+import nl.cita.magister.ui.motion.MagsStartupReveal
 import nl.cita.magister.ui.motion.StaggerScope
 import nl.cita.magister.ui.motion.magsSpring
 import nl.cita.magister.ui.motion.pageFadeSpring
@@ -115,44 +116,46 @@ fun CitaRoot(viewModel: CitaViewModel) {
         viewModel.hapticPulse.collect { haptics.play(it) }
     }
 
+    val safe = LocalSafeMode.current
+    var showStartupReveal by remember { mutableStateOf(!safe) }
+
     if (booting) {
         BootSplash()
         return
     }
 
-    if (webViewUrl != null) {
-        LoginWebView(
-            url = webViewUrl!!,
-            onRedirect = viewModel::handleRedirect,
-            onClose = viewModel::closeWebView,
-        )
-        return
-    }
-
-    if (!signedIn) {
-        val school by viewModel.schoolName.collectAsStateWithLifecycle()
-        val tenant by viewModel.tenantHost.collectAsStateWithLifecycle()
-        val hits by viewModel.schoolHits.collectAsStateWithLifecycle()
-        val searching by viewModel.schoolSearching.collectAsStateWithLifecycle()
-        val error by viewModel.lastError.collectAsStateWithLifecycle()
-        Scaffold(snackbarHost = { SnackbarHost(snackbarHost) }) {
-            LoginScreen(
-                schoolName = school,
-                tenantHost = tenant,
-                schools = hits,
-                searching = searching,
-                lastError = error,
-                onQuery = viewModel::searchSchools,
-                onSchoolChange = viewModel::setSchool,
-                onStartLogin = { viewModel.startLogin().authorizeUrl },
-                onWebViewLogin = viewModel::openWebViewLogin,
-                onDemo = viewModel::enterDemo,
+    Box(Modifier.fillMaxSize()) {
+        if (webViewUrl != null) {
+            LoginWebView(
+                url = webViewUrl!!,
+                onRedirect = viewModel::handleRedirect,
+                onClose = viewModel::closeWebView,
             )
+            return@Box
         }
-        return
-    }
 
-    val profile by viewModel.profile.collectAsStateWithLifecycle()
+        if (!signedIn) {
+            val school by viewModel.schoolName.collectAsStateWithLifecycle()
+            val tenant by viewModel.tenantHost.collectAsStateWithLifecycle()
+            val hits by viewModel.schoolHits.collectAsStateWithLifecycle()
+            val searching by viewModel.schoolSearching.collectAsStateWithLifecycle()
+            val error by viewModel.lastError.collectAsStateWithLifecycle()
+            Scaffold(snackbarHost = { SnackbarHost(snackbarHost) }) {
+                LoginScreen(
+                    schoolName = school,
+                    tenantHost = tenant,
+                    schools = hits,
+                    searching = searching,
+                    lastError = error,
+                    onQuery = viewModel::searchSchools,
+                    onSchoolChange = viewModel::setSchool,
+                    onStartLogin = { viewModel.startLogin().authorizeUrl },
+                    onWebViewLogin = viewModel::openWebViewLogin,
+                    onDemo = viewModel::enterDemo,
+                )
+            }
+        } else {
+        val profile by viewModel.profile.collectAsStateWithLifecycle()
     val grades by viewModel.grades.collectAsStateWithLifecycle()
     val averages by viewModel.averages.collectAsStateWithLifecycle()
     val latestGrades by viewModel.latestGrades.collectAsStateWithLifecycle()
@@ -233,6 +236,11 @@ fun CitaRoot(viewModel: CitaViewModel) {
         onPendingPageConsumed = viewModel::consumePendingPage,
         offline = offline,
     )
+        }
+        if (showStartupReveal) {
+            MagsStartupReveal(onFinished = { showStartupReveal = false })
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
