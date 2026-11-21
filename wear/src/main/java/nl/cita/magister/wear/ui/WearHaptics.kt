@@ -38,10 +38,11 @@ class WearHaptics(
     private val hasVibrator = vibrator?.hasVibrator() == true
 
     fun play(event: WearHapticEvent) {
-        if (Build.VERSION.SDK_INT >= 30 && hasVibrator && vibrator != null) {
-            val effect = buildPrimitive(event)
+        val vib = vibrator
+        if (Build.VERSION.SDK_INT >= 30 && hasVibrator && vib != null) {
+            val effect = buildPrimitive(vib, event)
             if (effect != null) {
-                runCatching { vibrator.vibrate(effect) }
+                runCatching { vib.vibrate(effect) }
                 return
             }
         }
@@ -54,17 +55,17 @@ class WearHaptics(
         view.performHapticFeedback(constant)
     }
 
-    private fun buildPrimitive(event: WearHapticEvent): VibrationEffect? {
-        if (Build.VERSION.SDK_INT < 30 || vibrator == null) return null
+    private fun buildPrimitive(vib: Vibrator, event: WearHapticEvent): VibrationEffect? {
+        if (Build.VERSION.SDK_INT < 30) return null
         return runCatching {
             val composer = VibrationEffect.startComposition()
             when (event) {
                 WearHapticEvent.Tick -> {
                     val id = if (Build.VERSION.SDK_INT >= 31 &&
-                        vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_LOW_TICK)
+                        vib.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_LOW_TICK)
                     ) {
                         VibrationEffect.Composition.PRIMITIVE_LOW_TICK
-                    } else if (vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_TICK)) {
+                    } else if (vib.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_TICK)) {
                         VibrationEffect.Composition.PRIMITIVE_TICK
                     } else {
                         return null
@@ -72,18 +73,18 @@ class WearHaptics(
                     composer.addPrimitive(id, 0.55f, 0)
                 }
                 WearHapticEvent.Click -> {
-                    if (!vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_CLICK)) return null
+                    if (!vib.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_CLICK)) return null
                     composer.addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.85f, 0)
                 }
                 WearHapticEvent.Sync -> {
-                    if (vibrator.areAllPrimitivesSupported(
+                    if (vib.areAllPrimitivesSupported(
                             VibrationEffect.Composition.PRIMITIVE_QUICK_RISE,
                             VibrationEffect.Composition.PRIMITIVE_CLICK,
                         )
                     ) {
                         composer.addPrimitive(VibrationEffect.Composition.PRIMITIVE_QUICK_RISE, 0.7f, 0)
                         composer.addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.95f, 35)
-                    } else if (vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_CLICK)) {
+                    } else if (vib.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_CLICK)) {
                         composer.addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.9f, 0)
                     } else {
                         return null
@@ -91,10 +92,10 @@ class WearHaptics(
                 }
                 WearHapticEvent.EdgeBump -> {
                     val id = if (Build.VERSION.SDK_INT >= 31 &&
-                        vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_THUD)
+                        vib.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_THUD)
                     ) {
                         VibrationEffect.Composition.PRIMITIVE_THUD
-                    } else if (vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_QUICK_FALL)) {
+                    } else if (vib.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_QUICK_FALL)) {
                         VibrationEffect.Composition.PRIMITIVE_QUICK_FALL
                     } else {
                         return null
