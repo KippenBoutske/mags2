@@ -29,6 +29,7 @@ object WearSnapshotStore {
             .putString(KEY_JSON, payload.toJson())
             .apply()
         _payload.value = payload
+        nl.cita.magister.wear.tile.NextLessonTileService.requestUpdate(context)
     }
 
     fun clear(context: Context) {
@@ -38,5 +39,6 @@ object WearSnapshotStore {
             .remove(KEY_JSON)
             .apply()
         _payload.value = null
+        nl.cita.magister.wear.tile.NextLessonTileService.requestUpdate(context)
     }
 }

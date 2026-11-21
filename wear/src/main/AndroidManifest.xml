@@ -6,6 +6,8 @@
 
     <application
         android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault">
@@ -34,6 +36,21 @@
                     android:host="*"
                     android:pathPrefix="/mags/snapshot" />
             </intent-filter>
+        </service>
+
+        <service
+            android:name=".tile.NextLessonTileService"
+            android:description="@string/tile_next_lesson_description"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_round"
+            android:label="@string/tile_next_lesson_label"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@mipmap/ic_launcher_round" />
         </service>
     </application>
 </manifest>

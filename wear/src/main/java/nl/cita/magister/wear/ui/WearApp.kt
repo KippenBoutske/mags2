@@ -27,7 +27,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -37,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
+import androidx.wear.compose.material.CardDefaults
 import androidx.wear.compose.material.Chip
 import androidx.wear.compose.material.ChipDefaults
 import androidx.wear.compose.material.Icon
@@ -140,6 +140,7 @@ private fun WearHomeScreen(
     onRequestSync: () -> Unit,
     onLoadDemo: () -> Unit,
 ) {
+    val palette = LocalWearPalette.current
     val listState = rememberScalingLazyListState()
     val focus = remember(payload, now) {
         payload?.let { WearScheduleHelper.currentOrNextLesson(it.appointments, now) }
@@ -157,7 +158,7 @@ private fun WearHomeScreen(
         ScalingLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(WearBg),
+                .background(palette.background),
             state = listState,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -167,7 +168,7 @@ private fun WearHomeScreen(
                     Text(
                         text = payload?.studentName?.let { "Hoi $it" } ?: "Mags",
                         style = MaterialTheme.typography.title3,
-                        color = WearOn,
+                        color = palette.onSurface,
                     )
                 }
             }
@@ -175,16 +176,16 @@ private fun WearHomeScreen(
                 item {
                     TitleCard(
                         onClick = onRequestSync,
-                        title = { Text("Wachten op telefoon", color = WearOn) },
-                        backgroundPainter = androidx.wear.compose.material.CardDefaults.cardBackgroundPainter(
-                            startBackgroundColor = WearSurfaceHigh,
-                            endBackgroundColor = WearSurface,
+                        title = { Text("Wachten op telefoon", color = palette.onSurface) },
+                        backgroundPainter = CardDefaults.cardBackgroundPainter(
+                            startBackgroundColor = palette.surfaceHigh,
+                            endBackgroundColor = palette.surface,
                         ),
                     ) {
                         Text(
                             "Open Mags op je telefoon om rooster en cijfers te synchroniseren.",
                             style = MaterialTheme.typography.caption2,
-                            color = WearMuted,
+                            color = palette.muted,
                         )
                     }
                 }
@@ -199,7 +200,10 @@ private fun WearHomeScreen(
                     Chip(
                         onClick = onLoadDemo,
                         label = { Text("Voorbeelddata", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        colors = ChipDefaults.secondaryChipColors(backgroundColor = WearSurface),
+                        colors = ChipDefaults.secondaryChipColors(
+                            backgroundColor = palette.surface,
+                            contentColor = palette.onSurface,
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -258,19 +262,20 @@ private fun HeroLessonCard(
     todayCount: Int,
     onClick: () -> Unit,
 ) {
+    val palette = LocalWearPalette.current
     if (focus == null) {
         TitleCard(
             onClick = onClick,
-            title = { Text(if (todayCount == 0) "Vrij vandaag" else "Klaar voor vandaag", color = WearOn) },
-            backgroundPainter = androidx.wear.compose.material.CardDefaults.cardBackgroundPainter(
-                startBackgroundColor = WearSurfaceHigh,
-                endBackgroundColor = WearSurface,
+            title = { Text(if (todayCount == 0) "Vrij vandaag" else "Klaar voor vandaag", color = palette.onSurface) },
+            backgroundPainter = CardDefaults.cardBackgroundPainter(
+                startBackgroundColor = palette.surfaceHigh,
+                endBackgroundColor = palette.surface,
             ),
         ) {
             Text(
                 "Tik om je rooster te bekijken",
                 style = MaterialTheme.typography.caption2,
-                color = WearMuted,
+                color = palette.muted,
             )
         }
         return
@@ -283,20 +288,20 @@ private fun HeroLessonCard(
             Text(
                 countdown,
                 style = MaterialTheme.typography.caption2.copy(fontWeight = FontWeight.SemiBold),
-                color = WearSand,
+                color = palette.primary,
             )
         },
         title = {
             Text(
                 focus.lesson.displaySubject(),
-                color = WearOn,
+                color = palette.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
         },
-        backgroundPainter = androidx.wear.compose.material.CardDefaults.cardBackgroundPainter(
-            startBackgroundColor = WearSurfaceHigh,
-            endBackgroundColor = WearSurface,
+        backgroundPainter = CardDefaults.cardBackgroundPainter(
+            startBackgroundColor = palette.primaryContainer,
+            endBackgroundColor = palette.surface,
         ),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -305,19 +310,19 @@ private fun HeroLessonCard(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 if (focus.isCurrent) {
-                    Box(Modifier.size(6.dp).clip(CircleShape).background(WearSand))
+                    Box(Modifier.size(6.dp).clip(CircleShape).background(palette.primary))
                 }
                 Text(
                     if (focus.isCurrent) "NU · tot ${focus.endLabel}" else "VOLGENDE · ${focus.startLabel}",
                     style = MaterialTheme.typography.caption3.copy(fontWeight = FontWeight.SemiBold),
-                    color = WearSand,
+                    color = palette.primary,
                 )
             }
             if (!room.isNullOrBlank()) {
                 Text(
                     "Lokaal $room",
                     style = MaterialTheme.typography.caption2,
-                    color = WearMuted,
+                    color = palette.muted,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -331,6 +336,7 @@ private fun WearScheduleScreen(
     appointments: List<Appointment>,
     now: Instant,
 ) {
+    val palette = LocalWearPalette.current
     val listState = rememberScalingLazyListState()
     val today = remember(now) { now.atZone(WearScheduleHelper.defaultZone).toLocalDate() }
     val tomorrow = remember(today) { today.plusDays(1) }
@@ -348,14 +354,14 @@ private fun WearScheduleScreen(
         ScalingLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(WearBg),
+                .background(palette.background),
             state = listState,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             item {
                 ListHeader {
-                    Text("Vandaag", style = MaterialTheme.typography.title3, color = WearOn)
+                    Text("Vandaag", style = MaterialTheme.typography.title3, color = palette.onSurface)
                 }
             }
             if (todayLessons.isEmpty()) {
@@ -363,7 +369,7 @@ private fun WearScheduleScreen(
                     Text(
                         "Geen lessen vandaag",
                         style = MaterialTheme.typography.caption1,
-                        color = WearMuted,
+                        color = palette.muted,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(vertical = 8.dp),
                     )
@@ -379,7 +385,7 @@ private fun WearScheduleScreen(
                         Text(
                             "Morgen · ${tomorrow.format(shortDateFmt)}",
                             style = MaterialTheme.typography.caption1,
-                            color = WearMuted,
+                            color = palette.muted,
                         )
                     }
                 }
@@ -393,13 +399,14 @@ private fun WearScheduleScreen(
 
 @Composable
 private fun WearLessonRow(lesson: Appointment, isCurrent: Boolean) {
+    val palette = LocalWearPalette.current
     val start = WearScheduleHelper.formatTime(lesson.startIso)
     val end = WearScheduleHelper.formatTime(lesson.endIso)
     val room = lesson.classroom ?: lesson.location
     val bg = when {
-        lesson.isCancelled -> WearErrorContainer
-        isCurrent -> Color(0xFF3A2B22)
-        else -> WearSurface
+        lesson.isCancelled -> palette.errorContainer
+        isCurrent -> palette.primaryContainer
+        else -> palette.surface
     }
     val subtitle = listOfNotNull(
         "$start–$end".takeIf { start.isNotBlank() },
@@ -422,27 +429,27 @@ private fun WearLessonRow(lesson: Appointment, isCurrent: Boolean) {
                 modifier = Modifier
                     .size(28.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(if (isCurrent) WearSand else WearSurfaceHigh),
+                    .background(if (isCurrent) palette.primary else palette.surfaceHigh),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     lesson.periodFrom?.toString() ?: "–",
                     style = MaterialTheme.typography.caption2.copy(fontWeight = FontWeight.Bold),
-                    color = if (isCurrent) WearInk else WearOn,
+                    color = if (isCurrent) palette.onPrimary else palette.onSurface,
                 )
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     lesson.displaySubject(),
                     style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.SemiBold),
-                    color = if (lesson.isCancelled) WearError else WearOn,
+                    color = if (lesson.isCancelled) palette.error else palette.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     subtitle,
                     style = MaterialTheme.typography.caption3,
-                    color = if (lesson.isCancelled) WearError.copy(alpha = 0.85f) else WearMuted,
+                    color = if (lesson.isCancelled) palette.error.copy(alpha = 0.85f) else palette.muted,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -456,6 +463,7 @@ private fun WearGradesScreen(
     latestGrades: List<Grade>,
     averages: List<SubjectAverage>,
 ) {
+    val palette = LocalWearPalette.current
     val listState = rememberScalingLazyListState()
     Scaffold(
         timeText = { TimeText() },
@@ -465,14 +473,14 @@ private fun WearGradesScreen(
         ScalingLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(WearBg),
+                .background(palette.background),
             state = listState,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             item {
                 ListHeader {
-                    Text("Laatste cijfers", style = MaterialTheme.typography.title3, color = WearOn)
+                    Text("Laatste cijfers", style = MaterialTheme.typography.title3, color = palette.onSurface)
                 }
             }
             if (latestGrades.isEmpty()) {
@@ -480,7 +488,7 @@ private fun WearGradesScreen(
                     Text(
                         "Nog geen cijfers",
                         style = MaterialTheme.typography.caption1,
-                        color = WearMuted,
+                        color = palette.muted,
                         modifier = Modifier.padding(vertical = 8.dp),
                     )
                 }
@@ -500,7 +508,7 @@ private fun WearGradesScreen(
             if (averages.isNotEmpty()) {
                 item {
                     ListHeader {
-                        Text("Per vak", style = MaterialTheme.typography.caption1, color = WearMuted)
+                        Text("Per vak", style = MaterialTheme.typography.caption1, color = palette.muted)
                     }
                 }
                 items(averages, key = { "avg-${it.subjectId}" }) { avg ->
@@ -523,22 +531,23 @@ private fun WearGradeRow(
     value: Double?,
     label: String?,
 ) {
+    val palette = LocalWearPalette.current
     val numeric = value ?: GradeCalculator.parseDutchNumber(label)
     val pillBg = when {
-        numeric != null && numeric < 5.5 -> WearErrorContainer
-        numeric != null && numeric >= 7.0 -> WearSageContainer
-        else -> WearSurfaceHigh
+        numeric != null && numeric < 5.5 -> palette.errorContainer
+        numeric != null && numeric >= 7.0 -> palette.secondaryContainer
+        else -> palette.surfaceHigh
     }
     val pillFg = when {
-        numeric != null && numeric < 5.5 -> WearError
-        numeric != null && numeric >= 7.0 -> WearSage
-        else -> WearOn
+        numeric != null && numeric < 5.5 -> palette.error
+        numeric != null && numeric >= 7.0 -> palette.secondary
+        else -> palette.onSurface
     }
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(WearSurface)
+            .background(palette.surface)
             .padding(horizontal = 12.dp, vertical = 9.dp),
     ) {
         Row(
@@ -549,7 +558,7 @@ private fun WearGradeRow(
                 Text(
                     title,
                     style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.Medium),
-                    color = WearOn,
+                    color = palette.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -557,7 +566,7 @@ private fun WearGradeRow(
                     Text(
                         subtitle,
                         style = MaterialTheme.typography.caption3,
-                        color = WearMuted,
+                        color = palette.muted,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -585,6 +594,7 @@ private fun WearGradeRow(
 
 @Composable
 private fun WearHomeworkScreen(homework: List<HomeworkItem>) {
+    val palette = LocalWearPalette.current
     val listState = rememberScalingLazyListState()
     Scaffold(
         timeText = { TimeText() },
@@ -594,14 +604,14 @@ private fun WearHomeworkScreen(homework: List<HomeworkItem>) {
         ScalingLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(WearBg),
+                .background(palette.background),
             state = listState,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             item {
                 ListHeader {
-                    Text("Huiswerk", style = MaterialTheme.typography.title3, color = WearOn)
+                    Text("Huiswerk", style = MaterialTheme.typography.title3, color = palette.onSurface)
                 }
             }
             if (homework.isEmpty()) {
@@ -609,7 +619,7 @@ private fun WearHomeworkScreen(homework: List<HomeworkItem>) {
                     Text(
                         "Alles af!",
                         style = MaterialTheme.typography.caption1,
-                        color = WearSage,
+                        color = palette.secondary,
                         modifier = Modifier.padding(vertical = 12.dp),
                     )
                 }
@@ -620,7 +630,7 @@ private fun WearHomeworkScreen(homework: List<HomeworkItem>) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(18.dp))
-                            .background(WearSurface)
+                            .background(palette.surface)
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -632,7 +642,7 @@ private fun WearHomeworkScreen(homework: List<HomeworkItem>) {
                                 Text(
                                     item.displaySubject(),
                                     style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.SemiBold),
-                                    color = WearOn,
+                                    color = palette.onSurface,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.weight(1f),
@@ -641,7 +651,7 @@ private fun WearHomeworkScreen(homework: List<HomeworkItem>) {
                                     Text(
                                         due,
                                         style = MaterialTheme.typography.caption3,
-                                        color = WearSand,
+                                        color = palette.primary,
                                     )
                                 }
                             }
@@ -649,7 +659,7 @@ private fun WearHomeworkScreen(homework: List<HomeworkItem>) {
                             Text(
                                 body,
                                 style = MaterialTheme.typography.caption2,
-                                color = WearMuted,
+                                color = palette.muted,
                                 maxLines = 3,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -670,6 +680,7 @@ private fun WearNavChip(
     secondaryLabel: String? = null,
     subtle: Boolean = false,
 ) {
+    val palette = LocalWearPalette.current
     Chip(
         onClick = onClick,
         label = {
@@ -685,7 +696,7 @@ private fun WearNavChip(
                     it,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = WearMuted,
+                    color = palette.muted,
                 )
             }
         },
@@ -693,12 +704,12 @@ private fun WearNavChip(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (subtle) WearMuted else WearSand,
+                tint = if (subtle) palette.muted else palette.primary,
             )
         },
         colors = ChipDefaults.secondaryChipColors(
-            backgroundColor = if (subtle) WearSurface else WearSurfaceHigh,
-            contentColor = WearOn,
+            backgroundColor = if (subtle) palette.surface else palette.surfaceHigh,
+            contentColor = palette.onSurface,
         ),
         modifier = Modifier.fillMaxWidth(),
     )

@@ -12,8 +12,8 @@ android {
         applicationId = "app.mags"
         minSdk = 30
         targetSdk = 37
-        versionCode = 24
-        versionName = "0.1.21"
+        versionCode = 25
+        versionName = "0.1.22"
     }
 
     signingConfigs {
@@ -83,5 +83,11 @@ dependencies {
     implementation(libs.wear.compose.material)
     implementation(libs.wear.compose.foundation)
     implementation(libs.wear.compose.navigation)
+    implementation(libs.wear.tiles)
+    implementation(libs.wear.tiles.material)
+    implementation(libs.wear.protolayout)
+    implementation(libs.wear.protolayout.material)
+    implementation(libs.wear.protolayout.expression)
+    implementation(libs.androidx.concurrent.futures.ktx)
     debugImplementation(libs.compose.ui.tooling)
 }

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Mags</string>
+    <string name="tile_next_lesson_label">Volgende les</string>
+    <string name="tile_next_lesson_description">Huidige of volgende les, lokaal en laatste cijfer</string>
 </resources>
