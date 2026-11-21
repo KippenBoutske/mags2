@@ -104,7 +104,7 @@ fun MagsWelcomeTour(
         if (exiting) return
         exiting = true
         confettiTick += 1
-        haptics.play(HapticEvent.GradeHigh)
+        haptics.play(HapticEvent.GradeCelebrate)
         scope.launch {
             delay(220L)
             launch { exitScale.animateTo(1.06f, tween(260, easing = FastOutSlowInEasing)) }
@@ -168,7 +168,7 @@ fun MagsWelcomeTour(
                 }
                 TextButton(
                     onClick = {
-                        haptics.play(HapticEvent.Tap)
+                        haptics.play(HapticEvent.CardPress)
                         finishTour()
                     },
                     modifier = Modifier.testTag("tour-skip"),
@@ -194,7 +194,7 @@ fun MagsWelcomeTour(
                     else -> HapticsFeelSlide(
                         onTryHaptic = {
                             confettiTick += 1
-                            haptics.play(HapticEvent.GradeHigh)
+                            haptics.play(HapticEvent.GradeCelebrate)
                         },
                     )
                 }
@@ -207,7 +207,7 @@ fun MagsWelcomeTour(
                     if (isLast) {
                         finishTour()
                     } else {
-                        haptics.play(HapticEvent.Tap)
+                        haptics.play(HapticEvent.CardPress)
                         scope.launch {
                             pagerState.animateScrollToPage(
                                 page = pagerState.currentPage + 1,
@@ -311,7 +311,7 @@ private fun WelcomeSlide(firstName: String?) {
                 modifier = Modifier
                     .size(136.dp)
                     .graphicsLayer { rotationZ = angle }
-                    .clip(ExpressiveScallopShape(lobes = 12, depthFraction = 0.08f))
+                    .clip(ExpressiveScallopShape(lobes = 12, depth = 0.08f))
                     .background(MaterialTheme.colorScheme.primaryContainer),
             )
             CookieFlower(
@@ -471,7 +471,7 @@ private fun GradesCalculatorSlide() {
                     pop.animateTo(1f, spring(dampingRatio = 0.52f, stiffness = Spring.StiffnessMediumLow))
                 }
                 Surface(
-                    shape = ExpressiveScallopShape(lobes = 10, depthFraction = 0.08f),
+                    shape = ExpressiveScallopShape(lobes = 10, depth = 0.08f),
                     color = bg,
                     modifier = Modifier
                         .size(if (idx == 1) 104.dp else 88.dp)
@@ -530,7 +530,7 @@ private fun HapticsFeelSlide(onTryHaptic: () -> Unit) {
         verticalArrangement = Arrangement.Center,
     ) {
         Surface(
-            shape = ExpressiveScallopShape(lobes = 12, depthFraction = 0.09f),
+            shape = ExpressiveScallopShape(lobes = 12, depth = 0.09f),
             color = if (tapped) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.secondaryContainer,
             modifier = Modifier
                 .size(138.dp)
@@ -538,7 +538,7 @@ private fun HapticsFeelSlide(onTryHaptic: () -> Unit) {
                     scaleX = pulse.value
                     scaleY = pulse.value
                 }
-                .clip(ExpressiveScallopShape(lobes = 12, depthFraction = 0.09f))
+                .clip(ExpressiveScallopShape(lobes = 12, depth = 0.09f))
                 .clickable {
                     tapped = !tapped
                     onTryHaptic()
