@@ -12,8 +12,8 @@ android {
         applicationId = "app.mags"
         minSdk = 30
         targetSdk = 37
-        versionCode = 30
-        versionName = "0.1.27"
+        versionCode = 31
+        versionName = "0.1.28"
     }
 
     signingConfigs {

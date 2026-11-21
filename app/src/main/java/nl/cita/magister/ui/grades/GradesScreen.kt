@@ -40,6 +40,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -47,7 +48,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -720,102 +721,164 @@ private fun CalculatorBlock(
     subject: SubjectAverage,
     grades: List<Grade>,
 ) {
-    var target by remember { mutableFloatStateOf(7f) }
+    val haptics = nl.cita.magister.haptics.LocalMagsHaptics.current
+    var targetTenths by remember(subject.subjectId) { mutableIntStateOf(70) }
+    val target = targetTenths / 10.0
     val columnWeights = remember(grades) {
         grades.mapNotNull { it.weight?.toInt()?.takeIf { weight -> weight in 1..6 } }
             .distinct()
             .sorted()
     }
     val weightChoices = remember(columnWeights) {
-        (listOf(1, 2, 3) + columnWeights).distinct().sorted()
+        (listOf(1, 2, 3, 4, 5) + columnWeights).distinct().sorted()
     }
-    var weight by remember { mutableFloatStateOf((columnWeights.firstOrNull() ?: 2).toFloat()) }
-    val result = remember(target, weight, grades) {
-        runCatching { GradeCalculator.scoreNeeded(grades, target.toDouble(), weight.toDouble()) }.getOrNull()
+    var weight by remember(subject.subjectId, columnWeights) {
+        mutableIntStateOf(columnWeights.firstOrNull() ?: 2)
     }
-    Column(
-        Modifier
+    val result = remember(targetTenths, weight, grades, subject.average) {
+        runCatching {
+            GradeCalculator.scoreNeeded(
+                currentGrades = grades,
+                target = target,
+                nextWeight = weight.toDouble(),
+                fallbackAverage = subject.average,
+            )
+        }.getOrNull()
+    }
+    Surface(
+        modifier = Modifier
             .fillMaxWidth()
             .testTag("cijfers-reken"),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        shape = RoundedCornerShape(32.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
-        Text("Wat moet ik halen?", style = MaterialTheme.typography.headlineSmall)
-        Text("Nu ${formatGrade(result?.currentAverage ?: subject.average)}", style = MaterialTheme.typography.bodyMedium)
-        Row(
-            Modifier.fillMaxWidth().testTag("cijfers-doel"),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            FilledTonalIconButton(
-                onClick = { target = (target - 0.1f).coerceIn(4f, 10f) },
-                modifier = Modifier
-                    .hapticOnDown(HapticEvent.CalculatorStep, enabled = target > 4f)
-                    .testTag("cijfers-doel-min"),
-            ) {
-                Icon(Icons.Outlined.Remove, contentDescription = "Doel lager")
-            }
-            Text(
-                "Doel ${formatGrade(target.toDouble())}",
-                style = MaterialTheme.typography.titleLarge,
-            )
-            FilledTonalIconButton(
-                onClick = { target = (target + 0.1f).coerceIn(4f, 10f) },
-                modifier = Modifier
-                    .hapticOnDown(HapticEvent.CalculatorStep, enabled = target < 10f)
-                    .testTag("cijfers-doel-plus"),
-            ) {
-                Icon(Icons.Outlined.Add, contentDescription = "Doel hoger")
-            }
-        }
-        Text("Weging ×${weight.toInt()}", style = MaterialTheme.typography.titleMedium)
-        Row(
+        Column(
             Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .testTag("cijfers-weging"),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            weightChoices.forEach { choice ->
-                FilterChip(
-                    selected = weight.toInt() == choice,
-                    onClick = { weight = choice.toFloat() },
-                    label = { Text("${choice}×") },
-                    modifier = Modifier
-                        .hapticOnDown(HapticEvent.CalculatorStep, enabled = weight.toInt() != choice)
-                        .testTag("cijfers-weging-$choice"),
-                )
-            }
-        }
-        val needed = result?.let { GradeCalculator.round1(it.needed) }
-        val tone = when {
-            result == null -> MaterialTheme.colorScheme.onSurface
-            result.alreadyReached -> GradeSage
-            !result.reachable -> MaterialTheme.colorScheme.error
-            (needed ?: 10.0) <= 6.5 -> GradeSage
-            (needed ?: 10.0) <= 8.5 -> MaterialTheme.colorScheme.primary
-            else -> MaterialTheme.colorScheme.error
-        }
-        when {
-            result == null -> Text("Te weinig cijfers.")
-            result.alreadyReached -> {
-                Text("–", style = MaterialTheme.typography.displayMedium, color = tone, modifier = Modifier.testTag("cijfers-nodig"))
-                Text("al gehaald", style = MaterialTheme.typography.bodyMedium, color = tone)
-            }
-            else -> {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Wat moet ik halen?", style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    formatGrade(needed),
-                    style = MaterialTheme.typography.displayMedium,
-                    color = tone,
-                    modifier = Modifier.testTag("cijfers-nodig"),
-                )
-                Text(
-                    if (result.reachable) "nodig voor je volgende" else "niet haalbaar",
+                    "Nu ${formatGrade(result?.currentAverage ?: subject.average)}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = tone,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            Row(
+                Modifier.fillMaxWidth().testTag("cijfers-doel"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                FilledTonalIconButton(
+                    onClick = { targetTenths = (targetTenths - 1).coerceIn(40, 100) },
+                    modifier = Modifier
+                        .hapticOnDown(HapticEvent.CalculatorStep, enabled = targetTenths > 40)
+                        .testTag("cijfers-doel-min"),
+                ) {
+                    Icon(Icons.Outlined.Remove, contentDescription = "Doel lager")
+                }
+                Text(
+                    "Doel ${formatGrade(target)}",
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                FilledTonalIconButton(
+                    onClick = { targetTenths = (targetTenths + 1).coerceIn(40, 100) },
+                    modifier = Modifier
+                        .hapticOnDown(HapticEvent.CalculatorStep, enabled = targetTenths < 100)
+                        .testTag("cijfers-doel-plus"),
+                ) {
+                    Icon(Icons.Outlined.Add, contentDescription = "Doel hoger")
+                }
+            }
+            Slider(
+                value = targetTenths.toFloat(),
+                onValueChange = { raw ->
+                    val snapped = kotlin.math.round(raw).toInt().coerceIn(40, 100)
+                    if (snapped != targetTenths) {
+                        targetTenths = snapped
+                        haptics.play(HapticEvent.ScrollTick)
+                    }
+                },
+                valueRange = 40f..100f,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text("Weging ×$weight", style = MaterialTheme.typography.titleMedium)
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .testTag("cijfers-weging"),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                weightChoices.forEach { choice ->
+                    FilterChip(
+                        selected = weight == choice,
+                        onClick = { weight = choice },
+                        label = { Text("${choice}×") },
+                        modifier = Modifier
+                            .hapticOnDown(HapticEvent.CalculatorStep, enabled = weight != choice)
+                            .testTag("cijfers-weging-$choice"),
+                    )
+                }
+            }
+            val needed = result?.let { GradeCalculator.round1(it.needed) }
+            val tone = when {
+                result == null -> MaterialTheme.colorScheme.onSurface
+                result.alreadyReached -> GradeSage
+                !result.reachable -> MaterialTheme.colorScheme.error
+                (needed ?: 10.0) <= 6.5 -> GradeSage
+                (needed ?: 10.0) <= 8.5 -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.error
+            }
+            val resultBg = when {
+                result == null -> MaterialTheme.colorScheme.surfaceContainerHighest
+                result.alreadyReached -> MaterialTheme.colorScheme.tertiaryContainer
+                !result.reachable -> MaterialTheme.colorScheme.errorContainer
+                (needed ?: 10.0) <= 6.5 -> MaterialTheme.colorScheme.tertiaryContainer
+                (needed ?: 10.0) <= 8.5 -> MaterialTheme.colorScheme.primaryContainer
+                else -> MaterialTheme.colorScheme.errorContainer
+            }
+            val resultFg = when {
+                result == null -> MaterialTheme.colorScheme.onSurface
+                result.alreadyReached -> MaterialTheme.colorScheme.onTertiaryContainer
+                !result.reachable -> MaterialTheme.colorScheme.onErrorContainer
+                (needed ?: 10.0) <= 6.5 -> MaterialTheme.colorScheme.onTertiaryContainer
+                (needed ?: 10.0) <= 8.5 -> MaterialTheme.colorScheme.onPrimaryContainer
+                else -> MaterialTheme.colorScheme.onErrorContainer
+            }
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(resultBg)
+                    .padding(horizontal = 18.dp, vertical = 14.dp),
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    when {
+                        result == null -> Text("Te weinig cijfers.", color = resultFg)
+                        result.alreadyReached -> {
+                            Text("–", style = MaterialTheme.typography.displayMedium, color = resultFg, modifier = Modifier.testTag("cijfers-nodig"))
+                            Text("al gehaald", style = MaterialTheme.typography.bodyMedium, color = resultFg)
+                        }
+                        else -> {
+                            Text(
+                                formatGrade(needed),
+                                style = MaterialTheme.typography.displayMedium,
+                                color = resultFg,
+                                modifier = Modifier.testTag("cijfers-nodig"),
+                            )
+                            Text(
+                                if (result.reachable) "nodig voor je volgende" else "niet haalbaar",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = resultFg,
+                            )
+                        }
+                    }
+                }
+            }
         }
-        Spacer(Modifier.height(12.dp))
     }
 }
 

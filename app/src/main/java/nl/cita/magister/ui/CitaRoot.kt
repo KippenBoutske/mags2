@@ -422,15 +422,19 @@ fun MagsSignedInScaffold(
                 state = ptr,
                 modifier = Modifier.fillMaxSize(),
                 indicator = {
+                    val indicatorMod = Modifier
+                        .align(Alignment.TopCenter)
+                        .statusBarsPadding()
+                        .padding(top = 8.dp)
                     if (safe) {
                         PullToRefreshDefaults.Indicator(
-                            modifier = Modifier.align(Alignment.TopCenter),
+                            modifier = indicatorMod,
                             isRefreshing = refreshing,
                             state = ptr,
                         )
                     } else {
                         PullToRefreshDefaults.LoadingIndicator(
-                            modifier = Modifier.align(Alignment.TopCenter),
+                            modifier = indicatorMod,
                             isRefreshing = refreshing,
                             state = ptr,
                         )
