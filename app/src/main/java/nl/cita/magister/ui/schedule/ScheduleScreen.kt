@@ -78,6 +78,7 @@ import nl.cita.magister.subject.displaySubject
 import nl.cita.magister.subject.teacherCode
 import nl.cita.magister.ui.components.CookieFlower
 import nl.cita.magister.ui.components.EmptyState
+import nl.cita.magister.ui.components.ExpressiveScallopShape
 import nl.cita.magister.ui.components.ListSkeleton
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatTime
@@ -622,7 +623,7 @@ private fun LessonCard(
         else -> MaterialTheme.colorScheme.onSecondaryContainer
     }
     val periodShape = if (active) {
-        nl.cita.magister.ui.components.ExpressiveScallopShape(lobes = 8, depth = 0.1f)
+        ExpressiveScallopShape(lobes = 8, depth = 0.1f)
     } else {
         RoundedCornerShape(16.dp)
     }
