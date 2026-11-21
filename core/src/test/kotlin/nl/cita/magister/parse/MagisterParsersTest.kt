@@ -73,7 +73,7 @@ class MagisterParsersTest {
         val latest = nl.cita.magister.grades.GradeCalculator.latestEarnedGrades(parsed)
         assertEquals(listOf("5,3", "7,6", "6,8"), latest.map { it.value })
         assertEquals(listOf("PW2", "Writing", "Literatuur"), latest.map { it.columnHeading })
-        assertEquals(listOf("Wiskunde B", "Engels", "Nederlands"), latest.map { it.subjectName })
+        assertEquals(listOf("Wiskunde", "Engels", "Nederlands"), latest.map { it.subjectName })
         assertEquals(3.0, latest.first().weight!!, 0.0001)
         assertEquals("2025-10-10T10:00:00.0000000Z", latest.first().enteredAt)
     }

@@ -143,8 +143,8 @@ class GradeCalculatorTest {
 
     @Test
     fun latestEarnedGradesAreIndividualNewestFirst() {
-        val latest = GradeCalculator.latestEarnedGrades(MockFixtures.grades())
-        assertEquals(listOf("Wiskunde B", "Engels", "Nederlands"), latest.map { it.subjectName })
+        val latest = GradeCalculator.latestEarnedGrades(MockFixtures.grades(), limit = 3)
+        assertEquals(listOf("Wiskunde", "Engels", "Nederlands"), latest.map { it.subjectName })
         assertEquals(listOf("5,3", "7,6", "6,8"), latest.map { it.value })
         assertEquals(listOf("PW2", "WR1", "LT1"), latest.map { it.columnHeading })
         assertTrue(latest.all { it.columnType == GradeColumnType.Grade })
