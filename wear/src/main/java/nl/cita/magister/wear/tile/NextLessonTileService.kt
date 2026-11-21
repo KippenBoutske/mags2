@@ -5,6 +5,7 @@ import androidx.concurrent.futures.CallbackToFutureAdapter
 import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.ColorBuilders.argb
 import androidx.wear.protolayout.DimensionBuilders.dp
+import androidx.wear.protolayout.DimensionBuilders.expand
 import androidx.wear.protolayout.LayoutElementBuilders
 import androidx.wear.protolayout.ModifiersBuilders
 import androidx.wear.protolayout.ResourceBuilders
@@ -27,7 +28,7 @@ import nl.cita.magister.wear.ui.WearPalette
 import nl.cita.magister.wear.ui.resolveWearPalette
 import java.time.Instant
 
-private const val RESOURCES_VERSION = "1"
+private const val RESOURCES_VERSION = "2"
 private const val FRESHNESS_MS = 60_000L
 
 class NextLessonTileService : TileService() {
@@ -82,8 +83,8 @@ class NextLessonTileService : TileService() {
 
         if (payload == null) {
             primaryLabelText = "MAGS"
-            titleText = "Open Mags op telefoon"
-            secondaryLine = "Tik om te openen"
+            titleText = "Open Mags"
+            secondaryLine = "Synchroniseer vanaf telefoon"
             chipText = "Openen"
         } else if (focus == null) {
             val today = now.atZone(WearScheduleHelper.defaultZone).toLocalDate()
@@ -142,9 +143,17 @@ class NextLessonTileService : TileService() {
             )
             .build()
 
+        // Box MUST use expand() width & height; wrap() collapses PrimaryLayout to 0x0.
         val root = LayoutElementBuilders.Box.Builder()
+            .setWidth(expand())
+            .setHeight(expand())
             .setModifiers(
                 ModifiersBuilders.Modifiers.Builder()
+                    .setBackground(
+                        ModifiersBuilders.Background.Builder()
+                            .setColor(argb(palette.backgroundArgb()))
+                            .build(),
+                    )
                     .setClickable(openAppClickable)
                     .build(),
             )
@@ -178,6 +187,7 @@ class NextLessonTileService : TileService() {
         clickable: ModifiersBuilders.Clickable,
     ): LayoutElementBuilders.LayoutElement {
         return LayoutElementBuilders.Column.Builder()
+            .setWidth(expand())
             .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
             .setModifiers(
                 ModifiersBuilders.Modifiers.Builder()
