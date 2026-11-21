@@ -34,7 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
-import androidx.wear.compose.foundation.lazy.items
+import androidx.wear.compose.foundation.lazy.itemsIndexed
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.CardDefaults
 import androidx.wear.compose.material.Chip
@@ -58,6 +58,7 @@ import nl.cita.magister.model.Appointment
 import nl.cita.magister.model.Grade
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.SubjectAverage
+import nl.cita.magister.parse.stripHtml
 import nl.cita.magister.subject.displaySubject
 import nl.cita.magister.wear.WearLessonFocus
 import nl.cita.magister.wear.WearScheduleHelper
@@ -84,46 +85,55 @@ fun MagsWearApp(
     onLoadDemo: () -> Unit,
 ) {
     MagsWearTheme {
-        var now by remember { mutableStateOf(Instant.now()) }
-        LaunchedEffect(Unit) {
-            while (true) {
-                delay(30_000L)
-                now = Instant.now()
+        ProvideWearHaptics {
+            var now by remember { mutableStateOf(Instant.now()) }
+            var showSplash by remember { mutableStateOf(true) }
+            LaunchedEffect(Unit) {
+                while (true) {
+                    delay(30_000L)
+                    now = Instant.now()
+                }
             }
-        }
-        val navController = rememberSwipeDismissableNavController()
-        SwipeDismissableNavHost(
-            navController = navController,
-            startDestination = WearRoute.Home,
-        ) {
-            composable(WearRoute.Home) {
-                WearHomeScreen(
-                    payload = payload,
-                    now = now,
-                    syncing = syncing,
-                    onOpenSchedule = { navController.navigate(WearRoute.Schedule) },
-                    onOpenGrades = { navController.navigate(WearRoute.Grades) },
-                    onOpenHomework = { navController.navigate(WearRoute.Homework) },
-                    onRequestSync = onRequestSync,
-                    onLoadDemo = onLoadDemo,
-                )
-            }
-            composable(WearRoute.Schedule) {
-                WearScheduleScreen(
-                    appointments = payload?.appointments.orEmpty(),
-                    now = now,
-                )
-            }
-            composable(WearRoute.Grades) {
-                WearGradesScreen(
-                    latestGrades = payload?.latestGrades.orEmpty(),
-                    averages = payload?.averages.orEmpty(),
-                )
-            }
-            composable(WearRoute.Homework) {
-                WearHomeworkScreen(
-                    homework = payload?.openHomework.orEmpty(),
-                )
+            val navController = rememberSwipeDismissableNavController()
+            Box(modifier = Modifier.fillMaxSize()) {
+                WearAmbientAura()
+                SwipeDismissableNavHost(
+                    navController = navController,
+                    startDestination = WearRoute.Home,
+                ) {
+                    composable(WearRoute.Home) {
+                        WearHomeScreen(
+                            payload = payload,
+                            now = now,
+                            syncing = syncing,
+                            onOpenSchedule = { navController.navigate(WearRoute.Schedule) },
+                            onOpenGrades = { navController.navigate(WearRoute.Grades) },
+                            onOpenHomework = { navController.navigate(WearRoute.Homework) },
+                            onRequestSync = onRequestSync,
+                            onLoadDemo = onLoadDemo,
+                        )
+                    }
+                    composable(WearRoute.Schedule) {
+                        WearScheduleScreen(
+                            appointments = payload?.appointments.orEmpty(),
+                            now = now,
+                        )
+                    }
+                    composable(WearRoute.Grades) {
+                        WearGradesScreen(
+                            latestGrades = payload?.latestGrades.orEmpty(),
+                            averages = payload?.averages.orEmpty(),
+                        )
+                    }
+                    composable(WearRoute.Homework) {
+                        WearHomeworkScreen(
+                            homework = payload?.openHomework.orEmpty(),
+                        )
+                    }
+                }
+                if (showSplash) {
+                    WearStartupSplash(onFinished = { showSplash = false })
+                }
             }
         }
     }
@@ -141,6 +151,7 @@ private fun WearHomeScreen(
     onLoadDemo: () -> Unit,
 ) {
     val palette = LocalWearPalette.current
+    val haptics = LocalWearHaptics.current
     val listState = rememberScalingLazyListState()
     val focus = remember(payload, now) {
         payload?.let { WearScheduleHelper.currentOrNextLesson(it.appointments, now) }
@@ -158,7 +169,7 @@ private fun WearHomeScreen(
         ScalingLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.background),
+                .wearScrollRatchet(),
             state = listState,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -175,7 +186,10 @@ private fun WearHomeScreen(
             if (payload == null) {
                 item {
                     TitleCard(
-                        onClick = onRequestSync,
+                        onClick = {
+                            haptics?.play(WearHapticEvent.Sync)
+                            onRequestSync()
+                        },
                         title = { Text("Wachten op telefoon", color = palette.onSurface) },
                         backgroundPainter = CardDefaults.cardBackgroundPainter(
                             startBackgroundColor = palette.surfaceHigh,
@@ -194,11 +208,15 @@ private fun WearHomeScreen(
                         label = if (syncing) "Synchroniseren…" else "Vernieuw",
                         icon = Icons.Outlined.Refresh,
                         onClick = onRequestSync,
+                        haptic = WearHapticEvent.Sync,
                     )
                 }
                 item {
                     Chip(
-                        onClick = onLoadDemo,
+                        onClick = {
+                            haptics?.play(WearHapticEvent.Click)
+                            onLoadDemo()
+                        },
                         label = { Text("Voorbeelddata", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         colors = ChipDefaults.secondaryChipColors(
                             backgroundColor = palette.surface,
@@ -249,6 +267,7 @@ private fun WearHomeScreen(
                         icon = Icons.Outlined.Refresh,
                         onClick = onRequestSync,
                         subtle = true,
+                        haptic = WearHapticEvent.Sync,
                     )
                 }
             }
@@ -263,9 +282,13 @@ private fun HeroLessonCard(
     onClick: () -> Unit,
 ) {
     val palette = LocalWearPalette.current
+    val haptics = LocalWearHaptics.current
     if (focus == null) {
         TitleCard(
-            onClick = onClick,
+            onClick = {
+                haptics?.play(WearHapticEvent.Click)
+                onClick()
+            },
             title = { Text(if (todayCount == 0) "Vrij vandaag" else "Klaar voor vandaag", color = palette.onSurface) },
             backgroundPainter = CardDefaults.cardBackgroundPainter(
                 startBackgroundColor = palette.surfaceHigh,
@@ -283,7 +306,10 @@ private fun HeroLessonCard(
     val room = focus.lesson.classroom ?: focus.lesson.location
     val countdown = WearScheduleHelper.countdownLabel(focus)
     TitleCard(
-        onClick = onClick,
+        onClick = {
+            haptics?.play(WearHapticEvent.Click)
+            onClick()
+        },
         time = {
             Text(
                 countdown,
@@ -307,10 +333,10 @@ private fun HeroLessonCard(
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 if (focus.isCurrent) {
-                    Box(Modifier.size(6.dp).clip(CircleShape).background(palette.primary))
+                    WearLivePulseDot(color = palette.primary, size = 6.dp)
                 }
                 Text(
                     if (focus.isCurrent) "NU · tot ${focus.endLabel}" else "VOLGENDE · ${focus.startLabel}",
@@ -354,7 +380,7 @@ private fun WearScheduleScreen(
         ScalingLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.background),
+                .wearScrollRatchet(),
             state = listState,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -375,8 +401,12 @@ private fun WearScheduleScreen(
                     )
                 }
             } else {
-                items(todayLessons, key = { "today-${it.id}" }) { lesson ->
-                    WearLessonRow(lesson = lesson, isCurrent = lesson.id == currentId)
+                itemsIndexed(todayLessons, key = { _, it -> "today-${it.id}" }) { index, lesson ->
+                    WearLessonRow(
+                        lesson = lesson,
+                        isCurrent = lesson.id == currentId,
+                        modifier = Modifier.wearStaggerEnter(index, key = "today-${lesson.id}"),
+                    )
                 }
             }
             if (tomorrowLessons.isNotEmpty()) {
@@ -389,8 +419,12 @@ private fun WearScheduleScreen(
                         )
                     }
                 }
-                items(tomorrowLessons, key = { "tomorrow-${it.id}" }) { lesson ->
-                    WearLessonRow(lesson = lesson, isCurrent = false)
+                itemsIndexed(tomorrowLessons, key = { _, it -> "tomorrow-${it.id}" }) { index, lesson ->
+                    WearLessonRow(
+                        lesson = lesson,
+                        isCurrent = false,
+                        modifier = Modifier.wearStaggerEnter(index, key = "tomorrow-${lesson.id}"),
+                    )
                 }
             }
         }
@@ -398,7 +432,11 @@ private fun WearScheduleScreen(
 }
 
 @Composable
-private fun WearLessonRow(lesson: Appointment, isCurrent: Boolean) {
+private fun WearLessonRow(
+    lesson: Appointment,
+    isCurrent: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val palette = LocalWearPalette.current
     val start = WearScheduleHelper.formatTime(lesson.startIso)
     val end = WearScheduleHelper.formatTime(lesson.endIso)
@@ -415,7 +453,7 @@ private fun WearLessonRow(lesson: Appointment, isCurrent: Boolean) {
     ).joinToString(" · ")
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
             .background(bg)
@@ -428,7 +466,7 @@ private fun WearLessonRow(lesson: Appointment, isCurrent: Boolean) {
             Box(
                 modifier = Modifier
                     .size(28.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(if (isCurrent) WearScallopShape(lobes = 8, depthFraction = 0.09f) else RoundedCornerShape(10.dp))
                     .background(if (isCurrent) palette.primary else palette.surfaceHigh),
                 contentAlignment = Alignment.Center,
             ) {
@@ -439,13 +477,21 @@ private fun WearLessonRow(lesson: Appointment, isCurrent: Boolean) {
                 )
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    lesson.displaySubject(),
-                    style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.SemiBold),
-                    color = if (lesson.isCancelled) palette.error else palette.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    if (isCurrent) {
+                        WearLivePulseDot(color = palette.primary, size = 5.dp)
+                    }
+                    Text(
+                        lesson.displaySubject(),
+                        style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.SemiBold),
+                        color = if (lesson.isCancelled) palette.error else palette.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 Text(
                     subtitle,
                     style = MaterialTheme.typography.caption3,
@@ -473,7 +519,7 @@ private fun WearGradesScreen(
         ScalingLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.background),
+                .wearScrollRatchet(),
             state = listState,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -493,7 +539,7 @@ private fun WearGradesScreen(
                     )
                 }
             } else {
-                items(latestGrades, key = { "g-${it.id}-${it.columnId}" }) { grade ->
+                itemsIndexed(latestGrades, key = { _, it -> "g-${it.id}-${it.columnId}" }) { index, grade ->
                     WearGradeRow(
                         title = grade.displaySubject(),
                         subtitle = listOfNotNull(
@@ -502,6 +548,7 @@ private fun WearGradesScreen(
                         ).joinToString(" · "),
                         value = grade.numericValue,
                         label = grade.value,
+                        modifier = Modifier.wearStaggerEnter(index, key = "g-${grade.id}-${grade.columnId}"),
                     )
                 }
             }
@@ -511,12 +558,13 @@ private fun WearGradesScreen(
                         Text("Per vak", style = MaterialTheme.typography.caption1, color = palette.muted)
                     }
                 }
-                items(averages, key = { "avg-${it.subjectId}" }) { avg ->
+                itemsIndexed(averages, key = { _, it -> "avg-${it.subjectId}" }) { index, avg ->
                     WearGradeRow(
                         title = avg.displaySubject(),
                         subtitle = if (avg.gradesCounted == 1) "1 cijfer" else "${avg.gradesCounted} cijfers",
                         value = avg.average,
                         label = avg.averageLabel,
+                        modifier = Modifier.wearStaggerEnter(index, key = "avg-${avg.subjectId}"),
                     )
                 }
             }
@@ -530,6 +578,7 @@ private fun WearGradeRow(
     subtitle: String,
     value: Double?,
     label: String?,
+    modifier: Modifier = Modifier,
 ) {
     val palette = LocalWearPalette.current
     val numeric = value ?: GradeCalculator.parseDutchNumber(label)
@@ -544,7 +593,7 @@ private fun WearGradeRow(
         else -> palette.onSurface
     }
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
             .background(palette.surface)
@@ -604,7 +653,7 @@ private fun WearHomeworkScreen(homework: List<HomeworkItem>) {
         ScalingLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(palette.background),
+                .wearScrollRatchet(),
             state = listState,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -624,11 +673,12 @@ private fun WearHomeworkScreen(homework: List<HomeworkItem>) {
                     )
                 }
             } else {
-                items(homework, key = { "hw-${it.id}" }) { item ->
+                itemsIndexed(homework, key = { _, it -> "hw-${it.id}" }) { index, item ->
                     val due = WearScheduleHelper.localDateOf(item.dueIso)?.format(shortDateFmt).orEmpty()
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .wearStaggerEnter(index, key = "hw-${item.id}")
                             .clip(RoundedCornerShape(18.dp))
                             .background(palette.surface)
                             .padding(horizontal = 12.dp, vertical = 10.dp),
@@ -655,7 +705,8 @@ private fun WearHomeworkScreen(homework: List<HomeworkItem>) {
                                     )
                                 }
                             }
-                            val body = item.description?.takeIf { it.isNotBlank() } ?: item.title
+                            val body = item.description?.stripHtml()?.takeIf { it.isNotBlank() }
+                                ?: item.title.stripHtml()
                             Text(
                                 body,
                                 style = MaterialTheme.typography.caption2,
@@ -679,10 +730,16 @@ private fun WearNavChip(
     onClick: () -> Unit,
     secondaryLabel: String? = null,
     subtle: Boolean = false,
+    haptic: WearHapticEvent = WearHapticEvent.Click,
+    modifier: Modifier = Modifier,
 ) {
     val palette = LocalWearPalette.current
+    val haptics = LocalWearHaptics.current
     Chip(
-        onClick = onClick,
+        onClick = {
+            haptics?.play(haptic)
+            onClick()
+        },
         label = {
             Text(
                 label,
@@ -711,6 +768,6 @@ private fun WearNavChip(
             backgroundColor = if (subtle) palette.surface else palette.surfaceHigh,
             contentColor = palette.onSurface,
         ),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     )
 }

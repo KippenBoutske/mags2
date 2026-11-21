@@ -74,6 +74,7 @@ import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.Appointment
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.InfoType
+import nl.cita.magister.parse.stripHtml
 import nl.cita.magister.subject.displaySubject
 import nl.cita.magister.subject.teacherCode
 import nl.cita.magister.ui.components.CookieFlower
@@ -720,7 +721,7 @@ private fun LessonCard(
                         )
                     }
                     if (active) {
-                        item.content?.takeIf { it.isNotBlank() }?.let { body ->
+                        item.content?.stripHtml()?.takeIf { it.isNotBlank() }?.let { body ->
                             Text(
                                 body,
                                 style = MaterialTheme.typography.bodyMedium,
@@ -804,13 +805,13 @@ private fun LessonSheet(
             infoLabel(lesson.infoType)?.let {
                 Text(it, style = MaterialTheme.typography.labelLarge)
             }
-            val hw = lesson.content?.trim().orEmpty()
+            val hw = lesson.content?.stripHtml().orEmpty()
             if (hw.isNotBlank()) {
                 Text("Huiswerk", style = MaterialTheme.typography.titleSmall)
                 Text(hw, style = MaterialTheme.typography.bodyMedium)
             }
             homework.forEach { item ->
-                val extra = item.description?.trim().orEmpty()
+                val extra = item.description?.stripHtml().orEmpty()
                 if (extra.isNotBlank() && extra != hw) {
                     Text(extra, style = MaterialTheme.typography.bodyMedium)
                 }

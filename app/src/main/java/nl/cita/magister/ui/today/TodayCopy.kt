@@ -3,6 +3,7 @@ package nl.cita.magister.ui.today
 import nl.cita.magister.model.Appointment
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.InfoType
+import nl.cita.magister.parse.stripHtml
 import nl.cita.magister.subject.displaySubject
 import nl.cita.magister.ui.components.minutesUntil
 import nl.cita.magister.ui.components.overLabel
@@ -22,11 +23,11 @@ fun subjectChipLabel(name: String, code: String): String {
 }
 
 fun homeworkBody(item: HomeworkItem): String {
-    val description = item.description?.trim().orEmpty()
+    val description = item.description?.stripHtml().orEmpty()
     if (description.isNotBlank() && !description.equals(item.subject, ignoreCase = true)) {
         return description
     }
-    val title = item.title.trim()
+    val title = item.title.stripHtml()
     if (title.isNotBlank() && !title.equals(item.subject, ignoreCase = true)) {
         return title
     }

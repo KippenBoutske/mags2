@@ -157,7 +157,7 @@ fun HomeworkScreen(
         buckets.forEach { bucket ->
             when (bucket) {
                 is HomeworkBucket.Overdue -> {
-                    stickyHeader(key = "verlopen") {
+                    item(key = "verlopen") {
                         OverdueHeader(
                             count = bucket.items.size,
                             expanded = overdueOpen,
@@ -177,14 +177,14 @@ fun HomeworkScreen(
                     }
                 }
                 is HomeworkBucket.Day -> {
-                    stickyHeader(key = "dag-${bucket.date}") {
+                    item(key = "dag-${bucket.date}") {
                         Text(
                             bucket.label,
                             style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.background)
-                                .padding(top = 8.dp, bottom = 4.dp)
+                                .padding(top = 8.dp, bottom = 2.dp, start = 4.dp)
                                 .testTag("hw-groep-${bucket.label.lowercase()}"),
                         )
                     }
@@ -210,17 +210,23 @@ private fun OverdueHeader(count: Int, expanded: Boolean, onToggle: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f))
             .clickable(onClick = onToggle)
-            .padding(top = 8.dp, bottom = 4.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
             .testTag("hw-groep-verlopen"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text("Verlopen ($count)", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Verlopen ($count)",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+        )
         Icon(
             if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
             contentDescription = if (expanded) "Inklappen" else "Uitklappen",
+            tint = MaterialTheme.colorScheme.onErrorContainer,
         )
     }
 }
