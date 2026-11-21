@@ -111,6 +111,12 @@ class CitaViewModel(
     private val _offline = MutableStateFlow(false)
     val offline = _offline.asStateFlow()
 
+    private val _showWelcomeTour = MutableStateFlow(false)
+    val showWelcomeTour = _showWelcomeTour.asStateFlow()
+
+    private val _welcomeFirstName = MutableStateFlow<String?>(null)
+    val welcomeFirstName = _welcomeFirstName.asStateFlow()
+
     val hasWebhookKey: Boolean get() = repo.webhookConfigured()
 
     private var searchJob: Job? = null
@@ -125,6 +131,9 @@ class CitaViewModel(
             if (demo && !clockPinned) _clock.value = AppClock.Demo
             if (!_signedIn.value) {
                 _signedIn.value = repo.isLoggedIn() || demo
+            }
+            if (_signedIn.value && !demo && !container.prefs.onboardingSeenNow()) {
+                _showWelcomeTour.value = true
             }
             runCatching { repo.cachedAppointments() }
             _booting.value = false
@@ -144,6 +153,15 @@ class CitaViewModel(
                 }
             }
         }
+    }
+
+    fun finishWelcomeTour() {
+        _showWelcomeTour.value = false
+        viewModelScope.launch { container.prefs.setOnboardingSeen(true) }
+    }
+
+    fun replayWelcomeTour() {
+        _showWelcomeTour.value = true
     }
 
     fun syncSignedInState() {
@@ -234,6 +252,8 @@ class CitaViewModel(
                 _webViewUrl.value = null
                 _lastError.value = null
                 _booting.value = false
+                _welcomeFirstName.value = displayName
+                _showWelcomeTour.value = true
                 _signedIn.value = true
                 _hapticPulse.tryEmit(HapticEvent.LoginSuccess)
                 if (!displayName.isNullOrBlank()) {

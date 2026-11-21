@@ -141,6 +141,12 @@ class UserPrefs(context: Context) {
         _webhookUrl.value = trimmed
     }
 
+    fun onboardingSeenNow(): Boolean = prefs.getBoolean(KEY_ONBOARDING_SEEN, false)
+
+    suspend fun setOnboardingSeen(seen: Boolean) {
+        prefs.edit().putBoolean(KEY_ONBOARDING_SEEN, seen).apply()
+    }
+
     private companion object {
         const val PREFS_NAME = "mags_user"
         const val KEY_TENANT = "tenant_host"
@@ -158,5 +164,6 @@ class UserPrefs(context: Context) {
         const val KEY_SEEN_GRADES = "seen_grade_ids"
         const val KEY_SEEN_LESSONS = "seen_lesson_keys"
         const val KEY_SNAPSHOT = "sync_snapshot_ready"
+        const val KEY_ONBOARDING_SEEN = "onboarding_seen"
     }
 }

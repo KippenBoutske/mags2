@@ -110,6 +110,7 @@ fun SettingsScreen(
     assignmentsError: ApiFailure? = null,
     unreadMessages: Int = 0,
     onOpenMessages: () -> Unit = {},
+    onReplayTour: () -> Unit = {},
     initialSection: MeerSection = MeerSection.Hub,
 ) {
     var section by remember { mutableStateOf(initialSection) }
@@ -130,6 +131,7 @@ fun SettingsScreen(
                 contentPadding = contentPadding,
                 onOpen = { section = it },
                 onOpenMessages = onOpenMessages,
+                onReplayTour = onReplayTour,
                 onLogout = onLogout,
             )
             MeerSection.Absence -> MeerListPage(
@@ -262,6 +264,7 @@ private fun MeerHub(
     contentPadding: PaddingValues,
     onOpen: (MeerSection) -> Unit,
     onOpenMessages: () -> Unit,
+    onReplayTour: () -> Unit,
     onLogout: () -> Unit,
 ) {
     Column(
@@ -319,6 +322,7 @@ private fun MeerHub(
             listOf(
                 MeerItem("Instellingen", testTag = "meer-rij-instellingen") { onOpen(MeerSection.Settings) },
                 MeerItem("Andere school", testTag = "meer-rij-school") { onOpen(MeerSection.School) },
+                MeerItem("Rondleiding", testTag = "meer-rij-rondleiding", onClick = onReplayTour),
                 MeerItem("Uitloggen", testTag = "meer-rij-uitloggen", chevron = false, onClick = onLogout),
             ),
         )

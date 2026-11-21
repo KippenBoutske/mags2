@@ -91,6 +91,7 @@ import nl.cita.magister.ui.nav.MagsChrome
 import nl.cita.magister.ui.nav.MagsPage
 import nl.cita.magister.ui.nav.MagsTopBar
 import nl.cita.magister.ui.nav.PhotosDock
+import nl.cita.magister.ui.onboarding.MagsWelcomeTour
 import nl.cita.magister.ui.schedule.ScheduleScreen
 import nl.cita.magister.ui.search.SearchHit
 import nl.cita.magister.ui.search.SearchSheet
@@ -106,6 +107,8 @@ fun CitaRoot(viewModel: CitaViewModel) {
     val booting by viewModel.booting.collectAsStateWithLifecycle()
     val signedIn by viewModel.signedIn.collectAsStateWithLifecycle()
     val webViewUrl by viewModel.webViewUrl.collectAsStateWithLifecycle()
+    val showWelcomeTour by viewModel.showWelcomeTour.collectAsStateWithLifecycle()
+    val welcomeFirstName by viewModel.welcomeFirstName.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
 
     val haptics = LocalMagsHaptics.current
@@ -235,7 +238,14 @@ fun CitaRoot(viewModel: CitaViewModel) {
         pendingPage = pendingPage,
         onPendingPageConsumed = viewModel::consumePendingPage,
         offline = offline,
+        onReplayTour = viewModel::replayWelcomeTour,
     )
+        if (showWelcomeTour) {
+            MagsWelcomeTour(
+                firstName = profile?.firstName?.takeIf { it.isNotBlank() } ?: welcomeFirstName,
+                onFinished = viewModel::finishWelcomeTour,
+            )
+        }
         }
         if (showStartupReveal) {
             MagsStartupReveal(onFinished = { showStartupReveal = false })
@@ -293,6 +303,7 @@ fun MagsSignedInScaffold(
     onVisibleWeek: (LocalDate) -> Unit = {},
     clockDate: LocalDate = LocalDate.now(),
     clockTime: LocalTime = LocalTime.now(),
+    onReplayTour: () -> Unit = {},
     pendingPage: MagsPage? = null,
     onPendingPageConsumed: () -> Unit = {},
     offline: Boolean = false,
@@ -583,6 +594,7 @@ fun MagsSignedInScaffold(
                                     assignmentsError = sectionErrors.assignments,
                                     unreadMessages = messages.count { !it.isRead },
                                     onOpenMessages = { page = MagsPage.Berichten },
+                                    onReplayTour = onReplayTour,
                                 )
                             }
                             }
