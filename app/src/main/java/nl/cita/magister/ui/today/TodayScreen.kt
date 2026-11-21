@@ -6,14 +6,17 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -23,14 +26,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.grades.GradeCalculator
 import nl.cita.magister.model.ApiFailure
@@ -161,20 +165,43 @@ fun TodayScreen(
                     onClick = { onOpenPage(MagsPage.Rooster) },
                 ) {
                     Row(
-                        Modifier.padding(20.dp),
+                        Modifier.padding(18.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
                         CookieFlower(
-                            size = 88.dp,
+                            size = 84.dp,
                             color = MaterialTheme.colorScheme.primary,
                         )
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                if (heroIsCurrent) "NU" else "VOLGENDE LES",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Row(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (heroIsCurrent) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                                        else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    )
+                                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                if (heroIsCurrent) {
+                                    Box(
+                                        Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primary),
+                                    )
+                                }
+                                Text(
+                                    if (heroIsCurrent) "NU" else "VOLGENDE LES",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    color = if (heroIsCurrent) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                )
+                            }
                             AnimatedContent(
                                 targetState = hero.displaySubject(),
                                 transitionSpec = {
@@ -190,9 +217,18 @@ fun TodayScreen(
                                     modifier = Modifier.testTag("today-hero-subject"),
                                 )
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Outlined.Place, null, Modifier, MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(hero.classroom ?: hero.location ?: "–", style = MaterialTheme.typography.bodyMedium)
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Outlined.Place,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    hero.classroom ?: hero.location ?: "–",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
                             Text(
                                 heroTimingLabel(
@@ -327,10 +363,20 @@ private fun HomeworkRow(
                 maxLines = 2,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
-            SuggestionChip(
-                onClick = {},
-                label = { Text(dueChipLabel(item.dueIso, today)) },
-            )
+            Box(
+                Modifier
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    dueChipLabel(item.dueIso, today),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
         }
     }
 }

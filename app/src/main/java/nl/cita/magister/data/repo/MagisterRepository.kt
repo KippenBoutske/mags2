@@ -94,7 +94,7 @@ class MagisterRepository(
         val stored = blob?.json?.let {
             MagisterJson.instance.decodeFromString(ListSerializerGrade, it)
         }.orEmpty()
-        GradeCalculator.latestEarnedGrades(stored.ifEmpty { grades })
+        GradeCalculator.latestEarnedGrades(stored + grades, limit = 50)
     }
 
     fun observeAppointments(): Flow<List<Appointment>> = cache.observe(KEY_APPOINTMENTS).map { blob ->
@@ -341,8 +341,8 @@ class MagisterRepository(
             val demo = MockFixtures.grades()
             writeCache(KEY_GRADES, MagisterJson.instance.encodeToString(demo))
             val latest = GradeCalculator.latestEarnedGrades(
-                MagisterParsers.parseRecentGrades(MockFixtures.recentGradesJson).ifEmpty { demo },
-                8,
+                MagisterParsers.parseRecentGrades(MockFixtures.recentGradesJson) + demo,
+                50,
             )
             writeCache(KEY_LATEST, MagisterJson.instance.encodeToString(latest))
             return
@@ -365,7 +365,7 @@ class MagisterRepository(
         writeCache(KEY_GRADES, MagisterJson.instance.encodeToString(enriched))
         val recent = runCatching {
             MagisterParsers.parseRecentGrades(
-                http.get(MagisterEndpoints.recentGrades(root, resolved.personId, top = 20)),
+                http.get(MagisterEndpoints.recentGrades(root, resolved.personId, top = 50)),
             )
         }.getOrDefault(emptyList())
         val recentExtra = fetchColumnInfo(root, resolved.personId, enrollmentId, recent)
@@ -373,7 +373,7 @@ class MagisterRepository(
         writeCache(
             KEY_LATEST,
             MagisterJson.instance.encodeToString(
-                GradeCalculator.latestEarnedGrades(recentEnriched.ifEmpty { enriched }, 8),
+                GradeCalculator.latestEarnedGrades(recentEnriched + enriched, 50),
             ),
         )
     }

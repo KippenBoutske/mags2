@@ -39,6 +39,7 @@ class MagisterSyncWorker(
         NextLessonStore.write(applicationContext, NextLesson.pick(lessons))
         NextLessonWidgetReceiver.updateAll(applicationContext)
         nl.cita.magister.live.LiveLessonScheduler.sync(applicationContext)
+        nl.cita.magister.wear.WearSyncPublisher.syncAsync(applicationContext)
         return Result.success()
     }
 

@@ -167,4 +167,17 @@ class MagisterParsersTest {
         assertEquals("abc/def", AuthRequestFactory.extractCode(url))
         assertEquals("access_denied: user", AuthRequestFactory.extractError("m6loapp://oauth2redirect/?error=access_denied&error_description=user"))
     }
+
+    @Test
+    fun applyColumnInfoKeepsGradeTypeWhenKolomSoortMissing() {
+        val recent = MagisterParsers.parseRecentGrades(MockFixtures.recentGradesJson)
+        val pw2 = recent.first { it.columnId == 32 }
+        val infoWithoutType = MagisterParsers.parseColumnInfo(
+            """{"KolomKop":"PW2","KolomOmschrijving":"Proefwerk 2","Weging":3.0}""",
+        )
+        val enriched = MagisterParsers.applyColumnInfo(listOf(pw2), mapOf(32 to infoWithoutType)).single()
+        assertEquals(nl.cita.magister.model.GradeColumnType.Grade, enriched.columnType)
+        assertTrue(enriched.counts)
+        assertEquals(3.0, enriched.weight!!, 0.0001)
+    }
 }

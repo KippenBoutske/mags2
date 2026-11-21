@@ -184,6 +184,20 @@ class GradeCalculatorTest {
     }
 
     @Test
+    fun latestEarnedGradesReturnsAllWhenLimitAllowsAndPrefersWeightedDuplicate() {
+        val seven = (1..7).map { i ->
+            grade(6.0 + i * 0.2, 2.0, id = i, columnId = 100 + i, heading = "T$i")
+                .copy(enteredAt = "2026-10-0${i}T10:00:00Z", value = "${6 + i / 5},${(i * 2) % 10}")
+        }
+        val duplicateWithoutWeight = seven.last().copy(id = -1, weight = null, subjectId = 0)
+        val latest = GradeCalculator.latestEarnedGrades(listOf(duplicateWithoutWeight) + seven, limit = Int.MAX_VALUE)
+
+        assertEquals(7, latest.size)
+        assertEquals(2.0, latest.first().weight!!, 0.0001)
+        assertEquals(1, latest.first().subjectId)
+    }
+
+    @Test
     fun formatAverageKeepsOneOrTwoDecimals() {
         assertEquals("6,9", GradeCalculator.formatAverage(6.9, "6,9"))
         assertEquals("5,85", GradeCalculator.formatAverage(5.85))

@@ -64,6 +64,8 @@ object GradeCalculator {
             .filter { hasEarnedResult(it) }
             .sortedWith(
                 compareByDescending<Grade> { it.enteredAt.orEmpty() }
+                    .thenByDescending { it.weight != null }
+                    .thenByDescending { it.subjectId > 0 }
                     .thenByDescending { it.id },
             )
             .distinctBy { it.columnId?.takeIf { id -> id != 0 } ?: it.id }
