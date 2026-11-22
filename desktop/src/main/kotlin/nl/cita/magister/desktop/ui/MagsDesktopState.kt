@@ -134,6 +134,7 @@ class MagsDesktopController(
 
     fun startBrowserLogin(school: School) {
         _loginError.value = null
+        DesktopAuthCallback.ensureWindowsProtocolRegistered()
         repo.prefs.setTenant(school.host, school.name, school.tenantId)
         val req = AuthRequestFactory.create(
             tenantHost = school.host,
@@ -164,7 +165,12 @@ class MagsDesktopController(
         }
         val code = AuthRequestFactory.extractCode(trimmed)
         if (code.isNullOrBlank()) {
-            _loginError.value = "Geen autorisatiecode gevonden in deze URL. Plak de volledige m6loapp://oauth2redirect/... link."
+            _loginError.value = if (trimmed.contains("login.microsoftonline.com", ignoreCase = true)) {
+                "Dit is nog de Microsoft-tussenpagina, niet de Magister-redirect. " +
+                    "Klik in je browser op 'Open Mags' zodra de pop-up verschijnt, of kopieer de m6loapp://oauth2redirect/... link uit F12 → Netwerk."
+            } else {
+                "Geen autorisatiecode gevonden in deze URL. Plak de volledige m6loapp://oauth2redirect/... link."
+            }
             return
         }
         val active = _activeAuth.value

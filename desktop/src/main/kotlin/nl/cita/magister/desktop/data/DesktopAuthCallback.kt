@@ -86,6 +86,14 @@ object DesktopAuthCallback {
     }
 
     /**
+     * Resolves the path to the packaged Mags.exe launcher on Windows (`jpackage.app-path`),
+     * falling back to the current process executable when running outside jpackage.
+     */
+    fun currentExecutablePath(): String? =
+        System.getProperty("jpackage.app-path")?.takeIf { it.isNotBlank() }
+            ?: ProcessHandle.current().info().command().orElse(null)?.takeIf { it.isNotBlank() }
+
+    /**
      * Registers `m6loapp://` under HKEY_CURRENT_USER on Windows (no admin needed)
      * pointing to the current Mags executable so browser login redirects straight
      * back into Mags Desktop.
@@ -94,8 +102,7 @@ object DesktopAuthCallback {
         if (!DesktopPaths.isWindows) {
             return Result.failure(IllegalStateException("Alleen beschikbaar op Windows."))
         }
-        val executable = ProcessHandle.current().info().command().orElse(null)
-            ?.takeIf { it.isNotBlank() }
+        val executable = currentExecutablePath()
             ?: return Result.failure(IllegalStateException("Kan pad naar Mags.exe niet bepalen."))
 
         val commandValue = "\"$executable\" \"%1\""
@@ -112,6 +119,12 @@ object DesktopAuthCallback {
             )
             "m6loapp:// gekoppeld aan $executable"
         }
+    }
+
+    /** Best-effort silent registration on Windows startup / login start. */
+    fun ensureWindowsProtocolRegistered(): Boolean {
+        if (!DesktopPaths.isWindows) return false
+        return registerWindowsProtocol().isSuccess
     }
 
     private fun runReg(vararg args: String) {

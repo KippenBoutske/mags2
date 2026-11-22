@@ -38,6 +38,9 @@ fun main(args: Array<String>) {
         return
     }
 
+    // Register m6loapp:// in HKCU on Windows so browser OAuth returns straight into Mags.
+    DesktopAuthCallback.ensureWindowsProtocolRegistered()
+
     val secretBox = DesktopSecretBox(dataDir)
     val prefs = DesktopPrefs(dataDir, secretBox)
     val tokenStore = DesktopTokenStore(dataDir, secretBox)

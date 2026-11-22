@@ -238,8 +238,13 @@ fun LoginView(controller: MagsDesktopController) {
                             color = MaterialTheme.colorScheme.primary,
                         )
                         Text(
-                            "Na het inloggen stuurt Magister je door naar een link die begint met m6loapp://oauth2redirect/. " +
-                                "Kopieer die link uit je browser (of uit het netwerktabblad/adresbalk) en plak hem hieronder.",
+                            if (DesktopPaths.isWindows) {
+                                "Log in via je browser (ook bij Microsoft/school-login). Zodra de browser vraagt om Mags te openen, klik je op 'Open Mags' — dan word je automatisch ingelogd. " +
+                                    "Geen pop-up gezien? Open F12 → Netwerk in je browser en plak de m6loapp://oauth2redirect/... link hieronder."
+                            } else {
+                                "Na het inloggen stuurt Magister je door naar een link die begint met m6loapp://oauth2redirect/. " +
+                                    "Kopieer die link uit je browser (of uit F12 → Netwerk) en plak hem hieronder."
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
