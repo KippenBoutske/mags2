@@ -62,15 +62,11 @@ fun HomeworkView(controller: MagsDesktopController) {
             .padding(28.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("Huiswerk", style = MaterialTheme.typography.displayMedium)
-            val openCount = homework.count { !it.isDone }
-            Text(
-                if (openCount == 0) "Alles af" else "$openCount openstaand",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        val openCount = homework.count { !it.isDone }
+        nl.cita.magister.desktop.ui.DesktopPageTitle(
+            title = "Huiswerk",
+            subtitle = if (openCount == 0) "Alles af" else "$openCount openstaand",
+        )
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             HwFilter.entries.forEach { f ->

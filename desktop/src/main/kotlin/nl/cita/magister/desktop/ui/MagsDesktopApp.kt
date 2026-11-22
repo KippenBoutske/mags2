@@ -209,8 +209,8 @@ fun MagsDesktopApp(controller: MagsDesktopController) {
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(34.dp)
-                                                .clip(CircleShape)
+                                                .size(38.dp)
+                                                .clip(ExpressiveScallopShape(lobes = 8, depth = 0.10f))
                                                 .background(MaterialTheme.colorScheme.primary),
                                             contentAlignment = Alignment.Center,
                                         ) {
@@ -218,7 +218,7 @@ fun MagsDesktopApp(controller: MagsDesktopController) {
                                                 initials,
                                                 style = MaterialTheme.typography.labelLarge,
                                                 color = MaterialTheme.colorScheme.onPrimary,
-                                                fontWeight = FontWeight.Bold,
+                                                fontWeight = FontWeight.ExtraBold,
                                             )
                                         }
                                         Column(modifier = Modifier.weight(1f)) {
@@ -241,13 +241,14 @@ fun MagsDesktopApp(controller: MagsDesktopController) {
                             }
                         }
 
-                        // Active page content
+                        // Active page content over living Expressive aura
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .background(MaterialTheme.colorScheme.background),
                         ) {
+                            ExpressiveAuraBackground()
                             when (page) {
                                 DesktopPage.Vandaag -> TodayView(controller)
                                 DesktopPage.Rooster -> ScheduleView(controller)
@@ -278,10 +279,10 @@ private fun SidebarItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(CircleShape)
             .background(bg)
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 14.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {

@@ -43,7 +43,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.desktop.ui.DesktopFormat
 import nl.cita.magister.desktop.ui.DesktopPage
+import nl.cita.magister.desktop.ui.DesktopPageTitle
+import nl.cita.magister.desktop.ui.ExpressiveCloverShape
+import nl.cita.magister.desktop.ui.ExpressiveScallopShape
+import nl.cita.magister.desktop.ui.LivePulseDot
 import nl.cita.magister.desktop.ui.MagsDesktopController
+import nl.cita.magister.desktop.ui.expressiveSheen
 import nl.cita.magister.grades.GradeCalculator
 import nl.cita.magister.model.Appointment
 import nl.cita.magister.subject.displaySubject
@@ -56,6 +61,7 @@ import java.time.LocalDate
 fun TodayView(controller: MagsDesktopController) {
     val profile by controller.profile.collectAsState()
     val appointments by controller.appointments.collectAsState()
+    val averages by controller.averages.collectAsState()
     val latestGrades by controller.latestGrades.collectAsState()
     val homework by controller.homework.collectAsState()
     val messages by controller.messages.collectAsState()
@@ -91,6 +97,9 @@ fun TodayView(controller: MagsDesktopController) {
         }
     }
 
+    val overallAvg = remember(averages) {
+        averages.mapNotNull { it.average }.takeIf { it.isNotEmpty() }?.average()
+    }
     val openHomework = remember(homework) {
         homework.filter { !it.isDone }.sortedBy { it.dueIso }.take(5)
     }
@@ -103,23 +112,14 @@ fun TodayView(controller: MagsDesktopController) {
             .padding(28.dp),
         verticalArrangement = Arrangement.spacedBy(22.dp),
     ) {
-        // Greeting header
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = "Hoi ${profile?.firstName?.ifBlank { "daar" } ?: "daar"}",
-                style = MaterialTheme.typography.displayMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            val subtitle = listOfNotNull(
-                DesktopFormat.formatDay(today),
-                profile?.let { DesktopFormat.profileLine(it.className, it.schoolName) }.takeIf { !it.isNullOrBlank() },
-            ).joinToString(" · ")
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        val subtitle = listOfNotNull(
+            DesktopFormat.formatDay(today),
+            profile?.let { DesktopFormat.profileLine(it.className, it.schoolName) }.takeIf { !it.isNullOrBlank() },
+        ).joinToString(" · ")
+        DesktopPageTitle(
+            title = "Hoi ${profile?.firstName?.ifBlank { "daar" } ?: "daar"}",
+            subtitle = subtitle,
+        )
 
         // 2-column desktop dashboard
         Row(
@@ -345,19 +345,26 @@ fun TodayView(controller: MagsDesktopController) {
                     }
                 }
 
-                // Quick counters row
+                // Expressive Bento counters row (overall average + open homework + unread messages)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     QuickStatCard(
-                        label = "Open huiswerk",
+                        label = "Gemiddelde",
+                        value = GradeCalculator.formatAverage(overallAvg),
+                        highlight = true,
+                        modifier = Modifier.weight(1f),
+                        onClick = { controller.navigate(DesktopPage.Cijfers) },
+                    )
+                    QuickStatCard(
+                        label = "Huiswerk",
                         value = homework.count { !it.isDone }.toString(),
                         modifier = Modifier.weight(1f),
                         onClick = { controller.navigate(DesktopPage.Huiswerk) },
                     )
                     QuickStatCard(
-                        label = "Ongelezen berichten",
+                        label = "Berichten",
                         value = unreadCount.toString(),
                         modifier = Modifier.weight(1f),
                         onClick = { controller.navigate(DesktopPage.Berichten) },
@@ -379,6 +386,8 @@ private fun HeroLessonCard(
         color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier
             .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .expressiveSheen(alpha = 0.10f)
             .clickable(onClick = onOpenSchedule),
     ) {
         if (activeOrNext == null) {
@@ -389,8 +398,8 @@ private fun HeroLessonCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
+                        .size(64.dp)
+                        .clip(ExpressiveScallopShape(lobes = 10, depth = 0.12f))
                         .background(MaterialTheme.colorScheme.secondaryContainer),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -398,7 +407,7 @@ private fun HeroLessonCard(
                         Icons.Outlined.WbSunny,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(30.dp),
                     )
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -423,8 +432,8 @@ private fun HeroLessonCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(64.dp)
-                        .clip(RoundedCornerShape(20.dp))
+                        .size(72.dp)
+                        .clip(ExpressiveScallopShape(lobes = 10, depth = 0.12f))
                         .background(MaterialTheme.colorScheme.primary),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -440,7 +449,7 @@ private fun HeroLessonCard(
                             Icons.Outlined.Schedule,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(30.dp),
                         )
                     }
                 }
@@ -448,12 +457,20 @@ private fun HeroLessonCard(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text(
-                        text = if (isCurrent) "NU" else "VOLGENDE LES",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        if (isCurrent) {
+                            LivePulseDot(color = MaterialTheme.colorScheme.primary, size = 7.dp)
+                        }
+                        Text(
+                            text = if (isCurrent) "NU" else "VOLGENDE LES",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.ExtraBold,
+                        )
+                    }
                     Text(
                         text = lesson.displaySubject(),
                         style = MaterialTheme.typography.headlineMedium,
@@ -497,17 +514,19 @@ private fun HeroLessonCard(
 private fun QuickStatCard(
     label: String,
     value: String,
+    highlight: Boolean = false,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     Surface(
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = if (highlight) ExpressiveCloverShape else MaterialTheme.shapes.medium,
+        color = if (highlight) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
         modifier = modifier.clickable(onClick = onClick),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalAlignment = if (highlight) Alignment.CenterHorizontally else Alignment.Start,
         ) {
             Text(
                 text = value,

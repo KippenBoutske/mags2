@@ -69,14 +69,10 @@ fun MessagesView(controller: MagsDesktopController) {
             .padding(28.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("Berichten", style = MaterialTheme.typography.displayMedium)
-            Text(
-                "Postvak IN (alleen lezen)",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        nl.cita.magister.desktop.ui.DesktopPageTitle(
+            title = "Berichten",
+            subtitle = "Postvak IN · alleen lezen",
+        )
 
         Row(
             modifier = Modifier.weight(1f).fillMaxWidth(),

@@ -72,12 +72,13 @@ fun LoginView(controller: MagsDesktopController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(32.dp),
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center,
     ) {
+        nl.cita.magister.desktop.ui.ExpressiveAuraBackground()
         Surface(
             modifier = Modifier
+                .padding(32.dp)
                 .widthIn(max = 560.dp)
                 .fillMaxWidth(),
             shape = MaterialTheme.shapes.large,

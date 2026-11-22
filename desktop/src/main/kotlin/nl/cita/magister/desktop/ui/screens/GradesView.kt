@@ -1,9 +1,13 @@
 package nl.cita.magister.desktop.ui.screens
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -48,6 +52,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.desktop.ui.DesktopFormat
+import nl.cita.magister.desktop.ui.DesktopPageTitle
+import nl.cita.magister.desktop.ui.GradeConfettiBurst
 import nl.cita.magister.desktop.ui.MagsDesktopController
 import nl.cita.magister.grades.GradeCalculator
 import nl.cita.magister.model.Grade
@@ -117,19 +123,10 @@ fun GradesView(controller: MagsDesktopController) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("Cijfers", style = MaterialTheme.typography.displayMedium)
-                profile?.let { p ->
-                    val line = DesktopFormat.profileLine(p.firstName, p.className, p.study)
-                    if (line.isNotBlank()) {
-                        Text(
-                            line,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
+            DesktopPageTitle(
+                title = "Cijfers",
+                subtitle = profile?.let { p -> DesktopFormat.profileLine(p.firstName, p.className, p.study) },
+            )
 
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedButton(
@@ -300,10 +297,15 @@ private fun GradeBar(value: Double?) {
     val error = MaterialTheme.colorScheme.error
     val track = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
     val fill = if (value != null && value < 5.5) error else primary
-    val fraction = ((value ?: 0.0) / 10.0).coerceIn(0.0, 1.0).toFloat()
+    val targetFraction = ((value ?: 0.0) / 10.0).coerceIn(0.0, 1.0).toFloat()
+    val fraction by animateFloatAsState(
+        targetValue = targetFraction,
+        animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing),
+        label = "grade-bar-fill",
+    )
 
     Canvas(modifier = Modifier.fillMaxWidth().height(12.dp)) {
-        val barH = 6.dp.toPx()
+        val barH = 7.dp.toPx()
         val y = (size.height - barH) / 2f
         val r = CornerRadius(barH / 2f, barH / 2f)
         drawRoundRect(color = track, topLeft = Offset(0f, y), size = Size(size.width, barH), cornerRadius = r)
@@ -348,12 +350,16 @@ private fun SubjectDetailPane(
         color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = modifier,
     ) {
-        Column(
-            modifier = Modifier
-                .verticalScroll(rememberScrollState())
-                .padding(22.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            if ((subject.average ?: 0.0) >= 7.5) {
+                GradeConfettiBurst(triggerKey = subject.subjectId)
+            }
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(22.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -522,6 +528,7 @@ private fun SubjectDetailPane(
                     }
                 }
             }
+        }
         }
     }
 }

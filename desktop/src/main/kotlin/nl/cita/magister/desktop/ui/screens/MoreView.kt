@@ -62,16 +62,12 @@ fun MoreView(controller: MagsDesktopController) {
             .padding(28.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("Meer", style = MaterialTheme.typography.displayMedium)
-            profile?.let { p ->
-                Text(
-                    DesktopFormat.profileLine("${p.firstName} ${p.lastName}".trim(), p.className, p.schoolName),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+        nl.cita.magister.desktop.ui.DesktopPageTitle(
+            title = "Meer",
+            subtitle = profile?.let { p ->
+                DesktopFormat.profileLine("${p.firstName} ${p.lastName}".trim(), p.className, p.schoolName)
+            },
+        )
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             MoreTab.entries.forEach { t ->

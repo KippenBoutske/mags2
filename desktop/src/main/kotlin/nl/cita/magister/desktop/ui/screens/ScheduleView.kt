@@ -47,6 +47,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import nl.cita.magister.desktop.ui.DesktopDaySlot
 import nl.cita.magister.desktop.ui.DesktopFormat
+import nl.cita.magister.desktop.ui.DesktopPageTitle
+import nl.cita.magister.desktop.ui.LivePulseDot
 import nl.cita.magister.desktop.ui.MagsDesktopController
 import nl.cita.magister.model.Appointment
 import nl.cita.magister.subject.displaySubject
@@ -85,15 +87,11 @@ fun ScheduleView(controller: MagsDesktopController) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("Rooster", style = MaterialTheme.typography.displayMedium)
-                val endDay = visibleDays.lastOrNull() ?: weekMonday.plusDays(4)
-                Text(
-                    "${DesktopFormat.formatDayMonth(weekMonday)} – ${DesktopFormat.formatDayMonth(endDay)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            val endDay = visibleDays.lastOrNull() ?: weekMonday.plusDays(4)
+            DesktopPageTitle(
+                title = "Rooster",
+                subtitle = "${DesktopFormat.formatDayMonth(weekMonday)} – ${DesktopFormat.formatDayMonth(endDay)}",
+            )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -381,6 +379,9 @@ private fun LessonCard(
                     textDecoration = if (lesson.isCancelled) TextDecoration.LineThrough else TextDecoration.None,
                     modifier = Modifier.weight(1f),
                 )
+                if (isCurrent) {
+                    LivePulseDot(color = fg, size = 6.dp)
+                }
             }
             val room = lesson.classroom?.takeIf { it.isNotBlank() } ?: lesson.location?.takeIf { it.isNotBlank() }
             val meta = listOfNotNull(
