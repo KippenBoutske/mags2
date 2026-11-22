@@ -132,6 +132,30 @@ class MagsDesktopController(
         }
     }
 
+    fun startInAppLogin(school: School) {
+        _loginError.value = null
+        repo.prefs.setTenant(school.host, school.name, school.tenantId)
+        val req = AuthRequestFactory.create(
+            tenantHost = school.host,
+            tenantId = school.tenantId,
+        )
+        _activeAuth.value = req
+        pendingAuthStore.save(
+            PendingAuth(
+                verifier = req.codeVerifier,
+                state = req.state,
+                tenantHost = req.tenantHost,
+                schoolName = school.name,
+            ),
+        )
+        nl.cita.magister.desktop.ui.screens.InAppLoginWindow.open(
+            authorizeUrl = req.authorizeUrl,
+            title = "Inloggen — ${school.name}",
+            onRedirectUrl = { url -> handleRedirectUrl(url) },
+            onError = { msg -> _loginError.value = msg },
+        )
+    }
+
     fun startBrowserLogin(school: School) {
         _loginError.value = null
         DesktopAuthCallback.ensureWindowsProtocolRegistered()

@@ -197,25 +197,37 @@ fun LoginView(controller: MagsDesktopController) {
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Button(
                         onClick = {
                             val school = selectedSchool ?: displayedSchools.firstOrNull()
-                            if (school != null) controller.startBrowserLogin(school)
+                            if (school != null) controller.startInAppLogin(school)
                         },
                         enabled = (selectedSchool != null || displayedSchools.isNotEmpty()) && !refreshing,
                         modifier = Modifier.weight(1f).height(46.dp),
                         shape = RoundedCornerShape(14.dp),
                     ) {
+                        Text("Inloggen")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            val school = selectedSchool ?: displayedSchools.firstOrNull()
+                            if (school != null) controller.startBrowserLogin(school)
+                        },
+                        enabled = (selectedSchool != null || displayedSchools.isNotEmpty()) && !refreshing,
+                        modifier = Modifier.height(46.dp),
+                        shape = RoundedCornerShape(14.dp),
+                    ) {
                         Icon(
                             Icons.AutoMirrored.Outlined.OpenInNew,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp),
+                            modifier = Modifier.size(16.dp),
                         )
-                        Spacer(Modifier.size(8.dp))
-                        Text("Inloggen in browser")
+                        Spacer(Modifier.size(6.dp))
+                        Text("Browser")
                     }
 
                     OutlinedButton(
@@ -225,7 +237,7 @@ fun LoginView(controller: MagsDesktopController) {
                         shape = RoundedCornerShape(14.dp),
                     ) {
                         Icon(Icons.Outlined.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.size(6.dp))
+                        Spacer(Modifier.size(4.dp))
                         Text("Voorbeeld")
                     }
                 }

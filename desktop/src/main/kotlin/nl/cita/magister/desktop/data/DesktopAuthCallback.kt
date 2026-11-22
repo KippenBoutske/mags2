@@ -94,6 +94,26 @@ object DesktopAuthCallback {
             ?: ProcessHandle.current().info().command().orElse(null)?.takeIf { it.isNotBlank() }
 
     /**
+     * Generates a valid Windows `.reg` file registering `m6loapp://` under HKCU.
+     * Using `reg import` avoids Java's ProcessBuilder embedded-quote escaping bug on Windows.
+     */
+    fun buildWindowsRegFile(executablePath: String): String {
+        val escaped = executablePath
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+        return buildString {
+            appendLine("Windows Registry Editor Version 5.00")
+            appendLine()
+            appendLine("[HKEY_CURRENT_USER\\Software\\Classes\\m6loapp]")
+            appendLine("@=\"URL:Mags Magister Login\"")
+            appendLine("\"URL Protocol\"=\"\"")
+            appendLine()
+            appendLine("[HKEY_CURRENT_USER\\Software\\Classes\\m6loapp\\shell\\open\\command]")
+            appendLine("@=\"\\\"$escaped\\\" \\\"%1\\\"\"")
+        }
+    }
+
+    /**
      * Registers `m6loapp://` under HKEY_CURRENT_USER on Windows (no admin needed)
      * pointing to the current Mags executable so browser login redirects straight
      * back into Mags Desktop.
@@ -105,18 +125,21 @@ object DesktopAuthCallback {
         val executable = currentExecutablePath()
             ?: return Result.failure(IllegalStateException("Kan pad naar Mags.exe niet bepalen."))
 
-        val commandValue = "\"$executable\" \"%1\""
         return runCatching {
-            runReg("add", "HKCU\\Software\\Classes\\m6loapp", "/ve", "/d", "URL:Mags Magister Login", "/f")
-            runReg("add", "HKCU\\Software\\Classes\\m6loapp", "/v", "URL Protocol", "/d", "", "/f")
-            runReg(
-                "add",
-                "HKCU\\Software\\Classes\\m6loapp\\shell\\open\\command",
-                "/ve",
-                "/d",
-                commandValue,
-                "/f",
-            )
+            val regFile = Files.createTempFile("mags-m6loapp-", ".reg")
+            try {
+                Files.writeString(regFile, buildWindowsRegFile(executable), Charsets.UTF_8)
+                val process = ProcessBuilder("reg", "import", regFile.toAbsolutePath().toString())
+                    .redirectErrorStream(true)
+                    .start()
+                val exit = process.waitFor()
+                if (exit != 0) {
+                    val out = process.inputStream.bufferedReader().readText().trim()
+                    error("reg import mislukt (code $exit): $out")
+                }
+            } finally {
+                runCatching { Files.deleteIfExists(regFile) }
+            }
             "m6loapp:// gekoppeld aan $executable"
         }
     }
@@ -125,16 +148,5 @@ object DesktopAuthCallback {
     fun ensureWindowsProtocolRegistered(): Boolean {
         if (!DesktopPaths.isWindows) return false
         return registerWindowsProtocol().isSuccess
-    }
-
-    private fun runReg(vararg args: String) {
-        val process = ProcessBuilder(listOf("reg") + args)
-            .redirectErrorStream(true)
-            .start()
-        val exit = process.waitFor()
-        if (exit != 0) {
-            val out = process.inputStream.bufferedReader().readText().trim()
-            error("reg.exe mislukt (code $exit): $out")
-        }
     }
 }

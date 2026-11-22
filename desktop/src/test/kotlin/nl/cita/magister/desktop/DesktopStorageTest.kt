@@ -196,4 +196,12 @@ class DesktopStorageTest {
             listener.close()
         }
     }
+
+    @Test
+    fun windowsRegFileEscapesExecutablePath() {
+        val reg = DesktopAuthCallback.buildWindowsRegFile("""C:\Users\Jens\AppData\Local\Mags\Mags.exe""")
+        assertTrue(reg.contains("Windows Registry Editor Version 5.00"))
+        assertTrue(reg.contains("""[HKEY_CURRENT_USER\Software\Classes\m6loapp\shell\open\command]"""))
+        assertTrue(reg.contains("""@="\"C:\\Users\\Jens\\AppData\\Local\\Mags\\Mags.exe\" \"%1\"""""))
+    }
 }
