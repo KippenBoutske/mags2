@@ -101,9 +101,28 @@ Elk vak: `name`, `average`, `grades[]` met `value`, `weight`, `description`, `da
 ## Architectuur
 
 - `:core` — endpoints, PKCE, parsers, calculator, fixtures, export
-- `:app` — Compose UI, JSON-cache, OkHttp, Android Keystore, Plan Goon
+- `:app` — Android Compose UI, JSON-cache, OkHttp, Android Keystore, Plan Goon
+- `:desktop` — Compose Multiplatform Desktop UI (Windows `.msi`/`.exe`), lokale AES-GCM tokenopslag, browser-OAuth + `m6loapp://` handler
 
 REST-paden staan in `MagisterEndpoints.kt`.
+
+## Desktop-app (Windows)
+
+De desktop-app zit in module `:desktop` en hergebruikt `:core` met dezelfde warme Mags-stijl (Vandaag, Rooster-weekoverzicht, Cijfers + *Wat moet ik halen?*, Huiswerk, Berichten split-view, Afwezigheid, Studiewijzers, Opdrachten en Plan Goon-export).
+
+Lokaal starten (JDK 21+):
+
+```bash
+./gradlew :desktop:run
+```
+
+Windows-installer bouwen (op Windows met JDK 21+):
+
+```bash
+./gradlew :desktop:packageMsi :desktop:packageExe
+```
+
+De GitHub Actions-workflow `.github/workflows/desktop-windows.yml` bouwt automatisch `.msi`- en `.exe`-installers als artifact. Op Windows kun je in het inlogscherm of onder **Meer → Instellingen** met één klik het `m6loapp://`-protocol koppelen zodat inloggen via je browser direct terugkeert naar Mags; anders kun je de `m6loapp://oauth2redirect/...`-link plakken of eerst **Voorbeeld** gebruiken.
 
 ## Licentie / verantwoordelijkheid
 
