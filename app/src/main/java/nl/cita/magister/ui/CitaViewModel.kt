@@ -318,25 +318,40 @@ class CitaViewModel(
         _pendingPage.value = null
     }
 
+    private var refreshJob: Job? = null
+
     fun refresh() {
-        viewModelScope.launch {
+        if (refreshJob?.isActive == true) return
+        refreshJob = viewModelScope.launch {
             _refreshing.value = true
-            runCatching { repo.refreshAll() }
-                .onSuccess {
-                    reportWarnings(it.warnings)
-                    _offline.value = false
-                    _hapticPulse.tryEmit(HapticEvent.RefreshDone)
-                    nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
-                    nl.cita.magister.wear.WearSyncPublisher.syncAsync(getApplication())
-            nl.cita.magister.widget.MagsWidgetUpdater.syncAsync(getApplication())
-                }
-                .onFailure { error ->
-                    rememberFailure(error)
-                    _offline.value = true
-                    _hapticPulse.tryEmit(HapticEvent.RefreshError)
-                    _snackbar.emit(friendlyOf(error))
-                }
-            _refreshing.value = false
+            val startedAt = System.currentTimeMillis()
+            try {
+                runCatching { repo.refreshAll() }
+                    .onSuccess { result ->
+                        reportWarnings(result.warnings)
+                        val accountFailed = result.profile == null &&
+                            result.warnings.any { it.path.contains("account", ignoreCase = true) }
+                        _offline.value = accountFailed
+                        if (accountFailed) {
+                            _hapticPulse.tryEmit(HapticEvent.RefreshError)
+                        } else {
+                            _hapticPulse.tryEmit(HapticEvent.RefreshDone)
+                            nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
+                            nl.cita.magister.wear.WearSyncPublisher.syncAsync(getApplication())
+                            nl.cita.magister.widget.MagsWidgetUpdater.syncAsync(getApplication())
+                        }
+                    }
+                    .onFailure { error ->
+                        rememberFailure(error)
+                        _offline.value = true
+                        _hapticPulse.tryEmit(HapticEvent.RefreshError)
+                        _snackbar.emit(friendlyOf(error))
+                    }
+                val elapsed = System.currentTimeMillis() - startedAt
+                if (elapsed < 400L) delay(400L - elapsed)
+            } finally {
+                _refreshing.value = false
+            }
         }
     }
 

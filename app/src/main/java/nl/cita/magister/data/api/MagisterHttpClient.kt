@@ -141,33 +141,49 @@ class MagisterHttpClient(
 
     private suspend fun executeAuthed(request: Request): String {
         if (tokenStore.expiringSoon()) {
-            runCatching { refreshIfNeeded() }
+            runCatching { refreshIfNeeded(failedAccessToken = null) }
         }
-        val first = client.newCall(request).execute()
-        val firstBody = first.body?.string().orEmpty()
-        if (first.code != 401) {
-            if (!first.isSuccessful) {
-                throw MagisterApiException(first.code, request.url.toString(), firstBody.ifBlank { first.message })
+        val tokenBeforeFirst = tokenStore.read()?.accessToken
+        val (firstCode, firstSuccessful, firstMessage, firstBody) = client.newCall(request).execute().use { res ->
+            HttpOutcome(res.code, res.isSuccessful, res.message, res.body?.string().orEmpty())
+        }
+        if (firstCode != 401) {
+            if (!firstSuccessful) {
+                throw MagisterApiException(firstCode, request.url.toString(), firstBody.ifBlank { firstMessage })
             }
             return firstBody
         }
-        refreshIfNeeded()
-        val retry = client.newCall(request).execute()
-        val retryBody = retry.body?.string().orEmpty()
-        if (!retry.isSuccessful) {
-            throw MagisterApiException(retry.code, request.url.toString(), retryBody.ifBlank { retry.message })
+        refreshIfNeeded(failedAccessToken = tokenBeforeFirst)
+        val (retryCode, retrySuccessful, retryMessage, retryBody) = client.newCall(request).execute().use { res ->
+            HttpOutcome(res.code, res.isSuccessful, res.message, res.body?.string().orEmpty())
+        }
+        if (!retrySuccessful) {
+            throw MagisterApiException(retryCode, request.url.toString(), retryBody.ifBlank { retryMessage })
         }
         return retryBody
     }
 
-    private suspend fun refreshIfNeeded() {
+    private suspend fun refreshIfNeeded(failedAccessToken: String?) {
         refreshLock.withLock {
             val session = tokenStore.read() ?: throw MagisterApiException(401, "session", "Niet ingelogd")
+            if (failedAccessToken != null && session.accessToken != failedAccessToken && !tokenStore.expiringSoon()) {
+                return
+            }
+            if (failedAccessToken == null && !tokenStore.expiringSoon()) {
+                return
+            }
             val refresh = session.refreshToken ?: throw MagisterApiException(401, "session", "Geen refresh-token")
             val tokens = refresh(refresh)
             tokenStore.updateTokens(tokens, session)
         }
     }
+
+    private data class HttpOutcome(
+        val code: Int,
+        val successful: Boolean,
+        val message: String,
+        val body: String,
+    )
 }
 
 class MagisterApiException(

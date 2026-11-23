@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.encodeToString
 import nl.cita.magister.dto.GradeColumnInfoDto
 import nl.cita.magister.api.KnownSchools
@@ -228,37 +230,45 @@ class MagisterRepository(
             return SessionHydration(MockFixtures.profile())
         }
         val session = tokenStore.read()!!
-        val warnings = mutableListOf<ApiFailure>()
+        val warnings = java.util.Collections.synchronizedList(mutableListOf<ApiFailure>())
         val host = session.tenantHost.ifBlank { prefs.tenantHostNow() }
         if (host.isBlank()) {
             warnings += ApiFailure("/api/account", 0, "Geen school-host na login.")
             return SessionHydration(profileFromToken(session), warnings)
         }
         val root = MagisterEndpoints.tenantRoot(host)
-        val accountJson = firstSuccessful(
-            listOf(
-                MagisterEndpoints.accountNoCache(root),
-                MagisterEndpoints.account(root),
-            ),
-            warnings,
-        )
-        val userinfoJson = if (accountJson == null) {
-            firstSuccessful(listOf(MagisterEndpoints.USERINFO), warnings)
-        } else {
-            null
-        }
-        if (accountJson == null && userinfoJson == null) {
-            return SessionHydration(profileFromToken(session), warnings)
-        }
-        val personId = accountJson?.let { MagisterParsers.parseAccount(it).person?.resolvedId }
-        val enrollmentsJson = if (personId != null) {
+        val accountJson = withTimeoutOrNull(12_000L) {
             firstSuccessful(
                 listOf(
-                    MagisterEndpoints.enrollments(root, personId),
-                    MagisterEndpoints.enrollmentsFallback(root, personId),
+                    MagisterEndpoints.accountNoCache(root),
+                    MagisterEndpoints.account(root),
                 ),
                 warnings,
             )
+        }
+        val userinfoJson = if (accountJson == null) {
+            withTimeoutOrNull(8_000L) {
+                firstSuccessful(listOf(MagisterEndpoints.USERINFO), warnings)
+            }
+        } else {
+            null
+        }
+        val cached = cachedProfile()
+        if (accountJson == null && userinfoJson == null && (cached == null || cached.personId <= 0)) {
+            return SessionHydration(profileFromToken(session), warnings.toList())
+        }
+        val personId = accountJson?.let { MagisterParsers.parseAccount(it).person?.resolvedId }
+            ?: cached?.personId?.takeIf { it > 0 }
+        val enrollmentsJson = if (personId != null) {
+            withTimeoutOrNull(10_000L) {
+                firstSuccessful(
+                    listOf(
+                        MagisterEndpoints.enrollments(root, personId),
+                        MagisterEndpoints.enrollmentsFallback(root, personId),
+                    ),
+                    warnings,
+                )
+            }
         } else {
             null
         }
@@ -275,6 +285,7 @@ class MagisterRepository(
                 schoolName = prefs.schoolNameNow().ifBlank { schoolNameFor(host) },
                 enrollment = enrollment,
             )
+            cached != null && cached.personId > 0 -> cached
             else -> profileFromToken(session, host)
         }
         if (profile != null) {
@@ -290,15 +301,34 @@ class MagisterRepository(
             )
             writeCache(KEY_PROFILE, MagisterJson.instance.encodeToString(profile))
             if (profile.personId > 0) {
-                runCatching { refreshGrades(profile) }.onFailure { warnings += failureOf(it, "/cijfers") }
-                runCatching { refreshAgenda(profile) }.onFailure { warnings += failureOf(it, "/afspraken") }
-                runCatching { refreshMessages(profile) }.onFailure { warnings += failureOf(it, "/berichten") }
-                runCatching { refreshAbsences(profile) }.onFailure { warnings += failureOf(it, "/absenties") }
-                runCatching { refreshStudyGuides(profile) }.onFailure { warnings += failureOf(it, "/studiewijzers") }
-                runCatching { refreshAssignments(profile) }.onFailure { warnings += failureOf(it, "/opdrachten") }
+                coroutineScope {
+                    val jobs = listOf(
+                        async {
+                            runCatching { withTimeout(18_000L) { refreshAgenda(profile) } }
+                                .onFailure { warnings += failureOf(it, "/afspraken") }
+                        },
+                        async {
+                            runCatching { withTimeout(18_000L) { refreshGrades(profile) } }
+                                .onFailure { warnings += failureOf(it, "/cijfers") }
+                        },
+                        async {
+                            runCatching { withTimeout(15_000L) { refreshMessages(profile) } }
+                                .onFailure { warnings += failureOf(it, "/berichten") }
+                        },
+                        async {
+                            runCatching { withTimeout(12_000L) { refreshAbsences(profile) } }
+                                .onFailure { warnings += failureOf(it, "/absenties") }
+                        },
+                        async {
+                            runCatching { withTimeout(12_000L) { refreshStudyGuides(profile) } }
+                                .onFailure { warnings += failureOf(it, "/studiewijzers") }
+                        },
+                    )
+                    jobs.awaitAll()
+                }
             }
         }
-        return SessionHydration(profile, warnings)
+        return SessionHydration(profile, warnings.toList())
     }
 
     private suspend fun firstSuccessful(urls: List<String>, warnings: MutableList<ApiFailure>): String? {
@@ -356,26 +386,34 @@ class MagisterRepository(
         val session = tokenStore.read() ?: return
         val root = MagisterEndpoints.tenantRoot(session.tenantHost)
         val peildatum = LocalDate.now().toString()
-        val json = try {
-            http.get(MagisterEndpoints.gradesOverview(root, resolved.personId, enrollmentId, false, peildatum))
-        } catch (error: Throwable) {
-            val forbidden = error is MagisterApiException && error.code in listOf(403, 404)
-            if (!forbidden) throw error
-            http.get(MagisterEndpoints.recentGrades(root, resolved.personId))
+        val (parsed, recent) = coroutineScope {
+            val overviewJob = async {
+                val json = try {
+                    http.get(MagisterEndpoints.gradesOverview(root, resolved.personId, enrollmentId, false, peildatum))
+                } catch (error: Throwable) {
+                    val forbidden = error is MagisterApiException && error.code in listOf(403, 404)
+                    if (!forbidden) throw error
+                    http.get(MagisterEndpoints.recentGrades(root, resolved.personId))
+                }
+                runCatching { MagisterParsers.parseGrades(json) }.getOrElse {
+                    MagisterParsers.parseRecentGrades(json)
+                }
+            }
+            val recentJob = async {
+                runCatching {
+                    MagisterParsers.parseRecentGrades(
+                        http.get(MagisterEndpoints.recentGrades(root, resolved.personId, top = 50)),
+                    )
+                }.getOrDefault(emptyList())
+            }
+            overviewJob.await() to recentJob.await()
         }
-        val parsed = runCatching { MagisterParsers.parseGrades(json) }.getOrElse {
-            MagisterParsers.parseRecentGrades(json)
-        }
-        val extra = fetchColumnInfo(root, resolved.personId, enrollmentId, parsed)
+        val extra = withTimeoutOrNull(10_000L) {
+            fetchColumnInfo(root, resolved.personId, enrollmentId, parsed + recent)
+        }.orEmpty()
         val enriched = MagisterParsers.applyColumnInfo(parsed, extra)
         writeCache(KEY_GRADES, MagisterJson.instance.encodeToString(enriched))
-        val recent = runCatching {
-            MagisterParsers.parseRecentGrades(
-                http.get(MagisterEndpoints.recentGrades(root, resolved.personId, top = 50)),
-            )
-        }.getOrDefault(emptyList())
-        val recentExtra = fetchColumnInfo(root, resolved.personId, enrollmentId, recent)
-        val recentEnriched = MagisterParsers.applyColumnInfo(recent, recentExtra)
+        val recentEnriched = MagisterParsers.applyColumnInfo(recent, extra)
         writeCache(
             KEY_LATEST,
             MagisterJson.instance.encodeToString(
@@ -392,7 +430,7 @@ class MagisterRepository(
     ): Map<Int, GradeColumnInfoDto> {
         val ids = grades.mapNotNull { it.columnId }.distinct()
         if (ids.isEmpty()) return emptyMap()
-        val limit = Semaphore(6)
+        val limit = Semaphore(10)
         return coroutineScope {
             ids.map { columnId ->
                 async {

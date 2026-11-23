@@ -38,6 +38,7 @@ fun MagsTopBar(
     unreadMessages: Int,
     onMessages: () -> Unit,
     onMore: () -> Unit,
+    onRefresh: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
@@ -80,6 +81,15 @@ fun MagsTopBar(
                 )
             }
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                if (onRefresh != null) {
+                    DropdownMenuItem(
+                        text = { Text("Vernieuwen") },
+                        onClick = {
+                            menu = false
+                            onRefresh()
+                        },
+                    )
+                }
                 DropdownMenuItem(
                     text = {
                         Text(

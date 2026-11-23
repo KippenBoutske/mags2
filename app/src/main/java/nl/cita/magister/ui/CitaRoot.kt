@@ -386,25 +386,29 @@ fun MagsSignedInScaffold(
 
     val ptr = rememberPullToRefreshState()
     val haptics = LocalMagsHaptics.current
-    val refreshArmed = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
-    val pullStep = remember { java.util.concurrent.atomic.AtomicInteger(0) }
-    val ptrFraction = ptr.distanceFraction
-    SideEffect {
-        val bucket = when {
-            ptrFraction >= 1f -> 4
-            ptrFraction >= 0.75f -> 3
-            ptrFraction >= 0.50f -> 2
-            ptrFraction >= 0.25f -> 1
-            else -> 0
-        }
-        val prevBucket = pullStep.getAndSet(bucket)
-        if (bucket in 1..3 && bucket > prevBucket) {
-            haptics.play(HapticEvent.ScrollTick)
-        }
-        if (ptrFraction >= 1f) {
-            if (refreshArmed.compareAndSet(false, true)) haptics.play(HapticEvent.RefreshThreshold)
-        } else if (ptrFraction < 0.45f) {
-            refreshArmed.set(false)
+    LaunchedEffect(ptr, haptics) {
+        var armed = false
+        var prevBucket = 0
+        androidx.compose.runtime.snapshotFlow { ptr.distanceFraction }.collect { fraction ->
+            val bucket = when {
+                fraction >= 1f -> 4
+                fraction >= 0.75f -> 3
+                fraction >= 0.50f -> 2
+                fraction >= 0.25f -> 1
+                else -> 0
+            }
+            if (bucket in 1..3 && bucket > prevBucket) {
+                haptics.play(HapticEvent.ScrollTick)
+            }
+            prevBucket = bucket
+            if (fraction >= 1f) {
+                if (!armed) {
+                    armed = true
+                    haptics.play(HapticEvent.RefreshThreshold)
+                }
+            } else if (fraction < 0.45f) {
+                armed = false
+            }
         }
     }
     val overlayScale = 1f - backProgress * 0.06f
@@ -433,22 +437,24 @@ fun MagsSignedInScaffold(
                 state = ptr,
                 modifier = Modifier.fillMaxSize(),
                 indicator = {
-                    val indicatorMod = Modifier
-                        .align(Alignment.TopCenter)
-                        .statusBarsPadding()
-                        .padding(top = 8.dp)
-                    if (safe) {
-                        PullToRefreshDefaults.Indicator(
-                            modifier = indicatorMod,
-                            isRefreshing = refreshing,
-                            state = ptr,
-                        )
-                    } else {
-                        PullToRefreshDefaults.LoadingIndicator(
-                            modifier = indicatorMod,
-                            isRefreshing = refreshing,
-                            state = ptr,
-                        )
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .statusBarsPadding()
+                            .padding(top = 4.dp)
+                            .zIndex(2f),
+                    ) {
+                        if (safe) {
+                            PullToRefreshDefaults.Indicator(
+                                isRefreshing = refreshing,
+                                state = ptr,
+                            )
+                        } else {
+                            PullToRefreshDefaults.LoadingIndicator(
+                                isRefreshing = refreshing,
+                                state = ptr,
+                            )
+                        }
                     }
                 },
             ) {
@@ -609,6 +615,7 @@ fun MagsSignedInScaffold(
                     unreadMessages = messages.count { !it.isRead },
                     onMessages = { page = MagsPage.Berichten },
                     onMore = { page = MagsPage.Meer },
+                    onRefresh = onRefresh,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .statusBarsPadding()
