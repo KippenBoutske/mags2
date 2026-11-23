@@ -1,0 +1,3 @@
+-keepattributes *Annotation*
+-keep class nl.cita.magister.wear.** { *; }
+-keep class nl.cita.magister.model.** { *; }

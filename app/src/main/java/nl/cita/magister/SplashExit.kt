@@ -8,10 +8,11 @@ internal fun splashIconOrNull(iconView: () -> View?): View? =
 
 internal fun animateSplashIcon(iconView: () -> View?, interpolator: Interpolator) {
     splashIconOrNull(iconView)?.animate()
-        ?.scaleX(0.72f)
-        ?.scaleY(0.72f)
+        ?.scaleX(0.65f)
+        ?.scaleY(0.65f)
+        ?.rotation(32f)
         ?.alpha(0f)
-        ?.setDuration(240)
+        ?.setDuration(220)
         ?.setInterpolator(interpolator)
         ?.start()
 }

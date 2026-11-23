@@ -46,11 +46,42 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.ui.today.subjectChipLabel
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+
+/** Material 3 Expressive scalloped flower/cookie shape usable with Modifier.clip / Surface. */
+class ExpressiveScallopShape(
+    private val lobes: Int = 10,
+    private val depth: Float = 0.12f,
+) : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+        val radius = size.minDimension / 2f
+        val center = Offset(size.width / 2f, size.height / 2f)
+        val path = Path()
+        val steps = lobes * 18
+        for (i in 0..steps) {
+            val t = i / steps.toFloat() * 2f * PI.toFloat()
+            val wobble = depth * cos(lobes * t)
+            val r = radius * (1f - depth + wobble)
+            val x = center.x + r * cos(t)
+            val y = center.y + r * sin(t)
+            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        path.close()
+        return Outline.Generic(path)
+    }
+}
+
+/** Material 3 Expressive soft 4-lobe clover squircle shape. */
+val ExpressiveCloverShape: Shape = ExpressiveScallopShape(lobes = 4, depth = 0.08f)
 
 @Composable
 fun PageTitle(
@@ -58,14 +89,27 @@ fun PageTitle(
     subtitle: String?,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(title, style = MaterialTheme.typography.displayMedium)
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            title,
+            style = MaterialTheme.typography.displayMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
         if (!subtitle.isNullOrBlank()) {
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Box(
+                Modifier
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .padding(horizontal = 12.dp, vertical = 5.dp),
+            ) {
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
@@ -156,14 +200,22 @@ fun CircleCheck(
     val next = !checked
     val progress by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (checked) 1f else 0f,
-        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.7f, stiffness = 380f),
+        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.58f, stiffness = 420f),
         label = "hw-check",
     )
+    val burst = remember { androidx.compose.animation.core.Animatable(1f) }
+    androidx.compose.runtime.LaunchedEffect(checked) {
+        if (checked) {
+            burst.snapTo(0f)
+            burst.animateTo(1f, tween(420))
+        }
+    }
     val ring = androidx.compose.ui.graphics.lerp(
         MaterialTheme.colorScheme.outline,
         MaterialTheme.colorScheme.primary,
-        progress,
+        progress.coerceIn(0f, 1f),
     )
+    val sparkColor = MaterialTheme.colorScheme.primary
     Box(
         modifier
             .size(48.dp)
@@ -173,18 +225,42 @@ fun CircleCheck(
             .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center,
     ) {
+        if (burst.value < 0.98f) {
+            Canvas(Modifier.size(44.dp)) {
+                val t = burst.value
+                val fade = (1f - t).coerceIn(0f, 1f)
+                val maxR = size.minDimension / 2f
+                repeat(6) { i ->
+                    val angle = (i / 6f) * (2f * PI.toFloat())
+                    val r = maxR * (0.45f + 0.55f * t)
+                    drawCircle(
+                        color = sparkColor.copy(alpha = fade),
+                        radius = 3.5f * (1f - 0.5f * t),
+                        center = Offset(
+                            x = center.x + cos(angle) * r,
+                            y = center.y + sin(angle) * r,
+                        ),
+                    )
+                }
+            }
+        }
         Box(
             Modifier
                 .size(24.dp)
+                .graphicsLayer {
+                    val bounce = 1f + 0.14f * sin(progress.coerceIn(0f, 1f) * PI.toFloat())
+                    scaleX = bounce
+                    scaleY = bounce
+                }
                 .clip(CircleShape)
                 .border(2.dp, ring, CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = progress), CircleShape),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = progress.coerceIn(0f, 1f)), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             if (progress > 0.15f) {
                 Text(
                     "✓",
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = progress),
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = progress.coerceIn(0f, 1f)),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.graphicsLayer {

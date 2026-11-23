@@ -76,10 +76,10 @@ fun PhotosDock(
     modifier: Modifier = Modifier,
     tabs: List<DockTab> = defaultDockTabs(),
 ) {
-    val pillColor = MaterialTheme.colorScheme.surfaceContainer
+    val pillColor = MaterialTheme.colorScheme.surfaceContainerHigh
     val onPill = MaterialTheme.colorScheme.onSurface
-    val indicatorColor = MaterialTheme.colorScheme.secondaryContainer
-    val onIndicator = MaterialTheme.colorScheme.onSecondaryContainer
+    val indicatorColor = MaterialTheme.colorScheme.primaryContainer
+    val onIndicator = MaterialTheme.colorScheme.onPrimaryContainer
 
     Row(
         modifier = modifier
@@ -101,8 +101,8 @@ fun PhotosDock(
         )
         SearchFab(
             size = MagsChrome.FabSize,
-            container = pillColor,
-            content = onPill,
+            container = MaterialTheme.colorScheme.tertiaryContainer,
+            content = MaterialTheme.colorScheme.onTertiaryContainer,
             onClick = onSearch,
         )
     }
@@ -280,7 +280,13 @@ private fun DockTabContent(
         Icon(
             tab.icon,
             contentDescription = null,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier
+                .size(19.dp)
+                .graphicsLayer {
+                    val s = 1f + 0.12f * selectedFraction
+                    scaleX = s
+                    scaleY = s
+                },
             tint = lerp(onPill, onIndicator, selectedFraction),
         )
         Text(
@@ -288,7 +294,7 @@ private fun DockTabContent(
             color = lerp(onPill, onIndicator, selectedFraction),
             fontSize = 11.sp,
             lineHeight = 13.sp,
-            fontWeight = FontWeight.Medium,
+            fontWeight = if (selectedFraction > 0.5f) FontWeight.Bold else FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Clip,
             softWrap = false,
@@ -306,10 +312,11 @@ private fun SearchFab(
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val pressScale by animateFloatAsState(
-        targetValue = if (pressed) 0.96f else 1f,
+        targetValue = if (pressed) 0.92f else 1f,
         animationSpec = pressSpring(),
         label = "search-press",
     )
+    val fabShape = androidx.compose.foundation.shape.RoundedCornerShape(if (pressed) 28.dp else 20.dp)
     Box(
         modifier = Modifier
             .size(size)
@@ -317,8 +324,8 @@ private fun SearchFab(
                 scaleX = pressScale
                 scaleY = pressScale
             }
-            .shadow(6.dp, CircleShape, ambientColor = Color.Black.copy(alpha = 0.28f), spotColor = Color.Black.copy(alpha = 0.34f))
-            .clip(CircleShape)
+            .shadow(6.dp, fabShape, ambientColor = Color.Black.copy(alpha = 0.28f), spotColor = Color.Black.copy(alpha = 0.34f))
+            .clip(fabShape)
             .background(container)
             .hapticOnDown(HapticEvent.TabSwitch)
             .clickable(

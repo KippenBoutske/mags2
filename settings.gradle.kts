@@ -18,3 +18,4 @@ rootProject.name = "Mags"
 include(":core")
 include(":app")
 include(":desktop")
+include(":wear")

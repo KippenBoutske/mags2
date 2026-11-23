@@ -143,8 +143,8 @@ class GradeCalculatorTest {
 
     @Test
     fun latestEarnedGradesAreIndividualNewestFirst() {
-        val latest = GradeCalculator.latestEarnedGrades(MockFixtures.grades())
-        assertEquals(listOf("Wiskunde B", "Engels", "Nederlands"), latest.map { it.subjectName })
+        val latest = GradeCalculator.latestEarnedGrades(MockFixtures.grades(), limit = 3)
+        assertEquals(listOf("Wiskunde", "Engels", "Nederlands"), latest.map { it.subjectName })
         assertEquals(listOf("5,3", "7,6", "6,8"), latest.map { it.value })
         assertEquals(listOf("PW2", "WR1", "LT1"), latest.map { it.columnHeading })
         assertTrue(latest.all { it.columnType == GradeColumnType.Grade })
@@ -181,6 +181,20 @@ class GradeCalculatorTest {
         val currentYear = GradeCalculator.currentSchoolYearGrades(grades, java.time.LocalDate.of(2026, 11, 15))
 
         assertEquals(listOf(4), currentYear.map { it.id })
+    }
+
+    @Test
+    fun latestEarnedGradesReturnsAllWhenLimitAllowsAndPrefersWeightedDuplicate() {
+        val seven = (1..7).map { i ->
+            grade(6.0 + i * 0.2, 2.0, id = i, columnId = 100 + i, heading = "T$i")
+                .copy(enteredAt = "2026-10-0${i}T10:00:00Z", value = "${6 + i / 5},${(i * 2) % 10}")
+        }
+        val duplicateWithoutWeight = seven.last().copy(id = -1, weight = null, subjectId = 0)
+        val latest = GradeCalculator.latestEarnedGrades(listOf(duplicateWithoutWeight) + seven, limit = Int.MAX_VALUE)
+
+        assertEquals(7, latest.size)
+        assertEquals(2.0, latest.first().weight!!, 0.0001)
+        assertEquals(1, latest.first().subjectId)
     }
 
     @Test

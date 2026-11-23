@@ -24,6 +24,7 @@ data class LiveSnapshot(
 object LiveLesson {
     const val LeadMinutes = 40L
     const val NextLessonLeadMinutes = 5L
+    const val UpdateIntervalMinutes = 1L
     private val zone: ZoneId = ZoneId.of("Europe/Amsterdam")
 
     private const val ColorLesson = 0xFFC4A36A.toInt()
@@ -51,36 +52,35 @@ object LiveLesson {
             else -> null
         } ?: return null
         val showingCurrent = current != null && !showingUpcoming
+        val target: Instant = if (showingCurrent) (current!!.end ?: now) else (focus.start ?: now)
+        val remainingSeconds = Duration.between(now, target).seconds.coerceAtLeast(0L)
+        val remainingMin = ((remainingSeconds + 59L) / 60L).toInt()
         val title: String
         val text: String
-        val target: Instant
-        val countdown: Boolean
+        val countdown = true
         if (showingCurrent) {
             title = if (current!!.item.isCancelled) "Uitval: ${current.name}" else "Nu: ${current.name}"
             text = buildString {
                 append("tot ${current.endLabel}")
+                if (remainingMin in 1..99) append(" · nog $remainingMin min")
                 current.room?.let { append(" · $it") }
                 if (current.item.isChanged && !current.item.isCancelled) append(" · gewijzigd")
             }
-            target = current.end ?: now
-            countdown = true
         } else {
             title = if (focus.item.isCancelled) "Uitval: ${focus.name}" else "Volgende: ${focus.name}"
             text = buildString {
+                if (remainingMin in 1..99) append("over $remainingMin min · ")
                 append(focus.startLabel)
                 focus.room?.let { append(" · $it") }
                 if (focus.item.isCancelled) append(" · Uitval")
                 else if (focus.item.isChanged) append(" · gewijzigd")
             }
-            target = focus.start ?: now
-            countdown = true
         }
 
-        val remainingMin = Duration.between(now, target).toMinutes()
         val chip = when {
-            current?.item?.isCancelled == true -> "Uitval"
+            focus.item.isCancelled -> "Uitval"
             remainingMin in 1..99 -> "$remainingMin min"
-            else -> (if (current != null) current.endLabel else focus.startLabel).take(5)
+            else -> (if (showingCurrent) current!!.endLabel else focus.startLabel).take(5)
         }
 
         val segments = segmentsOf(day)
@@ -136,9 +136,13 @@ object LiveLesson {
             .firstOrNull { it.isAfter(now) }
         val nextLessonWake = nextStart?.minus(Duration.ofMinutes(NextLessonLeadMinutes))
             ?.takeIf { it.isAfter(now) }
+        val stepMillis = Duration.ofMinutes(UpdateIntervalMinutes).toMillis()
+        val nextTick = Instant.ofEpochMilli(((now.toEpochMilli() / stepMillis) + 1L) * stepMillis)
+            .takeIf { it.isBefore(lastEnd) }
         return listOfNotNull(
             nextBoundary(day, now, lastEnd),
             nextLessonWake,
+            nextTick,
         ).minOrNull()
     }
 

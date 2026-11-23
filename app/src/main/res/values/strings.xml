@@ -10,5 +10,9 @@
     <string name="tab_meer">Meer</string>
     <string name="action_search">Zoeken</string>
     <string name="widget_next_lesson">Volgende les</string>
-    <string name="widget_next_lesson_desc">Toont je eerstvolgende les uit Magister.</string>
+    <string name="widget_next_lesson_desc">Toont je huidige of eerstvolgende les met lokaal en afteller.</string>
+    <string name="widget_today_schedule">Rooster vandaag</string>
+    <string name="widget_today_schedule_desc">Toont je aankomende lessen van vandaag in één oogopslag.</string>
+    <string name="widget_latest_grades">Laatste cijfers</string>
+    <string name="widget_latest_grades_desc">Toont je nieuwste cijfers uit Magister.</string>
 </resources>

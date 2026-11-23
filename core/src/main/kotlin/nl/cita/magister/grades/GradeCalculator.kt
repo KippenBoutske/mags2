@@ -64,6 +64,8 @@ object GradeCalculator {
             .filter { hasEarnedResult(it) }
             .sortedWith(
                 compareByDescending<Grade> { it.enteredAt.orEmpty() }
+                    .thenByDescending { it.weight != null }
+                    .thenByDescending { it.subjectId > 0 }
                     .thenByDescending { it.id },
             )
             .distinctBy { it.columnId?.takeIf { id -> id != 0 } ?: it.id }
@@ -135,6 +137,7 @@ object GradeCalculator {
         currentGrades: List<Grade>,
         target: Double,
         nextWeight: Double,
+        fallbackAverage: Double? = null,
     ): ScoreNeeded {
         require(target in 1.0..10.0) { "Doelcijfer moet tussen 1 en 10 liggen." }
         require(nextWeight > 0.0) { "Weging moet groter dan 0 zijn." }
@@ -143,8 +146,18 @@ object GradeCalculator {
             val weight = (grade.weight ?: 1.0).takeIf { it > 0 } ?: return@mapNotNull null
             value to weight
         }
-        val currentSum = usable.sumOf { it.first * it.second }
-        val currentWeight = usable.sumOf { it.second }
+        val currentSum: Double
+        val currentWeight: Double
+        if (usable.isNotEmpty()) {
+            currentSum = usable.sumOf { it.first * it.second }
+            currentWeight = usable.sumOf { it.second }
+        } else if (fallbackAverage != null) {
+            currentSum = fallbackAverage
+            currentWeight = 1.0
+        } else {
+            currentSum = 0.0
+            currentWeight = 0.0
+        }
         val needed = (target * (currentWeight + nextWeight) - currentSum) / nextWeight
         return ScoreNeeded(
             needed = needed,

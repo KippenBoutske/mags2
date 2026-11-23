@@ -40,8 +40,8 @@ class MainActivity : ComponentActivity() {
         val shownAt = SystemClock.elapsedRealtime()
         splash.setKeepOnScreenCondition {
             val elapsed = SystemClock.elapsedRealtime() - shownAt
-            if (elapsed >= 1_000L) return@setKeepOnScreenCondition false
-            viewModel.booting.value || elapsed < 820L
+            if (elapsed >= 600L) return@setKeepOnScreenCondition false
+            viewModel.booting.value || elapsed < 220L
         }
         try {
             runCatching { enableEdgeToEdge() }
@@ -105,6 +105,11 @@ class MainActivity : ComponentActivity() {
             .start()
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.syncSignedInState()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -130,6 +135,7 @@ class MainActivity : ComponentActivity() {
         val uri = intent?.data ?: return
         val raw = uri.toString()
         if (raw.startsWith(MagisterEndpoints.REDIRECT_URI.trimEnd('/'))) {
+            intent.data = null
             viewModel.handleRedirect(raw)
         }
     }

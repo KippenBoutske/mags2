@@ -134,7 +134,7 @@ object MagisterParsers {
                     it.resolvedName?.trim()?.takeIf { name -> name.isNotEmpty() }
                         ?: it.resolvedCode?.trim()
                 } ?: emptyList(),
-                content = dto.content?.takeIf { it.isNotBlank() },
+                content = dto.content?.stripHtml()?.takeIf { it.isNotBlank() },
                 infoType = InfoType.from(dto.infoType),
                 isCancelled = dto.status == 5,
                 isChanged = dto.status == 4,
@@ -160,8 +160,8 @@ object MagisterParsers {
                     title = appointment.title,
                     subjects = appointment.subjects,
                 ),
-                title = appointment.title,
-                description = appointment.content,
+                title = appointment.title.stripHtml(),
+                description = appointment.content?.stripHtml()?.takeIf { it.isNotBlank() },
                 location = appointment.location ?: appointment.classroom,
                 infoType = appointment.infoType,
                 isDone = appointment.isCompleted,
@@ -182,8 +182,8 @@ object MagisterParsers {
                     title = dto.subject?.name ?: dto.subject?.nameAlt,
                     code = dto.subject?.code,
                 ).takeIf { it != "Les" } ?: "Opdracht",
-                title = dto.title ?: "Opdracht",
-                description = dto.description,
+                title = (dto.title ?: "Opdracht").stripHtml(),
+                description = dto.description?.stripHtml()?.takeIf { it.isNotBlank() },
                 location = null,
                 infoType = InfoType.Homework,
                 isDone = dto.closed == true,
@@ -319,7 +319,13 @@ object MagisterParsers {
             val info = extra[columnId]
             val weight = extraWeights[columnId] ?: info?.resolvedWeight ?: grade.weight
             val type = if (info != null) {
-                columnType(info.type, info.name ?: grade.columnHeading, info.heading ?: grade.columnHeading, info.description)
+                val inferred = columnType(
+                    info.type,
+                    info.name ?: grade.columnHeading,
+                    info.heading ?: grade.columnHeading,
+                    info.description ?: grade.columnDescription,
+                )
+                if (info.type == null && inferred == GradeColumnType.Other) grade.columnType else inferred
             } else {
                 grade.columnType
             }
@@ -391,8 +397,25 @@ object MagisterParsers {
     }
 }
 
-fun String.stripHtml(): String = replace(Regex("<[^>]+>"), " ")
+fun String.stripHtml(): String = replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
+    .replace(Regex("</(p|div|li|h[1-6])>", RegexOption.IGNORE_CASE), "\n")
+    .replace(Regex("<[^>]+>"), " ")
     .replace("&nbsp;", " ")
     .replace("&amp;", "&")
-    .replace(Regex("\\s+"), " ")
+    .replace("&lt;", "<")
+    .replace("&gt;", ">")
+    .replace("&quot;", "\"")
+    .replace("&#39;", "'")
+    .replace("&apos;", "'")
+    .replace("&euro;", "€")
+    .replace("&ndash;", "–")
+    .replace("&mdash;", "—")
+    .replace(Regex("&#(\\d+);")) { m ->
+        m.groupValues[1].toIntOrNull()?.toChar()?.toString() ?: m.value
+    }
+    .replace(Regex("&#x([0-9a-fA-F]+);")) { m ->
+        m.groupValues[1].toIntOrNull(16)?.toChar()?.toString() ?: m.value
+    }
+    .replace(Regex("[ \\t\\r\\f]+"), " ")
+    .replace(Regex(" *\\n+ *"), "\n")
     .trim()

@@ -55,7 +55,7 @@ fun MagsTopBar(
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(CircleShape)
+                    .clip(nl.cita.magister.ui.components.ExpressiveScallopShape(lobes = 10, depth = 0.09f))
                     .background(MaterialTheme.colorScheme.primaryContainer)
                     .hapticOnDown(HapticEvent.LongPress)
                     .clickable { menu = true }
@@ -66,7 +66,17 @@ fun MagsTopBar(
                     initials(profile),
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.ExtraBold,
+                )
+            }
+            if (unreadMessages > 0) {
+                Box(
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(2.dp)
+                        .size(11.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.error),
                 )
             }
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {

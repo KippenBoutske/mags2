@@ -76,12 +76,14 @@ import nl.cita.magister.model.SubjectAverage
 import nl.cita.magister.haptics.HapticEvent
 import nl.cita.magister.haptics.HapticStrength
 import nl.cita.magister.haptics.LocalMagsHaptics
+import nl.cita.magister.haptics.hapticScrollRatchet
 import nl.cita.magister.ui.grades.GradesScreen
 import nl.cita.magister.ui.homework.HomeworkScreen
 import nl.cita.magister.ui.login.BootSplash
 import nl.cita.magister.ui.login.LoginScreen
 import nl.cita.magister.ui.login.LoginWebView
 import nl.cita.magister.ui.messages.MessagesScreen
+import nl.cita.magister.ui.motion.MagsStartupReveal
 import nl.cita.magister.ui.motion.StaggerScope
 import nl.cita.magister.ui.motion.magsSpring
 import nl.cita.magister.ui.motion.pageFadeSpring
@@ -89,6 +91,7 @@ import nl.cita.magister.ui.nav.MagsChrome
 import nl.cita.magister.ui.nav.MagsPage
 import nl.cita.magister.ui.nav.MagsTopBar
 import nl.cita.magister.ui.nav.PhotosDock
+import nl.cita.magister.ui.onboarding.MagsWelcomeTour
 import nl.cita.magister.ui.schedule.ScheduleScreen
 import nl.cita.magister.ui.search.SearchHit
 import nl.cita.magister.ui.search.SearchSheet
@@ -104,6 +107,8 @@ fun CitaRoot(viewModel: CitaViewModel) {
     val booting by viewModel.booting.collectAsStateWithLifecycle()
     val signedIn by viewModel.signedIn.collectAsStateWithLifecycle()
     val webViewUrl by viewModel.webViewUrl.collectAsStateWithLifecycle()
+    val showWelcomeTour by viewModel.showWelcomeTour.collectAsStateWithLifecycle()
+    val welcomeFirstName by viewModel.welcomeFirstName.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
 
     val haptics = LocalMagsHaptics.current
@@ -114,44 +119,46 @@ fun CitaRoot(viewModel: CitaViewModel) {
         viewModel.hapticPulse.collect { haptics.play(it) }
     }
 
+    val safe = LocalSafeMode.current
+    var showStartupReveal by remember { mutableStateOf(!safe) }
+
     if (booting) {
         BootSplash()
         return
     }
 
-    if (webViewUrl != null) {
-        LoginWebView(
-            url = webViewUrl!!,
-            onRedirect = viewModel::handleRedirect,
-            onClose = viewModel::closeWebView,
-        )
-        return
-    }
-
-    if (!signedIn) {
-        val school by viewModel.schoolName.collectAsStateWithLifecycle()
-        val tenant by viewModel.tenantHost.collectAsStateWithLifecycle()
-        val hits by viewModel.schoolHits.collectAsStateWithLifecycle()
-        val searching by viewModel.schoolSearching.collectAsStateWithLifecycle()
-        val error by viewModel.lastError.collectAsStateWithLifecycle()
-        Scaffold(snackbarHost = { SnackbarHost(snackbarHost) }) {
-            LoginScreen(
-                schoolName = school,
-                tenantHost = tenant,
-                schools = hits,
-                searching = searching,
-                lastError = error,
-                onQuery = viewModel::searchSchools,
-                onSchoolChange = viewModel::setSchool,
-                onStartLogin = { viewModel.startLogin().authorizeUrl },
-                onWebViewLogin = viewModel::openWebViewLogin,
-                onDemo = viewModel::enterDemo,
+    Box(Modifier.fillMaxSize()) {
+        if (webViewUrl != null) {
+            LoginWebView(
+                url = webViewUrl!!,
+                onRedirect = viewModel::handleRedirect,
+                onClose = viewModel::closeWebView,
             )
+            return@Box
         }
-        return
-    }
 
-    val profile by viewModel.profile.collectAsStateWithLifecycle()
+        if (!signedIn) {
+            val school by viewModel.schoolName.collectAsStateWithLifecycle()
+            val tenant by viewModel.tenantHost.collectAsStateWithLifecycle()
+            val hits by viewModel.schoolHits.collectAsStateWithLifecycle()
+            val searching by viewModel.schoolSearching.collectAsStateWithLifecycle()
+            val error by viewModel.lastError.collectAsStateWithLifecycle()
+            Scaffold(snackbarHost = { SnackbarHost(snackbarHost) }) {
+                LoginScreen(
+                    schoolName = school,
+                    tenantHost = tenant,
+                    schools = hits,
+                    searching = searching,
+                    lastError = error,
+                    onQuery = viewModel::searchSchools,
+                    onSchoolChange = viewModel::setSchool,
+                    onStartLogin = { viewModel.startLogin().authorizeUrl },
+                    onWebViewLogin = viewModel::openWebViewLogin,
+                    onDemo = viewModel::enterDemo,
+                )
+            }
+        } else {
+        val profile by viewModel.profile.collectAsStateWithLifecycle()
     val grades by viewModel.grades.collectAsStateWithLifecycle()
     val averages by viewModel.averages.collectAsStateWithLifecycle()
     val latestGrades by viewModel.latestGrades.collectAsStateWithLifecycle()
@@ -231,7 +238,19 @@ fun CitaRoot(viewModel: CitaViewModel) {
         pendingPage = pendingPage,
         onPendingPageConsumed = viewModel::consumePendingPage,
         offline = offline,
+        onReplayTour = viewModel::replayWelcomeTour,
     )
+        if (showWelcomeTour) {
+            MagsWelcomeTour(
+                firstName = profile?.firstName?.takeIf { it.isNotBlank() } ?: welcomeFirstName,
+                onFinished = viewModel::finishWelcomeTour,
+            )
+        }
+        }
+        if (showStartupReveal) {
+            MagsStartupReveal(onFinished = { showStartupReveal = false })
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
@@ -271,7 +290,7 @@ fun MagsSignedInScaffold(
     onLogout: () -> Unit,
     initialPage: MagsPage = MagsPage.Vandaag,
     sectionErrors: SectionErrors = SectionErrors(),
-    dynamicColor: Boolean = false,
+    dynamicColor: Boolean = true,
     onDynamicColor: (Boolean) -> Unit = {},
     notifications: Boolean = true,
     onNotifications: (Boolean) -> Unit = {},
@@ -284,6 +303,7 @@ fun MagsSignedInScaffold(
     onVisibleWeek: (LocalDate) -> Unit = {},
     clockDate: LocalDate = LocalDate.now(),
     clockTime: LocalTime = LocalTime.now(),
+    onReplayTour: () -> Unit = {},
     pendingPage: MagsPage? = null,
     onPendingPageConsumed: () -> Unit = {},
     offline: Boolean = false,
@@ -367,8 +387,20 @@ fun MagsSignedInScaffold(
     val ptr = rememberPullToRefreshState()
     val haptics = LocalMagsHaptics.current
     val refreshArmed = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
+    val pullStep = remember { java.util.concurrent.atomic.AtomicInteger(0) }
     val ptrFraction = ptr.distanceFraction
     SideEffect {
+        val bucket = when {
+            ptrFraction >= 1f -> 4
+            ptrFraction >= 0.75f -> 3
+            ptrFraction >= 0.50f -> 2
+            ptrFraction >= 0.25f -> 1
+            else -> 0
+        }
+        val prevBucket = pullStep.getAndSet(bucket)
+        if (bucket in 1..3 && bucket > prevBucket) {
+            haptics.play(HapticEvent.ScrollTick)
+        }
         if (ptrFraction >= 1f) {
             if (refreshArmed.compareAndSet(false, true)) haptics.play(HapticEvent.RefreshThreshold)
         } else if (ptrFraction < 0.45f) {
@@ -389,23 +421,31 @@ fun MagsSignedInScaffold(
         Box(
             Modifier
                 .fillMaxSize()
-                .nestedScroll(scroll),
+                .nestedScroll(scroll)
+                .hapticScrollRatchet(),
         ) {
+            if (!safe) {
+                nl.cita.magister.ui.motion.ExpressiveAuraBackground()
+            }
             PullToRefreshBox(
                 isRefreshing = refreshing,
                 onRefresh = onRefresh,
                 state = ptr,
                 modifier = Modifier.fillMaxSize(),
                 indicator = {
+                    val indicatorMod = Modifier
+                        .align(Alignment.TopCenter)
+                        .statusBarsPadding()
+                        .padding(top = 8.dp)
                     if (safe) {
                         PullToRefreshDefaults.Indicator(
-                            modifier = Modifier.align(Alignment.TopCenter),
+                            modifier = indicatorMod,
                             isRefreshing = refreshing,
                             state = ptr,
                         )
                     } else {
                         PullToRefreshDefaults.LoadingIndicator(
-                            modifier = Modifier.align(Alignment.TopCenter),
+                            modifier = indicatorMod,
                             isRefreshing = refreshing,
                             state = ptr,
                         )
@@ -416,10 +456,21 @@ fun MagsSignedInScaffold(
                     AnimatedContent(
                         targetState = page,
                         transitionSpec = {
+                            val dir = if (targetState.ordinal >= initialState.ordinal) 1 else -1
                             (
                                 fadeIn(animationSpec = pageFadeSpring()) +
-                                    scaleIn(initialScale = 0.92f, animationSpec = pageFadeSpring())
-                                ) togetherWith fadeOut(animationSpec = pageFadeSpring())
+                                    androidx.compose.animation.slideInHorizontally(
+                                        animationSpec = magsSpring(),
+                                        initialOffsetX = { dir * (it / 14) },
+                                    ) +
+                                    scaleIn(initialScale = 0.95f, animationSpec = pageFadeSpring())
+                                ) togetherWith (
+                                fadeOut(animationSpec = pageFadeSpring()) +
+                                    androidx.compose.animation.slideOutHorizontally(
+                                        animationSpec = magsSpring(),
+                                        targetOffsetX = { -dir * (it / 16) },
+                                    )
+                                )
                         },
                         label = "page",
                     ) { dest ->
@@ -543,6 +594,7 @@ fun MagsSignedInScaffold(
                                     assignmentsError = sectionErrors.assignments,
                                     unreadMessages = messages.count { !it.isRead },
                                     onOpenMessages = { page = MagsPage.Berichten },
+                                    onReplayTour = onReplayTour,
                                 )
                             }
                             }

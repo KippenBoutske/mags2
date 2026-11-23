@@ -74,15 +74,18 @@ import nl.cita.magister.model.ApiFailure
 import nl.cita.magister.model.Appointment
 import nl.cita.magister.model.HomeworkItem
 import nl.cita.magister.model.InfoType
+import nl.cita.magister.parse.stripHtml
 import nl.cita.magister.subject.displaySubject
 import nl.cita.magister.subject.teacherCode
 import nl.cita.magister.ui.components.CookieFlower
 import nl.cita.magister.ui.components.EmptyState
+import nl.cita.magister.ui.components.ExpressiveScallopShape
 import nl.cita.magister.ui.components.ListSkeleton
 import nl.cita.magister.ui.components.SectionError
 import nl.cita.magister.ui.formatTime
 import nl.cita.magister.ui.localDateOf
 import nl.cita.magister.ui.nav.MagsPage
+import nl.cita.magister.ui.motion.LivePulseDot
 import nl.cita.magister.ui.motion.PressScaleCard
 import nl.cita.magister.ui.motion.StaggerScope
 import nl.cita.magister.ui.motion.pageFadeSpring
@@ -475,8 +478,9 @@ private fun DayTimeline(
                 )
             }
         }
+        val nowLabel = now.format(DateTimeFormatter.ofPattern("HH:mm"))
         if (isToday && nowLineBefore(slots, now)) {
-            item { NowLine() }
+            item { NowLine(time = nowLabel) }
         }
         itemsIndexed(slots, key = { _, slot -> slotKey(slot) }) { index, slot ->
             when (slot) {
@@ -484,7 +488,7 @@ private fun DayTimeline(
                     Box(Modifier.staggerEnter(index, key = slotKey(slot))) {
                         if (slot.kind == GapKind.FreePeriod) GapRow(slot) else BreakMark()
                         if (isToday && nowInsideGap(slot, now)) {
-                            NowLine(Modifier.align(Alignment.Center))
+                            NowLine(Modifier.align(Alignment.Center), time = nowLabel)
                         }
                     }
                 }
@@ -501,7 +505,7 @@ private fun DayTimeline(
             }
         }
         if (isToday && nowLineAfter(slots, now)) {
-            item { NowLine() }
+            item { NowLine(time = nowLabel) }
         }
     }
 }
@@ -529,7 +533,13 @@ private fun NowLine(modifier: Modifier = Modifier, time: String = "") {
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary),
         )
-        Text("nu $time", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+        Text(
+            if (time.isBlank()) "nu" else "nu · $time",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+            softWrap = false,
+        )
     }
 }
 
@@ -540,17 +550,17 @@ private fun GapRow(slot: DaySlot.Gap) {
     Row(
         Modifier
             .fillMaxWidth()
-            .height(36.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .padding(horizontal = 14.dp)
+            .height(42.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.55f))
+            .padding(horizontal = 16.dp)
             .testTag("tussenuur"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("Tussenuur", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("Tussenuur", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onTertiaryContainer)
         Spacer(Modifier.weight(1f))
-        Text("$from–$to", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("$from–$to", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f))
     }
 }
 
@@ -594,11 +604,38 @@ private fun LessonCard(
     modifier: Modifier = Modifier,
 ) {
     val dimmed = item.isCancelled
+    val active = current && !dimmed
+    val titleColor = when {
+        dimmed -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f)
+        active -> MaterialTheme.colorScheme.onPrimaryContainer
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+    val metaColor = when {
+        active -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val periodBg = when {
+        active -> MaterialTheme.colorScheme.primary
+        dimmed -> MaterialTheme.colorScheme.errorContainer
+        else -> MaterialTheme.colorScheme.secondaryContainer
+    }
+    val periodFg = when {
+        active -> MaterialTheme.colorScheme.onPrimary
+        dimmed -> MaterialTheme.colorScheme.onErrorContainer
+        else -> MaterialTheme.colorScheme.onSecondaryContainer
+    }
+    val periodShape = if (active) {
+        ExpressiveScallopShape(lobes = 8, depth = 0.1f)
+    } else {
+        RoundedCornerShape(16.dp)
+    }
     PressScaleCard(
+        cornerRadius = if (active) 36.dp else 28.dp,
+        pressedCornerRadius = 18.dp,
         colors = CardDefaults.cardColors(
             when {
                 dimmed -> MaterialTheme.colorScheme.surfaceContainerLow
-                current -> MaterialTheme.colorScheme.primaryContainer
+                active -> MaterialTheme.colorScheme.primaryContainer
                 else -> MaterialTheme.colorScheme.surfaceContainerHigh
             },
         ),
@@ -607,79 +644,92 @@ private fun LessonCard(
             .testTag(if (current) "les-kaart-nu" else "les-kaart"),
         onClick = onClick,
     ) {
-        Box {
-            if (current && !dimmed) {
-                CurrentLessonBadge(
-                    modifier = Modifier.align(Alignment.TopEnd).padding(14.dp),
-                    startTime = formatTime(item.startIso),
-                )
-            }
-            Column(Modifier.padding(if (current) 18.dp else 14.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(
-                        Modifier
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
-                    ) {
-                        Text(item.periodFrom?.toString() ?: "–", style = MaterialTheme.typography.titleMedium)
-                    }
-                    Column(
-                        Modifier
-                            .weight(1f)
-                            .padding(end = if (current && !dimmed) 94.dp else 0.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+        Column(Modifier.padding(if (active) 18.dp else 16.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
+                Box(
+                    Modifier
+                        .size(if (active) 46.dp else 42.dp)
+                        .clip(periodShape)
+                        .background(periodBg),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        item.periodFrom?.toString() ?: "–",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                        color = periodFg,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                }
+                Column(
+                    Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(5.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             item.displaySubject(),
-                            style = if (current) MaterialTheme.typography.headlineSmall
+                            style = if (active) MaterialTheme.typography.headlineSmall
                             else MaterialTheme.typography.titleLarge,
-                            color = if (dimmed) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f)
-                            else MaterialTheme.colorScheme.onSurface,
+                            color = titleColor,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
                         )
-                        if (item.isCancelled || item.isChanged) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                if (item.isCancelled) {
-                                    LessonBadge(
-                                        text = "Uitval",
-                                        container = MaterialTheme.colorScheme.errorContainer,
-                                        content = MaterialTheme.colorScheme.onErrorContainer,
-                                    )
-                                } else if (item.isChanged) {
-                                    LessonBadge(
-                                        text = "Gewijzigd",
-                                        container = MaterialTheme.colorScheme.tertiaryContainer,
-                                        content = MaterialTheme.colorScheme.onTertiaryContainer,
-                                    )
-                                }
-                            }
-                        }
-                        val meta = listOfNotNull(
-                            item.teacherCode(),
-                            item.classroom ?: item.location,
-                            listOfNotNull(formatTime(item.startIso), formatTime(item.endIso))
-                                .filter { it.isNotBlank() }
-                                .joinToString("–")
-                                .takeIf { it.isNotBlank() },
-                        ).joinToString("  ·  ")
-                        if (meta.isNotBlank()) {
-                            Text(
-                                meta,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        if (active) {
+                            CurrentLessonBadge(
+                                startTime = formatTime(item.startIso),
                             )
                         }
-                        if (current && !dimmed) {
-                            item.content?.takeIf { it.isNotBlank() }?.let { body ->
-                                Text(
-                                    body,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    maxLines = 2,
-                                    modifier = Modifier.padding(top = 6.dp),
+                    }
+                    if (item.isCancelled || item.isChanged) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            if (item.isCancelled) {
+                                LessonBadge(
+                                    text = "Uitval",
+                                    container = MaterialTheme.colorScheme.errorContainer,
+                                    content = MaterialTheme.colorScheme.onErrorContainer,
+                                )
+                            } else if (item.isChanged) {
+                                LessonBadge(
+                                    text = "Gewijzigd",
+                                    container = MaterialTheme.colorScheme.tertiaryContainer,
+                                    content = MaterialTheme.colorScheme.onTertiaryContainer,
                                 )
                             }
+                        }
+                    }
+                    val meta = listOfNotNull(
+                        item.teacherCode(),
+                        item.classroom ?: item.location,
+                        listOfNotNull(formatTime(item.startIso), formatTime(item.endIso))
+                            .filter { it.isNotBlank() }
+                            .joinToString("–")
+                            .takeIf { it.isNotBlank() },
+                    ).joinToString("  ·  ")
+                    if (meta.isNotBlank()) {
+                        Text(
+                            meta,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = metaColor,
+                        )
+                    }
+                    if (active) {
+                        item.content?.stripHtml()?.takeIf { it.isNotBlank() }?.let { body ->
+                            Text(
+                                body,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = titleColor,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
                         }
                     }
                 }
@@ -689,18 +739,27 @@ private fun LessonCard(
 }
 
 @Composable
-private fun CurrentLessonBadge(modifier: Modifier, startTime: String) {
+private fun CurrentLessonBadge(startTime: String, modifier: Modifier = Modifier) {
     Row(
         modifier
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f))
-            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.14f))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
             .testTag("les-nu-vorm"),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(7.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
-        Text("NU · $startTime", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+        LivePulseDot(
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            size = 7.dp,
+        )
+        Text(
+            if (startTime.isBlank()) "NU" else "NU · $startTime",
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            maxLines = 1,
+            softWrap = false,
+        )
     }
 }
 
@@ -746,13 +805,13 @@ private fun LessonSheet(
             infoLabel(lesson.infoType)?.let {
                 Text(it, style = MaterialTheme.typography.labelLarge)
             }
-            val hw = lesson.content?.trim().orEmpty()
+            val hw = lesson.content?.stripHtml().orEmpty()
             if (hw.isNotBlank()) {
                 Text("Huiswerk", style = MaterialTheme.typography.titleSmall)
                 Text(hw, style = MaterialTheme.typography.bodyMedium)
             }
             homework.forEach { item ->
-                val extra = item.description?.trim().orEmpty()
+                val extra = item.description?.stripHtml().orEmpty()
                 if (extra.isNotBlank() && extra != hw) {
                     Text(extra, style = MaterialTheme.typography.bodyMedium)
                 }

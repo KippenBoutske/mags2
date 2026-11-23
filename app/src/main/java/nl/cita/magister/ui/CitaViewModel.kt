@@ -52,7 +52,7 @@ class CitaViewModel(
     val tenantId = container.prefs.tenantId.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     val webhookUrl = container.prefs.webhookUrl.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     val demoMode = container.prefs.demoMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
-    val dynamicColor = container.prefs.dynamicColor.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    val dynamicColor = container.prefs.dynamicColor.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     val notifications = container.prefs.notifications.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     val liveUpdate = container.prefs.liveUpdate.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     val haptics = container.prefs.haptics.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
@@ -111,10 +111,17 @@ class CitaViewModel(
     private val _offline = MutableStateFlow(false)
     val offline = _offline.asStateFlow()
 
+    private val _showWelcomeTour = MutableStateFlow(false)
+    val showWelcomeTour = _showWelcomeTour.asStateFlow()
+
+    private val _welcomeFirstName = MutableStateFlow<String?>(null)
+    val welcomeFirstName = _welcomeFirstName.asStateFlow()
+
     val hasWebhookKey: Boolean get() = repo.webhookConfigured()
 
     private var searchJob: Job? = null
     @Volatile private var skipBootRefresh = false
+    @Volatile private var lastHandledCode: String? = null
 
     init {
         viewModelScope.launch {
@@ -122,7 +129,12 @@ class CitaViewModel(
             if (skipBootRefresh) return@launch
             val demo = repo.isDemo()
             if (demo && !clockPinned) _clock.value = AppClock.Demo
-            _signedIn.value = repo.isLoggedIn() || demo
+            if (!_signedIn.value) {
+                _signedIn.value = repo.isLoggedIn() || demo
+            }
+            if (_signedIn.value && !demo && !container.prefs.onboardingSeenNow()) {
+                _showWelcomeTour.value = true
+            }
             runCatching { repo.cachedAppointments() }
             _booting.value = false
             if (_signedIn.value) {
@@ -138,8 +150,25 @@ class CitaViewModel(
                             _offline.value = true
                         }
                     nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
+                    nl.cita.magister.widget.MagsWidgetUpdater.syncAsync(getApplication())
                 }
             }
+        }
+    }
+
+    fun finishWelcomeTour() {
+        _showWelcomeTour.value = false
+        viewModelScope.launch { container.prefs.setOnboardingSeen(true) }
+    }
+
+    fun replayWelcomeTour() {
+        _showWelcomeTour.value = true
+    }
+
+    fun syncSignedInState() {
+        if (!_signedIn.value && (repo.isLoggedIn() || demoMode.value)) {
+            _signedIn.value = true
+            _booting.value = false
         }
     }
 
@@ -190,17 +219,27 @@ class CitaViewModel(
     }
 
     fun handleRedirect(url: String) {
+        val code = AuthRequestFactory.extractCode(url)
+        if (code != null && code == lastHandledCode) return
+        if (code != null) lastHandledCode = code
+        skipBootRefresh = true
         viewModelScope.launch {
             val error = AuthRequestFactory.extractError(url)
             if (error != null) {
+                _booting.value = false
                 _lastError.value = ApiFailure("oauth", 0, error)
                 _hapticPulse.tryEmit(HapticEvent.LoginError)
                 _snackbar.emit("Inloggen geannuleerd.")
                 return@launch
             }
-            val code = AuthRequestFactory.extractCode(url)
             val pending = container.pendingAuth.read()
             if (code == null || pending == null) {
+                _booting.value = false
+                if (repo.isLoggedIn()) {
+                    _webViewUrl.value = null
+                    _signedIn.value = true
+                    return@launch
+                }
                 _lastError.value = ApiFailure("oauth", 0, "Geen autorisatiecode ontvangen.")
                 _hapticPulse.tryEmit(HapticEvent.LoginError)
                 _snackbar.emit("Inloggen mislukt.")
@@ -208,26 +247,39 @@ class CitaViewModel(
             }
             val (verifier, _, tenant) = pending
             _refreshing.value = true
-            runCatching { repo.completeLogin(code, verifier, tenant) }
-                .onSuccess { result ->
-                    container.pendingAuth.clear()
-                    _webViewUrl.value = null
-                    _signedIn.value = true
-                    _hapticPulse.tryEmit(HapticEvent.LoginSuccess)
-                    val name = result.profile?.firstName
-                    if (name != null) {
-                        _snackbar.emit("Ingelogd als $name.")
-                    } else {
-                        _snackbar.emit("Ingelogd.")
+            val exchanged = runCatching { repo.exchangeLoginCode(code, verifier, tenant) }
+            exchanged.onSuccess { displayName ->
+                container.pendingAuth.clear()
+                _webViewUrl.value = null
+                _lastError.value = null
+                _booting.value = false
+                _welcomeFirstName.value = displayName
+                _showWelcomeTour.value = true
+                _signedIn.value = true
+                _hapticPulse.tryEmit(HapticEvent.LoginSuccess)
+                if (!displayName.isNullOrBlank()) {
+                    _snackbar.emit("Ingelogd als $displayName.")
+                } else {
+                    _snackbar.emit("Ingelogd.")
+                }
+                runCatching { repo.refreshAll() }
+                    .onSuccess { result ->
+                        _offline.value = false
+                        reportWarnings(result.warnings)
                     }
-                    reportWarnings(result.warnings)
-                    nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
-                }
-                .onFailure { error ->
-                    rememberFailure(error)
-                    _hapticPulse.tryEmit(HapticEvent.LoginError)
-                    _snackbar.emit(friendlyOf(error))
-                }
+                    .onFailure { syncError ->
+                        rememberFailure(syncError)
+                        _offline.value = true
+                    }
+                nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
+                nl.cita.magister.wear.WearSyncPublisher.syncAsync(getApplication())
+            nl.cita.magister.widget.MagsWidgetUpdater.syncAsync(getApplication())
+            }.onFailure { err ->
+                _booting.value = false
+                rememberFailure(err)
+                _hapticPulse.tryEmit(HapticEvent.LoginError)
+                _snackbar.emit(friendlyOf(err))
+            }
             _refreshing.value = false
         }
     }
@@ -244,6 +296,8 @@ class CitaViewModel(
             _hapticPulse.tryEmit(HapticEvent.LoginSuccess)
             _snackbar.emit(if (offline) "Offline · cache." else "Voorbeeld.")
             nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
+            nl.cita.magister.wear.WearSyncPublisher.syncAsync(getApplication())
+            nl.cita.magister.widget.MagsWidgetUpdater.syncAsync(getApplication())
         }
     }
 
@@ -273,6 +327,8 @@ class CitaViewModel(
                     _offline.value = false
                     _hapticPulse.tryEmit(HapticEvent.RefreshDone)
                     nl.cita.magister.live.LiveLessonScheduler.sync(getApplication())
+                    nl.cita.magister.wear.WearSyncPublisher.syncAsync(getApplication())
+            nl.cita.magister.widget.MagsWidgetUpdater.syncAsync(getApplication())
                 }
                 .onFailure { error ->
                     rememberFailure(error)
@@ -287,6 +343,7 @@ class CitaViewModel(
     fun logout() {
         viewModelScope.launch {
             nl.cita.magister.live.LiveLessonScheduler.cancel(getApplication())
+            nl.cita.magister.wear.WearSyncPublisher.clearAsync(getApplication())
             repo.logout()
             _signedIn.value = false
             _lastError.value = null
@@ -295,7 +352,11 @@ class CitaViewModel(
     }
 
     fun toggleHomework(item: HomeworkItem, done: Boolean) {
-        viewModelScope.launch { repo.markHomeworkDone(item, done) }
+        viewModelScope.launch {
+            repo.markHomeworkDone(item, done)
+            nl.cita.magister.wear.WearSyncPublisher.syncAsync(getApplication())
+            nl.cita.magister.widget.MagsWidgetUpdater.syncAsync(getApplication())
+        }
     }
 
     fun openMessage(id: Int) {
